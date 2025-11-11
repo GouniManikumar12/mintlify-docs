@@ -1,0 +1,12 @@
+---
+title: State machine
+---
+
+# State machine
+
+- `EXPOSURE_PENDING` → reserve CPX
+- `CLICK_PENDING` → release CPX, reserve CPC
+- `CONVERSION_PENDING` → release CPC, capture CPA
+- `FINALIZED` → capture active unit on expiry
+
+Only one capture per serve token.

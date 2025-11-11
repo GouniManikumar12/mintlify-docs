@@ -1,0 +1,11 @@
+---
+title: Security
+---
+
+# Security
+
+- Mutual TLS
+- HMAC-SHA256 signature with `nonce` and timestamp
+- Nonce TTL 60 seconds, replay rejected
+- Session binding: events must share session_id and platform_id
+- Key rotation every 90 days

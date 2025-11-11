@@ -1,0 +1,30 @@
+---
+title: Auction and scoring
+---
+
+# Auction and scoring
+
+**Eligibility**
+- Wallet funded
+- Vertical, geo, locale match
+- Trust score threshold
+
+**Scoring**
+```
+EV = CPX
+
+* (CTR_est * CPC)
+* (CVR_est * CPA)
+  EV_final = EV * TrustMultiplier
+```
+
+**Tie break**
+1. CPA
+2. CPC
+3. CPX
+4. Higher trust
+5. Deterministic jitter by serve_token hash
+
+**Clearing**
+- Second price CPX with soft floor
+- Reserve CPX on win

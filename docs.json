@@ -1,125 +1,62 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "AMXP Specification",
-  "colors": {
-    "primary": "#059669",
-    "light": "#10B981",
-    "dark": "#047857"
+  "name": "AdMesh Exchange Protocol (AMXP)",
+  "logo": {
+    "light": "/logo-light.png",
+    "dark": "/logo-dark.png"
   },
-  "favicon": "/favicon.svg",
-  "navigation": {
-    "tabs": [
-      {
-        "tab": "Specification",
-        "groups": [
-          {
-            "group": "Getting Started",
-            "pages": [
-              "index",
-              "quickstart"
-            ]
-          },
-          {
-            "group": "Core Specification",
-            "pages": [
-              "specification/01-overview",
-              "specification/02-roles",
-              "specification/03-transport-and-auth",
-              "specification/04-auction",
-              "specification/05-events-and-states",
-              "specification/06-wallets-and-payouts",
-              "specification/07-security-and-fraud",
-              "specification/08-observability",
-              "specification/09-compliance",
-              "specification/10-versioning-and-conformance"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Reference",
-        "groups": [
-          {
-            "group": "Technical Reference",
-            "pages": [
-              "reference/schemas",
-              "reference/examples"
-            ]
-          },
-          {
-            "group": "Documentation",
-            "pages": [
-              "reference/summary",
-              "reference/prd"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Governance",
-        "groups": [
-          {
-            "group": "Protocol Governance",
-            "pages": [
-              "governance/conformance",
-              "governance/governance",
-              "governance/versioning",
-              "governance/security",
-              "governance/contributing",
-              "governance/code-of-conduct"
-            ]
-          }
-        ]
-      }
-    ],
-    "global": {
-      "anchors": [
+  "favicon": "/favicon.ico",
+  "colors": {
+    "primary": "#059669"
+  },
+  "navigation": [
+    {
+      "group": "Welcome",
+      "pages": [
+        "index",
+        "overview"
+      ]
+    },
+    {
+      "group": "Get started",
+      "pages": [
+        "quickstart-platform",
+        "quickstart-agent"
+      ]
+    },
+    {
+      "group": "Protocol",
+      "pages": [
+        "protocol",
+        "auction",
+        "events",
+        "state-machine",
+        "wallets-and-payouts",
+        "security",
+        "observability",
+        "compliance",
+        "versioning",
+        "conformance",
+        "glossary",
+        "faq"
+      ]
+    },
+    {
+      "group": "API",
+      "pages": [
         {
-          "anchor": "GitHub",
-          "href": "https://github.com/GouniManikumar12/amxp-spec",
-          "icon": "github"
-        },
-        {
-          "anchor": "Discussions",
-          "href": "https://github.com/GouniManikumar12/amxp-spec/discussions",
-          "icon": "comments"
-        },
-        {
-          "anchor": "Issues",
-          "href": "https://github.com/GouniManikumar12/amxp-spec/issues",
-          "icon": "bug"
+          "name": "AMXP API Reference",
+          "api": "api/openapi.yaml"
         }
       ]
     }
+  ],
+  "topbarCtaButton": {
+    "name": "Get API access",
+    "url": "https://console.admesh.example/signup"
   },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "GitHub",
-        "href": "https://github.com/GouniManikumar12/amxp-spec"
-      }
-    ]
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/GouniManikumar12/amxp-spec"
-    }
+  "footerSocials": {
+    "github": "https://github.com/admesh",
+    "x": "https://x.com/admesh",
+    "linkedin": "https://www.linkedin.com/company/admesh"
   }
 }
