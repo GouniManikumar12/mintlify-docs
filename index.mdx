@@ -1,0 +1,166 @@
+---
+title: 'AMXP Specification'
+description: 'The open protocol for intent monetization in AI and agentic environments'
+---
+
+# Welcome to AMXP
+
+**AMXP (AdMesh Exchange Protocol)** is an open standard for monetizing user intent in AI-powered and agentic environments. It enables platforms, advertisers, and ad networks to operate compliant, interoperable marketplaces for AI-native advertising.
+
+## What is AMXP?
+
+AMXP defines how supply-side platforms, demand-side bidders, and auditing agents communicate intent, enforce policy, and settle value in real-time.
+
+<CardGroup cols={3}>
+  <Card title="For Platforms" icon="desktop" href="/specification/02-roles">
+    Monetize AI conversations and agent interactions with minimal integration effort
+  </Card>
+  <Card title="For Advertisers" icon="bullhorn" href="/specification/02-roles">
+    Reach users at the moment of intent with relevant, contextual recommendations
+  </Card>
+  <Card title="For Networks" icon="network-wired" href="/specification/02-roles">
+    Operate compliant, interoperable ad marketplaces with standardized protocols
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Real-time Bidding" icon="gavel">
+    Sub-100ms auction mechanics enable real-time ad selection without degrading user experience.
+    
+    - Server-side auctions with sub-100ms p95 latency
+    - Second-price auction mechanics
+    - Transparent bid evaluation
+  </Accordion>
+
+  <Accordion title="Event Tracking" icon="chart-line">
+    Comprehensive event tracking across the full user journey.
+    
+    - **CPX (Exposure)**: Impression tracking with viewport visibility
+    - **CPC (Click)**: Click tracking with attribution
+    - **CPA (Conversion)**: Conversion tracking with value attribution
+  </Accordion>
+
+  <Accordion title="Fraud Prevention" icon="shield-halved">
+    Built-in security measures to prevent fraud and abuse.
+    
+    - HMAC signatures for request authentication
+    - Nonce validation for replay protection
+    - Trust scoring for advertiser quality
+    - Rate limiting and abuse detection
+  </Accordion>
+
+  <Accordion title="Privacy-First" icon="user-shield">
+    GDPR and CCPA compliant by design.
+    
+    - No PII required for basic operations
+    - User consent management
+    - Data minimization principles
+    - Right to deletion support
+  </Accordion>
+
+  <Accordion title="Interoperable" icon="arrows-rotate">
+    Any network can implement AMXP and claim compatibility.
+    
+    - JSON-based payloads with explicit versioning
+    - Standardized JSON schemas
+    - Conformance test suite
+    - Certification program
+  </Accordion>
+</AccordionGroup>
+
+## Quick Start
+
+<CardGroup cols={2}>
+  <Card title="Read the Specification" icon="book-open" href="/specification/01-overview">
+    Start with the complete protocol specification
+  </Card>
+  <Card title="View Examples" icon="code" href="/reference/examples">
+    See real-world payload examples
+  </Card>
+  <Card title="JSON Schemas" icon="brackets-curly" href="/reference/schemas">
+    Explore the JSON schemas for validation
+  </Card>
+  <Card title="Get Certified" icon="badge-check" href="/governance/conformance">
+    Learn about AMXP certification
+  </Card>
+</CardGroup>
+
+## Protocol Principles
+
+<CardGroup cols={3}>
+  <Card title="Interoperability" icon="arrows-rotate">
+    JSON-based payloads with explicit versioning keep integrations predictable
+  </Card>
+  <Card title="Extensibility" icon="puzzle-piece">
+    Optional sections allow experimentation without fragmenting the ecosystem
+  </Card>
+  <Card title="Safety" icon="shield-check">
+    Every transport includes authentication, encryption, and replay protection
+  </Card>
+</CardGroup>
+
+## Specification Overview
+
+The AMXP specification is organized into 10 chapters:
+
+1. **[Overview](/specification/01-overview)** - Protocol introduction and principles
+2. **[Roles](/specification/02-roles)** - Platform, Advertiser, and Network responsibilities
+3. **[Transport & Auth](/specification/03-transport-and-auth)** - HTTP/REST and authentication
+4. **[Auction](/specification/04-auction)** - Real-time bidding mechanics
+5. **[Events & States](/specification/05-events-and-states)** - Event tracking lifecycle
+6. **[Wallets & Payouts](/specification/06-wallets-and-payouts)** - Financial operations
+7. **[Security & Fraud](/specification/07-security-and-fraud)** - Protection measures
+8. **[Observability](/specification/08-observability)** - Monitoring and logging
+9. **[Compliance](/specification/09-compliance)** - Privacy and legal requirements
+10. **[Versioning & Conformance](/specification/10-versioning-and-conformance)** - Version management
+
+## Reference Implementation
+
+The **AdMesh Ad Network** is the reference implementation of AMXP. Any ad network can implement AMXP and claim compatibility after passing the conformance suite.
+
+## Get Involved
+
+<CardGroup cols={2}>
+  <Card title="Contribute" icon="code-pull-request" href="/governance/contributing">
+    Help improve the specification
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/GouniManikumar12/amxp-spec">
+    View the source repository
+  </Card>
+  <Card title="Report Issues" icon="bug" href="https://github.com/GouniManikumar12/amxp-spec/issues">
+    Report bugs or request features
+  </Card>
+  <Card title="Discussions" icon="comments" href="https://github.com/GouniManikumar12/amxp-spec/discussions">
+    Join the conversation
+  </Card>
+</CardGroup>
+
+## Version
+
+**Current Version**: v0.1.0  
+**Status**: Public Specification  
+**License**: Apache 2.0 / MIT (dual)
+
+## Next Steps
+
+<Steps>
+  <Step title="Read the Overview">
+    Start with the [Overview](/specification/01-overview) to understand AMXP's core principles
+  </Step>
+  <Step title="Explore the Specification">
+    Dive into the [complete specification](/specification/02-roles) to learn about roles and responsibilities
+  </Step>
+  <Step title="Review Examples">
+    Check out [real-world examples](/reference/examples) to see AMXP in action
+  </Step>
+  <Step title="Implement & Test">
+    Use the [JSON schemas](/reference/schemas) and [conformance tests](/governance/conformance) to build your implementation
+  </Step>
+</Steps>
+
+---
+
+**AMXP** - The intent monetization layer for the agent economy.
+
