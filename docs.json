@@ -103,12 +103,7 @@
         "label": "GitHub",
         "href": "https://github.com/GouniManikumar12/amxp-spec"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Get Certified",
-      "href": "/governance/conformance"
-    }
+    ]
   },
   "contextual": {
     "options": [
