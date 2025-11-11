@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bid",
+  "description": "Advertiser agent bid payload submitted in response to a context request",
+  "type": "object",
+  "required": ["bid_id", "agent_id", "context_id", "wallet_id", "bid_vector", "ts", "auth"],
+  "properties": {
+    "bid_id": {
+      "type": "string",
+      "description": "Unique identifier for this bid",
+      "example": "b_7823"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Identifier of the advertiser agent submitting the bid",
+      "example": "ag_123"
+    },
+    "context_id": {
+      "type": "string",
+      "description": "Reference to the context request this bid responds to",
+      "example": "ctx_92f"
+    },
+    "wallet_id": {
+      "type": "string",
+      "description": "Wallet to charge for this bid if it wins",
+      "example": "w_890"
+    },
+    "bid_vector": {
+      "type": "object",
+      "description": "Multi-unit bid prices",
+      "required": ["cpx"],
+      "properties": {
+        "cpx": {
+          "type": "string",
+          "description": "Cost per exposure bid in USD",
+          "pattern": "^\\d+\\.\\d{2,}$",
+          "example": "0.05"
+        },
+        "cpc": {
+          "type": "string",
+          "description": "Cost per click bid in USD (optional)",
+          "pattern": "^\\d+\\.\\d{2,}$",
+          "example": "0.45"
+        },
+        "cpa": {
+          "type": "string",
+          "description": "Cost per acquisition bid in USD (optional)",
+          "pattern": "^\\d+\\.\\d{2,}$",
+          "example": "10.00"
+        }
+      }
+    },
+    "preferred_unit": {
+      "type": "string",
+      "description": "Preferred pricing unit for this bid",
+      "enum": ["CPX", "CPC", "CPA"],
+      "example": "CPA"
+    },
+    "creative": {
+      "type": "object",
+      "description": "Ad creative content",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Ad headline",
+          "maxLength": 60,
+          "example": "Pipedrive CRM"
+        },
+        "body": {
+          "type": "string",
+          "description": "Ad body text",
+          "maxLength": 200,
+          "example": "CRM built for growing teams."
+        },
+        "cta": {
+          "type": "string",
+          "description": "Call-to-action text",
+          "maxLength": 30,
+          "example": "Start free trial"
+        },
+        "deeplink": {
+          "type": "string",
+          "description": "Landing page URL",
+          "format": "uri",
+          "example": "https://pipedrive.com/signup"
+        }
+      }
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the bid submission",
+      "example": "2025-11-11T18:00:05Z"
+    },
+    "auth": {
+      "type": "object",
+      "description": "Authentication credentials",
+      "required": ["nonce", "sig"],
+      "properties": {
+        "nonce": {
+          "type": "string",
+          "description": "One-time nonce for replay protection",
+          "example": "n_456"
+        },
+        "sig": {
+          "type": "string",
+          "description": "HMAC signature of the bid",
+          "example": "sig_789"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "bid_id": "b_7823",
+      "agent_id": "ag_123",
+      "context_id": "ctx_92f",
+      "wallet_id": "w_890",
+      "bid_vector": {
+        "cpx": "0.05",
+        "cpc": "0.45",
+        "cpa": "10.00"
+      },
+      "preferred_unit": "CPA",
+      "creative": {
+        "title": "Pipedrive CRM",
+        "body": "CRM built for growing teams.",
+        "cta": "Start free trial",
+        "deeplink": "https://pipedrive.com/signup"
+      },
+      "ts": "2025-11-11T18:00:05Z",
+      "auth": {
+        "nonce": "n_456",
+        "sig": "sig_789"
+      }
+    }
+  ]
+}
+

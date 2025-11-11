@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuctionResult",
+  "description": "Auction winner response returned to the platform after bid evaluation",
+  "type": "object",
+  "required": ["auction_id", "serve_token", "winner", "render", "ttl_ms"],
+  "properties": {
+    "auction_id": {
+      "type": "string",
+      "description": "Unique identifier for this auction",
+      "example": "auc_981"
+    },
+    "serve_token": {
+      "type": "string",
+      "description": "Opaque token used to track this ad impression across events",
+      "example": "stk_abcxyz123"
+    },
+    "winner": {
+      "type": "object",
+      "description": "Information about the winning bid",
+      "required": ["agent_id", "clearing_price_cpx"],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "description": "Identifier of the winning advertiser agent",
+          "example": "ag_123"
+        },
+        "clearing_price_cpx": {
+          "type": "string",
+          "description": "Second-price auction clearing price for CPX in USD",
+          "pattern": "^\\d+\\.\\d{2,}$",
+          "example": "0.042"
+        },
+        "preferred_unit": {
+          "type": "string",
+          "description": "Winner's preferred pricing unit",
+          "enum": ["CPX", "CPC", "CPA"],
+          "example": "CPA"
+        }
+      }
+    },
+    "render": {
+      "type": "object",
+      "description": "Creative content to display",
+      "required": ["label", "title", "url"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Ad disclosure label",
+          "example": "[Ad]"
+        },
+        "title": {
+          "type": "string",
+          "description": "Ad headline",
+          "example": "Pipedrive CRM"
+        },
+        "body": {
+          "type": "string",
+          "description": "Ad body text",
+          "example": "Built for founders."
+        },
+        "cta": {
+          "type": "string",
+          "description": "Call-to-action text",
+          "example": "Try for free"
+        },
+        "url": {
+          "type": "string",
+          "description": "Click-through URL with serve_token embedded",
+          "format": "uri",
+          "example": "https://admesh.click/stk_abcxyz123"
+        }
+      }
+    },
+    "ttl_ms": {
+      "type": "integer",
+      "description": "Time-to-live in milliseconds before this result expires",
+      "minimum": 0,
+      "example": 60000
+    }
+  },
+  "examples": [
+    {
+      "auction_id": "auc_981",
+      "serve_token": "stk_abcxyz123",
+      "winner": {
+        "agent_id": "ag_123",
+        "clearing_price_cpx": "0.042",
+        "preferred_unit": "CPA"
+      },
+      "render": {
+        "label": "[Ad]",
+        "title": "Pipedrive CRM",
+        "body": "Built for founders.",
+        "cta": "Try for free",
+        "url": "https://admesh.click/stk_abcxyz123"
+      },
+      "ttl_ms": 60000
+    }
+  ]
+}
+
