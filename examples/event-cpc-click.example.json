@@ -1,0 +1,8 @@
+{
+  "event_type": "cpc_click",
+  "serve_token": "stk_3pQabcdef",
+  "event_id": "evt_click_7b1",
+  "s2s": true,
+  "ts": "2025-11-11T13:19:05Z",
+  "auth": { "nonce": "n_c11", "sig": "sig202" }
+}

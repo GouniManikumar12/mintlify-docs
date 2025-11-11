@@ -1,0 +1,18 @@
+{
+  "$id": "https://amxp.org/schemas/$schema-catalog.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AMXP Schema Catalog",
+  "type": "object",
+  "properties": {},
+  "allOf": [
+    { "$ref": "common.json" },
+    { "$ref": "context-request.json" },
+    { "$ref": "bid.json" },
+    { "$ref": "auction-result.json" },
+    { "$ref": "event-cpx-exposure.json" },
+    { "$ref": "event-cpc-click.json" },
+    { "$ref": "event-cpa-conversion.json" },
+    { "$ref": "ledger-record.json" }
+  ],
+  "additionalProperties": false
+}

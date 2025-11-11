@@ -1,0 +1,58 @@
+{
+  "$id": "https://amxp.org/schemas/bid.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bid",
+  "type": "object",
+  "required": ["bid_id","agent_id","context_id","wallet_id","bid_vector","ts","auth"],
+  "properties": {
+    "bid_id": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "context_id": { "type": "string" },
+    "wallet_id": { "type": "string" },
+    "bid_vector": {
+      "type": "object",
+      "properties": {
+        "cpx": { "$ref": "common.json#/properties/money" },
+        "cpc": { "$ref": "common.json#/properties/money" },
+        "cpa": { "$ref": "common.json#/properties/money" }
+      },
+      "required": ["cpx"],
+      "additionalProperties": false
+    },
+    "preferred_unit": { "type": "string", "enum": ["CPX","CPC","CPA"] },
+    "creative": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 120 },
+        "body": { "type": "string", "maxLength": 500 },
+        "cta": { "type": "string", "maxLength": 60 },
+        "deeplink": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": false
+    },
+    "caps": {
+      "type": "object",
+      "properties": {
+        "session": { "type": "integer", "minimum": 0 },
+        "daily": { "type": "integer", "minimum": 0 },
+        "geo_allow": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Z]{2}$" },
+          "maxItems": 50
+        }
+      },
+      "additionalProperties": false
+    },
+    "ts": { "$ref": "common.json#/properties/timestamp" },
+    "auth": {
+      "type": "object",
+      "required": ["nonce","sig"],
+      "properties": {
+        "nonce": { "$ref": "common.json#/properties/nonce" },
+        "sig": { "$ref": "common.json#/properties/signature" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
