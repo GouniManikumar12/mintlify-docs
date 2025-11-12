@@ -1,30 +1,84 @@
 # Ledger Record Schema
 
 ## Overview
-Records a financial transaction corresponding to a verified event in the AIP ledger.
+Final ledger record summarizing all events and charges for a served ad.
 
-## Schema Fields
+## Required Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| ledger_entry_id | string | Unique ledger ID |
-| serve_token | string | Event linkage token |
-| event_type | string | CPX, CPC, or CPA |
-| platform_credit | number | Credit to platform wallet |
-| adnetwork_fee | number | Fee retained by ad network |
-| agent_debit | number | Amount charged to advertiser |
-| status | string | pending or settled |
-| timestamp | string | RFC3339 timestamp |
+| `serve_token` | string | Serve token identifying this ad impression |
+| `session_id` | string | Session identifier |
+| `platform_id` | string | Platform identifier |
+| `agent_id` | string | Advertiser agent identifier |
+| `auction_id` | string | Auction identifier |
+| `state` | string | Final state of the ledger record. Enum: `PENDING`, `EXPOSED`, `CLICKED`, `CONVERTED`, `FINALIZED`, `REFUNDED` |
+| `final_unit` | string | Final pricing unit charged. Enum: `CPX`, `CPC`, `CPA` |
+| `final_charge` | string | Final charge amount in USD (pattern: `^\d+\.\d{2,}$`) |
+| `currency` | string | Currency code (always `USD`) |
+| `timestamps` | object | Timestamps for each event in the funnel |
+
+## Timestamps Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `auction` | string | When the auction completed (ISO 8601 date-time) |
+| `exposure` | string | When the ad was exposed (ISO 8601 date-time) |
+| `click` | string | When the ad was clicked (ISO 8601 date-time) |
+| `conversion` | string | When the conversion occurred (ISO 8601 date-time) |
+| `finalized` | string | When the ledger was finalized (ISO 8601 date-time) |
+
+## Optional Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| `charges` | object | Breakdown of charges by pricing unit |
+| `revenue_share` | object | Revenue distribution |
+
+## Charges Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `cpx` | string | CPX charge amount (pattern: `^\d+\.\d{2,}$`) |
+| `cpc` | string | CPC charge amount (pattern: `^\d+\.\d{2,}$`) |
+| `cpa` | string | CPA charge amount (pattern: `^\d+\.\d{2,}$`) |
+
+## Revenue Share Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `platform_share` | string | Platform's revenue share (pattern: `^\d+\.\d{2,}$`) |
+| `network_share` | string | Network's revenue share (pattern: `^\d+\.\d{2,}$`) |
 
 ## Example
 ```json
 {
-  "ledger_entry_id": "led_583f12",
-  "serve_token": "srv_20381f",
-  "event_type": "CPA",
-  "platform_credit": 2.00,
-  "adnetwork_fee": 0.50,
-  "agent_debit": 2.50,
-  "status": "settled",
-  "timestamp": "2025-11-30T00:00:00Z"
+  "serve_token": "stk_abcxyz123",
+  "session_id": "s_001",
+  "platform_id": "pf_chatapp",
+  "agent_id": "ag_123",
+  "auction_id": "auc_981",
+  "state": "FINALIZED",
+  "final_unit": "CPA",
+  "final_charge": "10.00",
+  "currency": "USD",
+  "timestamps": {
+    "auction": "2025-11-11T18:00:00Z",
+    "exposure": "2025-11-11T18:00:00Z",
+    "click": "2025-11-11T18:02:00Z",
+    "conversion": "2025-11-11T18:30:00Z",
+    "finalized": "2025-11-11T19:00:00Z"
+  },
+  "charges": {
+    "cpx": "0.034",
+    "cpc": "0.45",
+    "cpa": "10.00"
+  },
+  "revenue_share": {
+    "platform_share": "3.00",
+    "network_share": "7.00"
+  }
 }
 ```
+
+## Validation Rules
+- `state` must be one of: `PENDING`, `EXPOSED`, `CLICKED`, `CONVERTED`, `FINALIZED`, `REFUNDED`
+- `final_unit` must be one of: `CPX`, `CPC`, `CPA`
+- `currency` must be exactly `USD`
+- All price fields (`final_charge`, `charges.*`, `revenue_share.*`) must match pattern: `^\d+\.\d{2,}$`
+- All timestamp fields must be in ISO 8601 date-time format

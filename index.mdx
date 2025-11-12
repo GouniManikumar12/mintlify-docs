@@ -17,7 +17,7 @@ Until now, there has been no common way to connect that intent with advertisers 
 AIP solves this by standardizing how intent is:
 
 - Captured from AI platforms  
-- Matched with advertiser agents  
+- Matched with brand agents  
 - Verified when a user engages or converts  
 - Settled transparently through wallets and ledgers  
 
@@ -28,7 +28,7 @@ AIP solves this by standardizing how intent is:
 | Layer | What it does | Why it matters |
 |-------|---------------|----------------|
 | **Context Ingestion** | Collects anonymized intent from AI platforms | Enables precise, privacy-safe matching |
-| **Real-Time Auction** | Lets advertiser agents bid on verified intent | Creates market-based pricing for intent |
+| **Real-Time Auction** | Lets brand agents bid on verified intent | Creates market-based pricing for intent |
 | **Event Verification** | Tracks CPX, CPC, and CPA outcomes with signatures | Prevents fraud and double charging |
 | **Wallet Settlement** | Automates monthly payouts and auditing | Makes billing deterministic and trusted |
 
@@ -70,7 +70,7 @@ sequenceDiagram
   participant U as User
   participant P as AI Platform
   participant AIP as AIP Network
-  participant AA as Advertiser Agents
+  participant AA as Brand Agents
   participant W as Wallet Ledger
 
   U->>P: "Best accounting software for freelancers?"
@@ -95,4 +95,4 @@ sequenceDiagram
 
 - [Overview](/overview)  
 - [Quickstart for Platforms](/quickstart-platform)  
-- [Quickstart for Advertiser Agents](/quickstart-agent)  
+- [Quickstart for Brand Agents](/quickstart-agent)  

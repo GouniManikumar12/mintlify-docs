@@ -1,24 +1,47 @@
-# Event - CPC Schema
+# CPC Click Event Schema
 
 ## Overview
-Represents a verified click on a previously exposed recommendation.
+Event fired when a user clicks on an ad.
 
-## Schema Fields
+## Required Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| serve_token | string | Token linking click to exposure |
-| event_type | string | Must equal "click" |
-| timestamp | string | RFC3339 timestamp |
-| signature | string | Verification hash |
-| metadata | object | Includes platform and user region |
+| `event_type` | string | Event type identifier (always `cpc_click`) |
+| `serve_token` | string | Serve token from the auction result |
+| `event_id` | string | Unique identifier for this click event |
+| `ts` | string | ISO 8601 timestamp of the click |
+
+## Optional Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| `s2s` | boolean | Whether this is a server-to-server event (true) or client-side (false) |
+| `click_metadata` | object | Additional click context |
+
+## Click Metadata Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `user_agent` | string | User agent string of the client |
+| `ip_address` | string | IP address of the user (for fraud detection, IPv4 format) |
+| `referrer` | string | HTTP referrer URL (must be valid URI) |
 
 ## Example
 ```json
 {
-  "serve_token": "srv_20381f",
-  "event_type": "click",
-  "timestamp": "2025-11-12T01:42:00Z",
-  "signature": "b5c8ae1e",
-  "metadata": {"platform_id": "plat_ai_example", "agent_id": "brand_quickbooks"}
+  "event_type": "cpc_click",
+  "serve_token": "stk_abcxyz123",
+  "event_id": "ev_991",
+  "s2s": true,
+  "click_metadata": {
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+    "ip_address": "192.168.1.1",
+    "referrer": "https://chatapp.example/session/s_001"
+  },
+  "ts": "2025-11-11T18:02:00Z"
 }
 ```
+
+## Validation Rules
+- `event_type` must be exactly `cpc_click`
+- `ts` must be in ISO 8601 date-time format
+- `click_metadata.ip_address` must be in IPv4 format
+- `click_metadata.referrer` must be a valid URI

@@ -5,7 +5,7 @@ description: Deploy and operate an AIP-compliant ad network to manage auctions, 
 
 # Quickstart for Ad Networks
 
-Ad Networks run the AIP infrastructure that connects AI Platforms and Advertiser Agents.  
+Ad Networks run the AIP infrastructure that connects AI Platforms and Brand Agents.  
 They handle auctions, verify events, and manage payouts in a transparent, standardized way.
 
 ---
@@ -38,14 +38,14 @@ WALLET_SECRET="your_private_key"
 
 Connect to the rest of the AIP ecosystem:
 
-- **Advertiser Agents** via `/bid`
+- **Brand Agents** via `/bid`
 - **AI Platforms** via `/context`
 - **Settlement Service** via `/payout`
 
 ```mermaid
 flowchart LR
     P[AI Platform] -->|ContextRequest| AIP[AIP Ad Network]
-    AIP -->|Auction| AA[Advertiser Agents]
+    AIP -->|Auction| AA[Brand Agents]
     AA -->|Bids| AIP
     AIP -->|Results| P
     AIP -->|Verification + Payout| L[Ledger + Wallet]

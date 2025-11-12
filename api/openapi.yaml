@@ -3,7 +3,7 @@ info:
   title: Agentic Intent Protocol (AIP)
   version: "0.1"
   description: |
-    The Agentic Intent Protocol (AIP) defines how AI platforms, advertiser agents, and ad networks
+    The Agentic Intent Protocol (AIP) defines how AI platforms, brand agents, and ad networks
     communicate to power conversational and agentic advertising.
     This reference describes the standard AIP endpoints implemented by the AdMesh Ad Network.
 
@@ -17,7 +17,7 @@ tags:
   - name: Context
     description: Platform requests to initiate auctions
   - name: Bidding
-    description: Advertiser agents submit bids
+    description: brand agents submit bids
   - name: Events
     description: Track CPX, CPC, and CPA lifecycle events
   - name: Ledger
@@ -259,7 +259,7 @@ paths:
       summary: Submit a Bid
       tags: [Bidding]
       description: >
-        Advertiser agents use this endpoint to place bids on incoming contexts.
+        brand agents use this endpoint to place bids on incoming contexts.
         The bid includes CPX, CPC, and CPA values, and a preferred unit.
       parameters:
         - $ref: "#/components/parameters/VersionHeader"

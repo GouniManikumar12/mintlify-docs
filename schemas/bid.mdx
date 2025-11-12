@@ -1,24 +1,77 @@
 # Bid Schema
 
 ## Overview
-Represents a Brand Agent’s response to a bid request.
+Advertiser agent bid submitted in response to a context request.
 
-## Schema Fields
+## Required Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| price | number | Bid value per exposure or click |
-| creative | string | Ad or recommendation text |
-| landing_url | string | Destination link |
-| ttl | integer | Time to live in seconds |
-| agent_id | string | Identifier for the advertiser agent |
+| `bid_id` | string | Unique identifier for this bid |
+| `agent_id` | string | Identifier of the advertiser agent placing the bid |
+| `context_id` | string | ID of the context request being bid on |
+| `wallet_id` | string | Wallet to charge if this bid wins |
+| `bid_vector` | object | Pricing for different charging models (CPX required, CPC/CPA optional) |
+| `ts` | string | ISO 8601 timestamp of the bid |
+| `auth` | object | Authentication credentials (nonce and signature) |
+
+## Bid Vector Object
+| Field | Type | Required | Description |
+|--------|------|----------|-------------|
+| `cpx` | string | Yes | Price per exposure in USD (pattern: `^\d+\.\d{2,}$`) |
+| `cpc` | string | No | Price per click in USD (pattern: `^\d+\.\d{2,}$`) |
+| `cpa` | string | No | Price per conversion in USD (pattern: `^\d+\.\d{2,}$`) |
+
+## Optional Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| `preferred_unit` | string | Preferred charging model for this bid. Enum: `CPX`, `CPC`, `CPA` |
+| `creative` | object | Ad creative to display if bid wins |
+
+## Creative Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `title` | string | Ad title (max 120 characters) |
+| `body` | string | Ad body text (max 500 characters) |
+| `cta` | string | Call-to-action text (max 60 characters) |
+| `deeplink` | string | Destination URL (must be valid URI) |
+
+## Authentication Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `nonce` | string | One-time nonce for replay protection |
+| `sig` | string | HMAC signature of the bid |
 
 ## Example
 ```json
 {
-  "price": 0.05,
-  "creative": "Try QuickBooks for Startups",
-  "landing_url": "https://quickbooks.example",
-  "ttl": 120,
-  "agent_id": "brand_quickbooks"
+  "bid_id": "b_7823",
+  "agent_id": "ag_123",
+  "context_id": "ctx_92f",
+  "wallet_id": "w_890",
+  "bid_vector": {
+    "cpx": "0.05",
+    "cpc": "0.45",
+    "cpa": "10.00"
+  },
+  "preferred_unit": "CPA",
+  "creative": {
+    "title": "Pipedrive CRM",
+    "body": "CRM built for growing teams.",
+    "cta": "Start free trial",
+    "deeplink": "https://pipedrive.com/signup"
+  },
+  "ts": "2025-11-11T18:00:01Z",
+  "auth": {
+    "nonce": "n_456",
+    "sig": "sig_789"
+  }
 }
 ```
+
+## Validation Rules
+- All price fields (`cpx`, `cpc`, `cpa`) must match pattern: `^\d+\.\d{2,}$`
+- `title` max length: 120 characters
+- `body` max length: 500 characters
+- `cta` max length: 60 characters
+- `deeplink` must be a valid URI
+- `ts` must be in ISO 8601 date-time format

@@ -1,28 +1,55 @@
 # Auction Result Schema
 
 ## Overview
-Defines the result of a completed AIP auction with the winning Brand Agent.
+Result of an ad auction, returned to the platform with the winning creative.
 
-## Schema Fields
+## Required Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| auction_id | string | Unique auction identifier |
-| serve_token | string | Token linking all future events |
-| winner | object | Winning bid details |
-| timestamp | string | RFC3339 timestamp |
+| `auction_id` | string | Unique identifier for this auction |
+| `serve_token` | string | Token used to track events for this ad serve |
+| `winner` | object | Information about the winning bid |
+| `render` | object | Creative content to display to the user |
+| `ttl_ms` | integer | Time-to-live in milliseconds for this auction result |
+
+## Winner Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `agent_id` | string | ID of the winning advertiser agent |
+| `clearing_price_cpx` | string | Clearing price for CPX in USD (pattern: `^\d+\.\d{2,}$`) |
+| `preferred_unit` | string | Charging model for this serve. Enum: `CPX`, `CPC`, `CPA` |
+
+## Render Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `label` | string | Disclosure label (always `[Ad]`) |
+| `title` | string | Ad title |
+| `body` | string | Ad body text |
+| `cta` | string | Call-to-action text |
+| `url` | string | Click-through URL with tracking (must be valid URI) |
 
 ## Example
 ```json
 {
-  "auction_id": "auc_92b134",
-  "serve_token": "srv_20381f",
+  "auction_id": "auc_981",
+  "serve_token": "stk_abcxyz123",
   "winner": {
-    "agent_id": "brand_quickbooks",
-    "score": 0.87,
-    "price": 0.05,
-    "creative": "Try QuickBooks for Startups",
-    "landing_url": "https://quickbooks.example"
+    "agent_id": "ag_123",
+    "clearing_price_cpx": "0.042",
+    "preferred_unit": "CPA"
   },
-  "timestamp": "2025-11-12T01:40:00Z"
+  "render": {
+    "label": "[Ad]",
+    "title": "Pipedrive CRM",
+    "body": "Built for founders.",
+    "cta": "Try for free",
+    "url": "https://admesh.click/stk_abcxyz123"
+  },
+  "ttl_ms": 60000
 }
 ```
+
+## Validation Rules
+- `clearing_price_cpx` must match pattern: `^\d+\.\d{2,}$`
+- `url` must be a valid URI
+- `ttl_ms` must be between 1000 and 300000 (1 second to 5 minutes)
