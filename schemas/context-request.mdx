@@ -1,0 +1,24 @@
+# Context Request Schema
+
+## Overview
+Defines the structure of an intent context payload sent by an AI platform to an Ad Network.
+
+## Schema Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| intent | string | User query or inferred intent |
+| session_id | string | Unique identifier for the user session |
+| platform_id | string | Registered platform identifier |
+| timestamp | string | RFC3339 UTC timestamp |
+| metadata | object | Optional contextual metadata |
+
+## Example
+```json
+{
+  "intent": "best accounting software for freelancers",
+  "session_id": "sess_101",
+  "platform_id": "plat_ai_example",
+  "timestamp": "2025-11-12T01:30:00Z",
+  "metadata": {"region": "US"}
+}
+```

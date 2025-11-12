@@ -1,76 +1,16 @@
----
-title: JSON Schemas
-description: Copy-paste-ready JSON schemas and sample payloads for all AIP entities
----
-
 # JSON Schemas
 
-All AIP payloads conform to these JSON schemas.
-Each file defines required fields, validation rules, and example payloads.
-
-## Available Schemas
+All schemas define the message formats used in the Agentic Intent Protocol (AIP).
+Each schema is versioned independently and validated through conformance tests.
 
 | Schema | Description |
-|---------|--------------|
-| [context-request.json](context-request.json) | AI platform request that starts an auction |
-| [bid.json](bid.json) | Advertiser agent bid payload |
-| [auction-result.json](auction-result.json) | Auction winner response |
-| [event-cpx.json](event-cpx.json) | Exposure event |
-| [event-cpc.json](event-cpc.json) | Click event |
-| [event-cpa.json](event-cpa.json) | Conversion event |
-| [ledger-record.json](ledger-record.json) | Final ledger record summary |
-
-## Usage
-
-These schemas are provided in JSON Schema Draft 2020-12 format. You can use them to:
-
-- **Validate** your payloads before sending to AIP endpoints
-- **Generate** client code using tools like `quicktype` or `json-schema-to-typescript`
-- **Test** your integration with sample data
-- **Reference** exact field names, types, and constraints
-
-## Integration Examples
-
-### Validating a Context Request (Node.js)
-
-```javascript
-const Ajv = require('ajv');
-const contextRequestSchema = require('./context-request.json');
-
-const ajv = new Ajv();
-const validate = ajv.compile(contextRequestSchema);
-
-const payload = {
-  request_id: "rq_92f",
-  session_id: "s_001",
-  platform_id: "pf_chatapp",
-  query_text: "best CRM for small teams",
-  locale: "en-US",
-  geo: "US",
-  ts: new Date().toISOString(),
-  auth: {
-    nonce: "n_123",
-    sig: "sig_abcd"
-  }
-};
-
-if (validate(payload)) {
-  console.log('Valid payload');
-} else {
-  console.error('Validation errors:', validate.errors);
-}
-```
-
-### Generating TypeScript Types
-
-```bash
-npx json-schema-to-typescript schemas/context-request.json > types/ContextRequest.ts
-```
-
-## See Also
-
-- [Protocol Overview](/protocol) - High-level protocol flow
-- [Auction Mechanics](/auction) - How bidding and clearing works
-- [Events](/events) - Event tracking and ledger finalization
-- [API Reference](/api/openapi) - OpenAPI specification
-
+|--------|--------------|
+| [Context Request](context-request.mdx) | User intent data from platform |
+| [Bid](bid.mdx) | Advertiser agent bid payload |
+| [Auction Result](auction-result.mdx) | Winning bid and serve token |
+| [Event - CPX](event-cpx.mdx) | Verified exposure |
+| [Event - CPC](event-cpc.mdx) | Verified click |
+| [Event - CPA](event-cpa.mdx) | Verified conversion |
+| [Ledger Record](ledger-record.mdx) | Monetary ledger entry |
+| [Wallet Record](wallet-record.mdx) | Account balance and transaction |
+| [Version](version.mdx) | Protocol version metadata |

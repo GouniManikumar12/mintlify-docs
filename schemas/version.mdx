@@ -1,0 +1,20 @@
+# Version Schema
+
+## Overview
+Provides versioning metadata for AIP implementations.
+
+## Schema Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| current | string | Active version |
+| supported | array | List of supported versions |
+| deprecated_after | string | Deprecation cutoff date |
+
+## Example
+```json
+{
+  "current": "0.1.0",
+  "supported": ["0.1.0", "0.0.9"],
+  "deprecated_after": "2026-06-30"
+}
+```

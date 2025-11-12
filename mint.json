@@ -20,8 +20,9 @@
     {
       "group": "Get started",
       "pages": [
-        "quickstart-platform",
-        "quickstart-agent"
+        "platforms",
+        "adnetworks",
+        "brand-agents"
       ]
     },
     {
@@ -37,27 +38,40 @@
         "compliance",
         "versioning",
         "conformance",
-        "glossary",
-        "faq"
+        "glossary"
       ]
     },
     {
-      "group": "Developer Reference",
+      "group": "Important Concepts",
       "pages": [
-        "schemas/README"
+        "agentic-advertising",
+        "cpm-vs-cpx"
       ]
     },
     {
-      "group": "API Reference",
+      "group": "Schemas",
       "pages": [
-        "api/openapi"
+        "schemas/context-request",
+        "schemas/bid",
+        "schemas/auction-result",
+        "schemas/event-cpx",
+        "schemas/event-cpc",
+        "schemas/event-cpa",
+        "schemas/ledger-record",
+        "schemas/wallet-record",
+        "schemas/version"
+      ]
+    },
+    {
+      "group": "FAQ",
+      "pages": [
+        "faq/platforms",
+        "faq/adnetworks",
+        "faq/brand-agents",
+        "faq/compliance-and-audit"
       ]
     }
   ],
-  "topbarCtaButton": {
-    "name": "Get API access",
-    "url": "https://console.admesh.example/signup"
-  },
   "footerSocials": {
     "github": "https://github.com/admesh",
     "x": "https://x.com/admesh",

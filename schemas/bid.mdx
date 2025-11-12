@@ -1,0 +1,24 @@
+# Bid Schema
+
+## Overview
+Represents a Brand Agent’s response to a bid request.
+
+## Schema Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| price | number | Bid value per exposure or click |
+| creative | string | Ad or recommendation text |
+| landing_url | string | Destination link |
+| ttl | integer | Time to live in seconds |
+| agent_id | string | Identifier for the advertiser agent |
+
+## Example
+```json
+{
+  "price": 0.05,
+  "creative": "Try QuickBooks for Startups",
+  "landing_url": "https://quickbooks.example",
+  "ttl": 120,
+  "agent_id": "brand_quickbooks"
+}
+```

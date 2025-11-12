@@ -1,20 +1,125 @@
 ---
 title: Events
+description: Learn how AIP verifies exposures, clicks, and conversions to enable fair, auditable billing.
 ---
 
-**Exposure (CPX)**
-- Fired on render
-- Includes surface, position, visibility
+Every measurable action in AIP is recorded as an **Event**.  
+Events are how the protocol verifies that value was created — from a user seeing an ad to completing a conversion.
 
-**Click (CPC)**
-- Fired on CTA
-- S2S or client
+---
 
-**Conversion (CPA)**
-- Fired on verified action
-- For agentic sessions, “conversion” can be task completion
+## 1. TL;DR
 
-**Windows**
-- CPX → CPC: 30 min
-- CPC → CPA: 24 h
-- CPA fallback: 7 days
+> Events track and verify each stage of user engagement: exposure, click, and conversion.
+
+---
+
+## 2. Why it matters
+
+Traditional ad systems rely on cookies or opaque tracking pixels.  
+AIP replaces those with **signed, timestamped events** that can be independently verified by all participants.
+
+This means:
+- No duplicate billing  
+- No fake clicks or conversions  
+- Transparent proof of every monetized action  
+
+---
+
+## 3. The Event Ladder
+
+AIP defines three progressive event types — each building on the last.  
+Only **one unit** settles per `serve_token`.
+
+| Event Type | Abbreviation | Trigger | Billing Unit | Verified By |
+|-------------|--------------|----------|---------------|--------------|
+| **Exposure** | CPX | User sees an ad or recommendation | Cost per Exposure | Platform |
+| **Click** | CPC | User clicks or engages | Cost per Click | Platform + Ad Network |
+| **Conversion** | CPA | User completes a purchase or signup | Cost per Action | Brand Agent + Ad Network |
+
+Once a higher event (like CPA) is verified, lower-tier events (CPX or CPC) are not billed again.
+
+---
+
+## 4. Event lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Exposure
+    Exposure --> Click: User interacts
+    Click --> Conversion: User completes goal
+    Conversion --> [*]
+```
+
+Each transition is verified and timestamped.  
+If no further event occurs, the lifecycle ends at the last verified state.
+
+---
+
+## 5. EventPacket schema
+
+All events follow a shared structure that makes them cryptographically verifiable.
+
+```json
+{
+  "serve_token": "srv_20381f",
+  "event_type": "click",
+  "timestamp": "2025-11-12T01:42:00Z",
+  "signature": "a3f0ab92...",
+  "metadata": {
+    "platform_id": "plat_ai_example",
+    "agent_id": "brand_quickbooks",
+    "session_id": "sess_441",
+    "user_region": "US"
+  }
+}
+```
+
+The `serve_token` links each event back to the original auction and winning bid.
+
+---
+
+## 6. Verification process
+
+| Stage | Who Verifies | What’s Checked |
+|--------|---------------|----------------|
+| **Exposure** | Platform | Display logs and visibility events |
+| **Click** | Platform + Ad Network | User interaction + timestamp |
+| **Conversion** | Brand Agent + Ad Network | Server-side callback or API confirmation |
+
+Every event is digitally signed and validated against the original `serve_token`.  
+Discrepancies automatically trigger reconciliation or rejection.
+
+---
+
+## 7. Example flow
+
+1. Platform renders a sponsored recommendation → **CPX logged**  
+2. User clicks the recommendation → **CPC verified**  
+3. User signs up on advertiser site → **CPA confirmed**  
+4. Lower events (CPX, CPC) are marked as verified but not billed  
+
+---
+
+## 8. Payout implications
+
+- Platforms are paid for verified **CPX** and **CPC** events.  
+- Advertisers pay only for **CPC** or **CPA** events that pass verification.  
+- Ad Networks mediate settlement and ledger reconciliation at the end of each cycle.
+
+---
+
+## 9. Guarantees
+
+- Each event is uniquely linked to a serve token.  
+- Events cannot be duplicated or retroactively modified.  
+- Signatures are auditable by any party in the chain.  
+- Billing and payout data are mathematically verifiable.
+
+---
+
+## Summary
+
+> Events are the backbone of AIP — they turn user actions into verified, auditable, and monetizable outcomes.
+
+Next: [State Machine](/state-machine)

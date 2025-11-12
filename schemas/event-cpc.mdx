@@ -1,0 +1,24 @@
+# Event - CPC Schema
+
+## Overview
+Represents a verified click on a previously exposed recommendation.
+
+## Schema Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| serve_token | string | Token linking click to exposure |
+| event_type | string | Must equal "click" |
+| timestamp | string | RFC3339 timestamp |
+| signature | string | Verification hash |
+| metadata | object | Includes platform and user region |
+
+## Example
+```json
+{
+  "serve_token": "srv_20381f",
+  "event_type": "click",
+  "timestamp": "2025-11-12T01:42:00Z",
+  "signature": "b5c8ae1e",
+  "metadata": {"platform_id": "plat_ai_example", "agent_id": "brand_quickbooks"}
+}
+```

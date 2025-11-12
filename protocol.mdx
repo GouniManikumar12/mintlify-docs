@@ -1,14 +1,114 @@
 ---
-title: Protocol basics
+title: Overview
+description: Understand the core transport, identifiers, and message flow used in the Agentic Intent Protocol.
 ---
 
-**Transport**
-- HTTPS or gRPC
-- HMAC signature over method, path, canonical body, timestamp, nonce
-- Header `X-AIP-Version: 0.1`
+# Agentic Intent Protocol (AIP)
 
-**Identifiers**
-- platform_id, agent_id, wallet_id, session_id, request_id, auction_id, bid_id, serve_token
+AIP defines a common language for how **AI Platforms**, **Ad Networks**, and **Brand Agents** talk to each other.  
+It ensures every request, bid, and payout is traceable, secure, and verifiable.
 
-**Timestamps**
-- RFC 3339 UTC
+---
+
+## 1. TL;DR
+
+> AIP is the communication layer that lets every intent, bid, and event move securely between participants.
+
+---
+
+## 2. Why it matters
+
+Without a shared standard, every platform and advertiser would use different message formats.  
+AIP replaces that chaos with one protocol that guarantees:
+- Consistent data structures  
+- Secure signatures and timestamps  
+- Clear tracking from exposure to conversion  
+
+This creates **trust** in every transaction.
+
+---
+
+## 3. How it works
+
+Every AIP interaction follows a simple pattern:
+
+```mermaid
+sequenceDiagram
+  participant Platform
+  participant AdNetwork
+  participant BrandAgent
+
+  Platform->>AdNetwork: ContextRequest (user intent)
+  AdNetwork->>BrandAgent: BidRequest
+  BrandAgent->>AdNetwork: BidResponse
+  AdNetwork->>Platform: AuctionResult
+  Platform->>AdNetwork: EventPacket (exposure, click, conversion)
+```
+
+Each message is signed, timestamped, and stored for verification.
+
+---
+
+## 4. Transport and Security
+
+All requests use **HTTPS or gRPC** for transport.  
+Each message includes a cryptographic signature header:
+
+```
+X-AIP-Signature: HMAC(method + path + body + timestamp + nonce)
+X-AIP-Version: 0.1
+```
+
+This prevents tampering, replay attacks, or duplicate submissions.
+
+**Timestamps:** RFC 3339 (UTC)  
+**Nonces:** Unique per request  
+**Versioning:** Declared in header to ensure backward compatibility.
+
+---
+
+## 5. Identifiers
+
+AIP uses a set of consistent IDs to trace every step of the transaction.
+
+| Identifier | Purpose |
+|-------------|----------|
+| `platform_id` | Identifies the AI Platform |
+| `agent_id` | Identifies the Brand Agent |
+| `adnetwork_id` | Identifies the Ad Network |
+| `wallet_id` | Linked to payout accounts |
+| `session_id` | Groups user activity |
+| `auction_id` | Tracks a single bidding event |
+| `bid_id` | Tracks an individual bid |
+| `serve_token` | Unique ID that binds exposure, click, and conversion |
+
+These identifiers make AIP fully auditable end-to-end.
+
+---
+
+## 6. Example flow
+
+1. User asks: “Best project management tool?”
+2. Platform sends a `ContextRequest` to the Ad Network.
+3. The Ad Network forwards it to Brand Agents.
+4. Brand Agents bid with JSON responses.
+5. The highest-scoring bid becomes the `AuctionResult`.
+6. Platform displays it with a disclosure label `[Ad]`.
+7. Exposures, clicks, and conversions are logged under one `serve_token`.
+
+---
+
+## 7. Guarantees
+
+- Every message is signed and timestamped.  
+- No two serve tokens collide.  
+- All events can be independently verified by participants.  
+- Protocol versioning ensures upgrades never break compatibility.
+
+---
+
+## Summary
+
+> AIP provides the reliable transport, identifiers, and security foundation that make the entire ad ecosystem interoperable.
+
+Next: [Auction and Scoring](/auction)

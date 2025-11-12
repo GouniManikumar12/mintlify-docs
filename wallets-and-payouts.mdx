@@ -1,18 +1,130 @@
 ---
-title: Wallets and payouts
+title: Wallets and Payouts
+description: Learn how AIP automates billing, settlements, and payouts across platforms, ad networks, and brand agents.
+---
+AIP includes a transparent, automated billing system that converts verified events into wallet balances and monthly payouts.  
+Each participant — Platform, Ad Network, and Brand Agent — has their own wallet and ledger entries.
+
 ---
 
-**Wallet operations**
-- fund, reserve, release, capture, transfer
+## 1. TL;DR
 
-**Splits**
-- Platform 70 percent
-- Ad Network 30 percent
-- Configurable per integration. Defaults shown here.
+> Wallets record verified value. Payouts distribute that value fairly, automatically, and on schedule.
 
-**Payouts**
-- Real time ledger
-- **Monthly external payouts**
-- Platforms manually request payout once per 30 days
-- Aging period: 14 days before funds become withdrawable
-- Minimum payout threshold: $200
+---
+
+## 2. Why it matters
+
+Legacy ad systems rely on delayed invoicing, reconciliation spreadsheets, and manual payouts.  
+AIP replaces that with **real-time, cryptographically verifiable ledgers**.  
+
+This ensures:
+- No payment disputes  
+- Real-time visibility into balances  
+- Deterministic reconciliation for all parties  
+
+---
+
+## 3. Participants and Wallets
+
+| Participant | Purpose | Example Entries |
+|--------------|----------|-----------------|
+| **AI Platform Wallet** | Receives revenue share for verified CPX/CPC events | Exposure fees, click revenue |
+| **Ad Network Wallet** | Holds temporary balances and manages ledger settlements | Pending payouts, operator fees |
+| **Brand Agent Wallet** | Tracks advertiser spend and CPA confirmations | Bids placed, conversions billed |
+
+Every transaction in AIP is linked to a **`ledger_entry_id`** and **`serve_token`**, ensuring perfect traceability.
+
+---
+
+## 4. Payout Flow
+
+```mermaid
+sequenceDiagram
+  participant Platform
+  participant AdNetwork
+  participant BrandAgent
+  participant Ledger
+
+  Platform->>AdNetwork: EventPacket (verified CPX/CPC/CPA)
+  AdNetwork->>Ledger: Record transaction
+  Ledger->>BrandAgent: Debit (spend)
+  Ledger->>Platform: Credit (share)
+  Ledger->>AdNetwork: Fee + reserve balance
+  AdNetwork->>All: Monthly reconciliation & payout
+```
+
+The flow runs continuously, with monthly finalization for confirmed balances.
+
+---
+
+## 5. Example Ledger Entry
+
+```json
+{
+  "ledger_entry_id": "led_583f12",
+  "serve_token": "srv_20381f",
+  "event_type": "CPA",
+  "platform_credit": 2.00,
+  "adnetwork_fee": 0.50,
+  "agent_debit": 2.50,
+  "status": "settled",
+  "timestamp": "2025-11-30T00:00:00Z"
+}
+```
+
+Each entry maps one verified event to monetary movement across wallets.
+
+---
+
+## 6. Payout Scheduling
+
+| Cycle | Description | Responsible |
+|--------|--------------|--------------|
+| **Real-Time** | Balances update instantly on verified events | Ledger API |
+| **Daily** | Ledger snapshots for reporting and reconciliation | Ad Network |
+| **Monthly** | Payouts triggered for finalized balances | Ad Network + Settlement Service |
+
+Payouts can be processed via:
+- Direct bank transfer  
+- Stripe Connect  
+- Crypto-compatible ledgers (optional extension)
+
+---
+
+## 7. Handling disputes or reversals
+
+AIP minimizes disputes by making all transactions **verifiable and signed**.  
+But if discrepancies occur:
+1. A dispute is logged with supporting evidence.  
+2. Ad Network validates via the event ledger.  
+3. If confirmed invalid, funds revert to originating wallets.  
+
+All adjustments are recorded transparently under a new `revision_id`.
+
+---
+
+## 8. Example of Reconciliation Summary
+
+| Participant | Debit | Credit | Net | Status |
+|--------------|--------|---------|------|---------|
+| Brand Agent | $2,500 | - | ($2,500) | Paid |
+| AI Platform | - | $1,750 | $1,750 | Paid |
+| Ad Network | - | $750 | $750 | Paid |
+
+---
+
+## 9. Guarantees
+
+- No manual invoicing — all payouts are event-driven.  
+- Balances and ledgers are cryptographically signed.  
+- Each participant can verify their own ledger independently.  
+- Settlement delays or fraud are mathematically impossible under AIP rules.
+
+---
+
+## Summary
+
+> AIP wallets turn verified intent into money — instantly, transparently, and without reconciliation headaches.
+
+Next: [Security](/security)

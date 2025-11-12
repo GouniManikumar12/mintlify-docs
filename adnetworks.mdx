@@ -1,0 +1,74 @@
+---
+title: Ad Networks
+description: Deploy and operate an AIP-compliant ad network to manage auctions, verification, and settlements.
+---
+
+# Quickstart for Ad Networks
+
+Ad Networks run the AIP infrastructure that connects AI Platforms and Advertiser Agents.  
+They handle auctions, verify events, and manage payouts in a transparent, standardized way.
+
+---
+
+## Step 1: Clone and Deploy
+
+```bash
+git clone https://github.com/admesh/admesh-operator
+cd admesh-operator
+docker compose up -d
+```
+
+This launches a reference AIP node. You can self-host or extend it with your own bidding, compliance, or ledger modules.
+
+---
+
+## Step 2: Configure Wallet and Ledger
+
+Edit your `.env` file to connect to your wallet and database.
+
+```bash
+AD_NETWORK_ID="admesh-us-1"
+LEDGER_URL="postgres://user:pass@localhost:5432/aip_ledger"
+WALLET_SECRET="your_private_key"
+```
+
+---
+
+## Step 3: Connect Components
+
+Connect to the rest of the AIP ecosystem:
+
+- **Advertiser Agents** via `/bid`
+- **AI Platforms** via `/context`
+- **Settlement Service** via `/payout`
+
+```mermaid
+flowchart LR
+    P[AI Platform] -->|ContextRequest| AIP[AIP Ad Network]
+    AIP -->|Auction| AA[Advertiser Agents]
+    AA -->|Bids| AIP
+    AIP -->|Results| P
+    AIP -->|Verification + Payout| L[Ledger + Wallet]
+```
+
+---
+
+## Step 4: Test the Auction Flow
+
+Run a simple test to verify your setup:
+
+```bash
+curl -X POST https://adnetwork.example/api/test-auction   -H "Authorization: Bearer <API_KEY>"   -d '{"intent":"Best CRM for startups"}'
+```
+
+If successful, you will receive an `AuctionResult` payload containing bid and creative data.
+
+---
+
+## Step 5: Verify Events and Settlements
+
+- Exposures, clicks, and conversions are logged with cryptographic signatures.  
+- Monthly reconciliations ensure accurate payouts.  
+- Use your ledger dashboard to review verified events and final settlements.
+
+✅ **Your ad network is now live and compliant with AIP v0.1.**

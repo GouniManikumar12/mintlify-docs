@@ -1,17 +1,98 @@
 ---
 title: Agentic Intent Protocol (AIP)
+description: The open standard for monetizing AI intent, transparent, auditable, and interoperable.
+---
+## The new standard for monetizing AI intent
+
+AIP is an **open protocol** that lets AI platforms and advertisers **transact on verified user intent**, not just impressions or clicks.  
+It defines how AI systems, agents, and advertisers exchange context, bids, and verified outcomes in a transparent way.
+
 ---
 
-AIP is an open protocol for monetizing conversational and agentic intent.
-AdMesh is the reference ad network that implements AIP. Any ad network can adopt AIP and interoperate.
+## Why AIP exists
 
-**What AIP standardizes**
-- Context ingestion from AI platforms
-- Real time auctions among advertiser agents
-- Event verification for CPX, CPC, CPA
-- Wallet settlement and monthly payouts
+AI conversations reveal what users actually want, their **intent**.  
+Until now, there has been no common way to connect that intent with advertisers or measure it fairly.
 
-**Key guarantees**
-- One final charge per serve token
-- Deterministic priority: CPA over CPC over CPX
-- Signed events and audit-ready ledger
+AIP solves this by standardizing how intent is:
+
+- Captured from AI platforms  
+- Matched with advertiser agents  
+- Verified when a user engages or converts  
+- Settled transparently through wallets and ledgers  
+
+---
+
+## What AIP standardizes
+
+| Layer | What it does | Why it matters |
+|-------|---------------|----------------|
+| **Context Ingestion** | Collects anonymized intent from AI platforms | Enables precise, privacy-safe matching |
+| **Real-Time Auction** | Lets advertiser agents bid on verified intent | Creates market-based pricing for intent |
+| **Event Verification** | Tracks CPX, CPC, and CPA outcomes with signatures | Prevents fraud and double charging |
+| **Wallet Settlement** | Automates monthly payouts and auditing | Makes billing deterministic and trusted |
+
+---
+
+## Built-in guarantees
+
+- One verified charge per event  
+- Priority order: **CPA → CPC → CPX**  
+- Signed and auditable ledger  
+- Interoperable with any ad network  
+
+---
+
+## Who benefits
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+
+<Card title="AI Platforms">
+Gain a sustainable monetization model without compromising user experience.
+</Card>
+
+<Card title="Advertisers">
+Pay only for verified intent with transparent ROI.
+</Card>
+
+<Card title="Users">
+See contextually relevant, trusted recommendations instead of noise.
+</Card>
+
+</div>
+
+---
+
+## Example: How it works
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant P as AI Platform
+  participant AIP as AIP Network
+  participant AA as Advertiser Agents
+  participant W as Wallet Ledger
+
+  U->>P: "Best accounting software for freelancers?"
+  P->>AIP: Send anonymized intent context
+  AIP->>AA: Run real-time auction
+  AA->>AIP: Submit bids
+  AIP->>P: Return top bid (QuickBooks)
+  P->>U: Display ad or recommendation
+  U->>AIP: Click or conversion event
+  AIP->>W: Verify and settle payout
+```
+
+---
+
+## AIP in one line
+
+> **AIP turns AI intent into a trusted and monetizable signal for platforms, agents, and advertisers.**
+
+---
+
+## Get started
+
+- [Overview](/overview)  
+- [Quickstart for Platforms](/quickstart-platform)  
+- [Quickstart for Advertiser Agents](/quickstart-agent)  

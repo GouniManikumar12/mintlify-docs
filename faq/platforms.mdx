@@ -1,0 +1,26 @@
+---
+title: "FAQ – Platforms"
+description: "Frequently asked questions for AI platforms integrating with AIP"
+---
+
+<AccordionGroup>
+  <Accordion title="How does AIP monetize AI intent?">
+    AI platforms send anonymized ContextRequests to the Ad Network when they detect monetizable intent. Verified exposures generate CPX-based payouts through the ledger.
+  </Accordion>
+
+  <Accordion title="What data is shared with the Ad Network?">
+    Only anonymized context: intent text, session ID, platform ID, and metadata such as region or language. No user identifiers are included.
+  </Accordion>
+
+  <Accordion title="How are payouts determined?">
+    Each verified CPX, CPC, or CPA event triggers a ledger entry. Monthly settlement occurs automatically from the Ad Network wallet to the Platform wallet.
+  </Accordion>
+
+  <Accordion title="What happens if verification fails?">
+    If an event signature or timestamp is invalid, it is excluded from settlement. Platforms can inspect verification logs via the /events API.
+  </Accordion>
+
+  <Accordion title="How does consent work?">
+    Platforms must surface disclosure labels such as [Ad] and manage user consent for personalized or monetized responses.
+  </Accordion>
+</AccordionGroup>

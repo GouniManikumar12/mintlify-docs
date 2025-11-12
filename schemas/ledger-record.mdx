@@ -1,0 +1,30 @@
+# Ledger Record Schema
+
+## Overview
+Records a financial transaction corresponding to a verified event in the AIP ledger.
+
+## Schema Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| ledger_entry_id | string | Unique ledger ID |
+| serve_token | string | Event linkage token |
+| event_type | string | CPX, CPC, or CPA |
+| platform_credit | number | Credit to platform wallet |
+| adnetwork_fee | number | Fee retained by ad network |
+| agent_debit | number | Amount charged to advertiser |
+| status | string | pending or settled |
+| timestamp | string | RFC3339 timestamp |
+
+## Example
+```json
+{
+  "ledger_entry_id": "led_583f12",
+  "serve_token": "srv_20381f",
+  "event_type": "CPA",
+  "platform_credit": 2.00,
+  "adnetwork_fee": 0.50,
+  "agent_debit": 2.50,
+  "status": "settled",
+  "timestamp": "2025-11-30T00:00:00Z"
+}
+```

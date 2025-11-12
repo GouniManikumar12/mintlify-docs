@@ -1,7 +1,147 @@
 ---
 title: Glossary
+description: Definitions of all key terms used in the Agentic Intent Protocol (AIP).
 ---
 
-- **Serve token**: signed, opaque handle that binds auction result to events
-- **Trust score**: multiplier based on quality and fraud signals
-- **EV**: expected value used for ranking bids
+Plain-language definitions of every major concept used in AIP — written so marketers, engineers, and finance teams can all understand them clearly.
+
+---
+
+## Core Concepts
+
+**AIP (Agentic Intent Protocol)**  
+An open standard that defines how AI platforms, ad networks, and brands exchange verified intent, bids, and payouts.  
+
+**Intent**  
+The meaning or goal behind a user’s query or conversation. Example: “Best CRM for startups” shows buying intent.  
+
+**Serve Token**  
+A unique ID that links an exposure, click, and conversion together. It prevents duplicates and ensures accurate billing.  
+
+**CPX (Cost Per Exposure)**  
+Payment when an ad or recommendation is displayed to a user.  
+
+**CPC (Cost Per Click)**  
+Payment when a user interacts or clicks on an ad.  
+
+**CPA (Cost Per Action)**  
+Payment when a user completes a valuable action, like a purchase or signup.  
+
+**Event**  
+Any measurable action in AIP — such as an exposure, click, or conversion — that can trigger billing or verification.  
+
+---
+
+## Roles
+
+**Platform**  
+An AI application or interface that shows responses to users and integrates the AdMesh or AIP SDK to display ads.  
+
+**Ad Network**  
+The intermediary that runs auctions, verifies events, and manages ledgers and payouts between brands and platforms.  
+
+**Brand Agent**  
+A software endpoint representing a brand or advertiser that bids on verified user intent.  
+
+**User**  
+The end person interacting with the AI platform. Their intent triggers the entire protocol flow.  
+
+**Verifier**  
+Any participant (usually Platform or Ad Network) responsible for validating that an event or transaction actually happened.  
+
+---
+
+## Data & Verification
+
+**ContextRequest**  
+A message sent by the Platform to share anonymized user intent with the Ad Network.  
+
+**BidRequest**  
+A request from the Ad Network to Brand Agents to gather bids for a given intent.  
+
+**BidResponse**  
+A Brand Agent’s response containing bid price, creative text, and destination URL.  
+
+**AuctionResult**  
+The outcome of the bidding process — identifies the winning Brand Agent and includes the serve_token for tracking.  
+
+**EventPacket**  
+A record of a verified user action (exposure, click, or conversion) used for billing and auditing.  
+
+**Ledger**  
+A secure, immutable record of all verified transactions between participants.  
+
+**Wallet**  
+Each participant’s account balance in AIP. Wallets automatically record credits and debits for verified events.  
+
+**Ledger Entry**  
+A single transaction record inside the ledger — including event type, timestamp, and settlement status.  
+
+---
+
+## Security & Compliance
+
+**Signature**  
+A cryptographic hash proving that a message was sent by the claimed participant and wasn’t tampered with.  
+
+**Nonce**  
+A unique, one-time value added to every signed message to prevent replay attacks.  
+
+**Timestamp**  
+The precise time an event or message occurred. Used for ordering and fraud prevention.  
+
+**Audit Trail**  
+A chronological log of all protocol events and verifications. Helps trace every exposure, click, and conversion.  
+
+**Anonymization**  
+Process of removing or obfuscating personal data from user interactions while keeping them verifiable for analytics.  
+
+**Consent Disclosure**  
+Visible label or tooltip on AI platforms (like [Ad] or “Why this ad?”) that informs users of sponsored content.  
+
+---
+
+## Governance & Conformance
+
+**Versioning**  
+AIP’s process for managing updates using semantic versioning — ensuring backward compatibility across releases.  
+
+**Schema**  
+A structured definition (usually JSON) that describes the required format and fields of AIP messages.  
+
+**Conformance**  
+The process of testing whether a system fully follows the AIP specification.  
+
+**Certification**  
+An official verification from the AdMesh or AIP registry confirming that a participant passed all conformance tests.  
+
+**Test Suite**  
+A collection of automated tests that validate protocol behavior for platforms, ad networks, and brand agents.  
+
+**Deprecation**  
+When a feature or API version is gradually phased out and replaced by a newer one while maintaining compatibility.  
+
+---
+
+## Financial Terms
+
+**Settlement**  
+The process of finalizing payments after verified events are logged and reconciled.  
+
+**Reconciliation**  
+Cross-checking event records, ledgers, and balances between participants to ensure accurate payouts.  
+
+**Dispute**  
+A challenge or correction request raised if a participant detects a mismatch in event or billing data.  
+
+**Reserve Balance**  
+Funds temporarily held by the Ad Network until all related events are verified and settled.  
+
+**Payout Cycle**  
+The recurring schedule (usually monthly) when participants receive verified earnings.  
+
+---
+
+## Summary
+
+The glossary makes AIP accessible to everyone involved — technical or not — ensuring shared understanding across the ecosystem.

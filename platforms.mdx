@@ -1,0 +1,81 @@
+---
+title: Platforms
+description: Learn how to integrate AIP into your AI platform and monetize verified user intent.
+---
+
+This guide helps AI platforms integrate AIP and start monetizing verified user intent in minutes.
+
+---
+
+## Step 1: Get Credentials
+
+Create an account in the [AdMesh Console](https://console.admesh.example/signup) and generate your **Platform API Key**.  
+You will use this key to authenticate with AIP services.
+
+---
+
+## Step 2: Install SDK
+
+Choose one of the official SDKs based on your stack:
+
+```bash
+# Node.js
+npm install admesh-weave-node
+
+# Python
+pip install admesh-weave-python
+```
+
+---
+
+## Step 3: Send a ContextRequest
+
+Detect when a user query or conversation shows monetizable intent, then send a `ContextRequest`.
+
+```js
+import { sendContextRequest } from "admesh-weave-node";
+
+const response = await sendContextRequest({
+  intent: "Best CRM for startups",
+  userRegion: "US",
+  sessionId: "abc123"
+});
+```
+
+---
+
+## Step 4: Render the AuctionResult
+
+Render the response from AIP with a clear disclosure label `[Ad]`.
+
+```jsx
+<div>
+  <p>{response.recommendation}</p>
+  <span>[Ad]</span>
+</div>
+```
+
+---
+
+## Step 5: Post Events
+
+Track verified events to ensure accurate billing.
+
+- **Exposure** → When the ad is rendered  
+- **Click** → When the user interacts  
+- **Conversion** → When the user signs up or purchases
+
+```js
+await postEvent({ type: "exposure", serveToken });
+await postEvent({ type: "click", serveToken });
+await postEvent({ type: "conversion", serveToken });
+```
+
+---
+
+## Step 6: Monitor Payouts
+
+- **Real-time ledger:** View exposures, clicks, and conversions as they occur.  
+- **Monthly settlement:** Platform requests payout after reconciliation.  
+
+✅ **Integration complete.** Your platform now earns revenue from verified AI intent.

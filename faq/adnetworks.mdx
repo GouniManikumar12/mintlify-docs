@@ -1,0 +1,26 @@
+---
+title: "FAQ – Ad Networks"
+description: "Frequently asked questions for ad networks implementing AIP"
+---
+
+<AccordionGroup>
+  <Accordion title="What is the Ad Network's role in AIP?">
+    The Ad Network mediates auctions, verifies events, manages wallets, and maintains the audit ledger across all participants.
+  </Accordion>
+
+  <Accordion title="How are auctions scored?">
+    Auctions use a weighted scoring formula balancing price, relevance, and trust scores. The highest total score determines the AuctionResult.
+  </Accordion>
+
+  <Accordion title="How is fraud prevented?">
+    Each message includes a cryptographic signature and nonce. Duplicate or tampered requests are rejected automatically.
+  </Accordion>
+
+  <Accordion title="How are payouts reconciled?">
+    Verified ledger entries are aggregated by wallet each month. Ad Networks perform reconciliation before triggering payouts.
+  </Accordion>
+
+  <Accordion title="What happens during a dispute?">
+    Disputed events are reviewed against ledger hashes. If invalid, funds revert to the originating wallet and an updated revision_id is recorded.
+  </Accordion>
+</AccordionGroup>

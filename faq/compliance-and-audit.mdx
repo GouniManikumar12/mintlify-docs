@@ -1,0 +1,26 @@
+---
+title: "FAQ – Compliance and Audit"
+description: "Frequently asked questions about AIP compliance, privacy, and audit trails"
+---
+
+<AccordionGroup>
+  <Accordion title="How does AIP meet privacy regulations?">
+    AIP complies with GDPR, CCPA, and similar frameworks through anonymization, consent management, and minimal data retention.
+  </Accordion>
+
+  <Accordion title="How are audit trails stored?">
+    All verifications, signatures, and timestamps are written to the Ad Network’s immutable audit ledger.
+  </Accordion>
+
+  <Accordion title="What is the data retention policy?">
+    Event logs: 90 days. Ledger entries: 5 years. Wallet records: 7 years. Aggregated metrics: anonymized and retained indefinitely.
+  </Accordion>
+
+  <Accordion title="How are cryptographic keys managed?">
+    Each participant uses rotating key pairs. Keys are renewed every 90 days, with backward compatibility for verification.
+  </Accordion>
+
+  <Accordion title="How are breaches handled?">
+    If a participant is compromised, ledgers lock automatically and key rotation occurs. Impacted participants are notified for re-verification.
+  </Accordion>
+</AccordionGroup>

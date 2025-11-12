@@ -1,0 +1,29 @@
+# Event - CPA Schema
+
+## Overview
+Defines a verified conversion event confirmed by the Brand Agent and Ad Network.
+
+## Schema Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| serve_token | string | Token linking conversion to prior click |
+| event_type | string | Must equal "conversion" |
+| timestamp | string | RFC3339 timestamp |
+| signature | string | Cross-signed hash |
+| metadata | object | Includes agent_id, platform_id, session_id |
+
+## Example
+```json
+{
+  "serve_token": "srv_20381f",
+  "event_type": "conversion",
+  "timestamp": "2025-11-12T01:43:00Z",
+  "signature": "c12aaef3",
+  "metadata": {
+    "platform_id": "plat_ai_example",
+    "agent_id": "brand_quickbooks",
+    "session_id": "sess_441",
+    "user_region": "US"
+  }
+}
+```

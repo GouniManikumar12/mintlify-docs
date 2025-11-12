@@ -1,7 +1,153 @@
 ---
 title: Versioning
+description: Learn how AIP manages upgrades, backward compatibility, and schema evolution without breaking integrations.
 ---
 
-- `X-AIP-Version: 0.1`
-- Additive fields allowed within minor versions
-- Breaking changes require new version with dual-stack period
+Versioning ensures that AIP evolves safely while keeping every existing integration stable.
+
+AIP is designed for **long-term stability**, allowing new capabilities to be introduced without breaking existing participants.
+
+---
+
+## 1. TL;DR
+
+> AIP uses semantic versioning and explicit version headers to guarantee backward compatibility across the network.
+
+---
+
+## 2. Why it matters
+
+Every AI platform, ad network, and brand agent depends on stable interfaces.  
+Without consistent versioning, protocol updates could cause mismatched data or invalid events.
+
+Versioning provides:
+- Predictable upgrade paths  
+- Stable APIs and schemas  
+- Graceful deprecation for older implementations  
+
+---
+
+## 3. Version Format
+
+AIP follows **Semantic Versioning (SemVer)**:
+
+```
+MAJOR.MINOR.PATCH
+```
+
+| Level | Meaning | Example |
+|--------|----------|----------|
+| **MAJOR** | Incompatible protocol or schema changes | 1.0 → 2.0 |
+| **MINOR** | Backward-compatible feature additions | 1.0 → 1.1 |
+| **PATCH** | Backward-compatible fixes or optimizations | 1.1 → 1.1.1 |
+
+Current AIP version: **0.1**
+
+---
+
+## 4. Version Headers
+
+Every AIP request must include a version header.
+
+```http
+X-AIP-Version: 0.1
+```
+
+This header ensures all participants — Platforms, Ad Networks, and Brand Agents — know which version of the protocol is being used.
+
+If a participant receives a higher version than supported, they can:
+- Default to fallback behavior, or  
+- Return a `VERSION_NOT_SUPPORTED` response.
+
+---
+
+## 5. Schema Versioning
+
+Each JSON schema in the AIP specification includes a `"$version"` field.
+
+Example:
+
+```json
+{
+  "$schema": "https://aip.dev/schemas/auction-result.json",
+  "$version": "0.1.0",
+  "auction_id": "auc_92b134",
+  "winner": { "agent_id": "brand_quickbooks", "score": 0.87 }
+}
+```
+
+This ensures that even if the API version remains the same, schemas can evolve independently with backward-compatible fields.
+
+---
+
+## 6. Deprecation Policy
+
+AIP maintains a **six-month deprecation window** for any breaking change.
+
+| Type | Notice Period | Example |
+|------|----------------|----------|
+| Minor Schema Change | 3 months | Adding optional field |
+| Major Protocol Change | 6 months | Changing event verification flow |
+
+Participants are notified through release notes and OpenAPI changelogs.
+
+---
+
+## 7. Compatibility Matrix
+
+| Component | Compatible With | Grace Period |
+|------------|------------------|--------------|
+| Platform SDKs | Last 2 minor versions | 6 months |
+| Ad Network APIs | All current MINOR versions | 9 months |
+| Brand Agent Bidding APIs | Latest and previous version | 12 months |
+
+Backward compatibility testing is part of AIP conformance checks.
+
+---
+
+## 8. Migration Guidelines
+
+When upgrading:
+1. Verify SDK compatibility in staging.  
+2. Check new schema definitions under `/schemas/`.  
+3. Use dual-version testing — old and new endpoints simultaneously.  
+4. Once stable, update your `X-AIP-Version` header in production.
+
+If breaking changes are introduced, AIP provides migration scripts or wrappers through the official SDKs.
+
+---
+
+## 9. Version Discovery
+
+You can query supported versions via API:
+
+```http
+GET /versions
+```
+
+Response:
+
+```json
+{
+  "current": "0.1.0",
+  "supported": ["0.1.0", "0.0.9"],
+  "deprecated_after": "2026-06-30"
+}
+```
+
+---
+
+## 10. Guarantees
+
+- No breaking changes without notice.  
+- All APIs are backward-compatible for at least one minor version.  
+- Schema evolution follows additive-only rules within the same version.  
+- SDKs are auto-updated to handle multiple AIP versions.
+
+---
+
+## Summary
+
+> Versioning in AIP ensures progress without disruption — enabling innovation while maintaining trust and stability.
+
+Next: [Conformance](/conformance)

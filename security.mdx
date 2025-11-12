@@ -1,9 +1,145 @@
 ---
 title: Security
+description: Learn how AIP ensures integrity, authenticity, and fraud prevention across every auction, event, and payout.
 ---
 
-- Mutual TLS
-- HMAC-SHA256 signature with `nonce` and timestamp
-- Nonce TTL 60 seconds, replay rejected
-- Session binding: events must share session_id and platform_id
-- Key rotation every 90 days
+AIP is designed with **cryptographic trust** at its core.  
+Every request, bid, and event is signed, timestamped, and verified before it is accepted by the network.  
+This ensures that no actor — platform, advertiser, or ad network — can fake or manipulate transactions.
+
+---
+
+## 1. TL;DR
+
+> AIP uses digital signatures and verifiable ledgers to guarantee that every event and payout is authentic.
+
+---
+
+## 2. Why it matters
+
+In digital advertising, fraud and data tampering are common:  
+- Fake clicks and impressions  
+- Replay or duplicate requests  
+- Manipulated billing data  
+
+AIP removes these risks by enforcing **signature-based verification** for every message in the protocol.
+
+---
+
+## 3. Core security guarantees
+
+| Guarantee | Description |
+|------------|--------------|
+| **Authenticity** | Every message is signed by its sender and verified by the receiver. |
+| **Integrity** | Data cannot be altered after signing. |
+| **Non-repudiation** | Participants cannot deny the messages they sent. |
+| **Replay protection** | Unique nonces and timestamps prevent reused requests. |
+| **Confidentiality** | HTTPS or gRPC ensures encrypted transport. |
+
+---
+
+## 4. Signature Model
+
+Each message — from `ContextRequest` to `EventPacket` — must include a signature header.  
+
+```bash
+X-AIP-Signature: HMAC(method + path + body + timestamp + nonce)
+X-AIP-Version: 0.1
+```
+
+### Verification steps
+1. Receiver re-computes the HMAC using the shared secret.  
+2. If the computed signature matches, the message is authentic.  
+3. If not, it’s rejected automatically.
+
+**Algorithm:** SHA-256 HMAC  
+**Timestamps:** RFC 3339 UTC  
+**Nonce Expiry:** 60 seconds (prevents replay)
+
+---
+
+## 5. Example Signed Request
+
+```json
+{
+  "auction_id": "auc_92b134",
+  "intent": "best CRM for startups",
+  "timestamp": "2025-11-12T01:42:00Z",
+  "nonce": "bf29eaf9",
+  "signature": "45c0b8a5..."
+}
+```
+
+If any field changes, the signature becomes invalid, blocking tampering or replay attacks.
+
+---
+
+## 6. Key Management
+
+Each participant (Platform, Ad Network, Brand Agent) holds:
+- **Public Key:** Used for verifying signatures  
+- **Private Key:** Used for signing outgoing messages  
+
+| Role | Key Responsibility |
+|------|---------------------|
+| **Platform** | Signs event packets and verifies auction results |
+| **Ad Network** | Signs auction results and verifies events |
+| **Brand Agent** | Signs bids and verifies auction requests |
+
+Keys rotate automatically every 90 days, with backward compatibility for prior transactions.
+
+---
+
+## 7. Replay and Duplication Defense
+
+AIP tracks every `nonce` for 60 seconds.  
+If a duplicate nonce or timestamp drift exceeds the limit, the request is rejected:
+
+| Error | Description |
+|--------|--------------|
+| `ERR_NONCE_REPLAY` | Reused nonce detected |
+| `ERR_TIMESTAMP_EXPIRED` | Request older than 60s |
+| `ERR_INVALID_SIGNATURE` | Signature mismatch |
+
+This ensures every message is unique and time-bounded.
+
+---
+
+## 8. Secure Event Verification
+
+Each `EventPacket` (CPX, CPC, CPA) is verified using:
+- **Cross-signatures** (Platform + Ad Network + Brand Agent)
+- **Serve token hash validation**
+- **Timestamp checks**  
+
+Example:
+
+```bash
+event_hash = SHA256(serve_token + event_type + timestamp)
+```
+
+Each verifier stores a matching event hash in the ledger — creating a cryptographic audit trail.
+
+---
+
+## 9. Audit and Compliance Integration
+
+All signatures, hashes, and nonces are stored in the Ad Network’s **audit ledger**.  
+This ledger can be verified by independent auditors or connected to external compliance frameworks (e.g., SOC 2, ISO 27001).
+
+---
+
+## 10. Guarantees
+
+- No unsigned or tampered message can pass verification.  
+- Replay attacks are mathematically blocked.  
+- Ledgers can be externally audited for every transaction.  
+- Private keys never leave secure key vaults.  
+
+---
+
+## Summary
+
+> AIP’s security model makes every dollar traceable and every event verifiable — creating a zero-trust, fraud-proof foundation for AI advertising.
+
+Next: [Observability](/observability)
