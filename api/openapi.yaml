@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
-  title: AdMesh Exchange Protocol (AMXP)
+  title: Agentic Intent Protocol (AIP)
   version: "0.1"
   description: |
-    The AdMesh Exchange Protocol (AMXP) defines how AI platforms, advertiser agents, and ad networks
+    The Agentic Intent Protocol (AIP) defines how AI platforms, advertiser agents, and ad networks
     communicate to power conversational and agentic advertising.
-    This reference describes the standard AMXP endpoints implemented by the AdMesh Ad Network.
+    This reference describes the standard AIP endpoints implemented by the AdMesh Ad Network.
 
 servers:
   - url: https://api.admesh.ai
@@ -30,12 +30,12 @@ components:
     HMACAuth:
       type: apiKey
       in: header
-      name: X-AMXP-Signature
+      name: X-AIP-Signature
       description: >
         HMAC-SHA256 signature using shared secret, computed over method, path, body, timestamp, and nonce.
   parameters:
     VersionHeader:
-      name: X-AMXP-Version
+      name: X-AIP-Version
       in: header
       required: true
       schema:
@@ -231,7 +231,7 @@ components:
         amount: { type: string, example: "2500.00" }
         currency: { type: string, example: "USD" }
 paths:
-  /amxp/context:
+  /aip/context:
     post:
       summary: Submit a ContextRequest
       description: >
@@ -254,7 +254,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuctionResult" }
 
-  /amxp/bid:
+  /aip/bid:
     post:
       summary: Submit a Bid
       tags: [Bidding]
@@ -272,7 +272,7 @@ paths:
         "202":
           description: Bid accepted
 
-  /amxp/events:
+  /aip/events:
     post:
       summary: Send event (CPX, CPC, or CPA)
       tags: [Events]
