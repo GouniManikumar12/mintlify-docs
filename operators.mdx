@@ -1,0 +1,218 @@
+---
+title: AIP Operators
+description: Learn how to implement and operate an AIP-compatible ad network.
+---
+An **AIP operator** is any ad network that implements the Agentic Intent Protocol.  
+Operators act as the bridge between:
+
+- **AI Platforms** (who send anonymized intent)
+- **Brand Agents** (who bid on that intent)
+- **The AIP Ledger** (which verifies exposure, click, and conversion events)
+
+AdMesh is the **reference operator**, but any company can build and run their own operator.
+
+This page explains how operators work, what they must implement, and how others can integrate with them.
+
+---
+
+# What an Operator Does
+
+Every operator must implement five core functions:
+
+## 1. Receive ContextRequests from Platforms  
+Operators accept anonymized user intent and create an **Auction Context**.
+
+They must:
+
+- validate payload  
+- generate a serveToken  
+- start or join an auction cycle  
+- notify bidders (Brand Agents)
+
+## 2. Run AIP Auctions  
+Operators run a real-time auction using AIP rules:
+
+- CPA outranks CPC  
+- CPC outranks CPX  
+- CPA and CPC bids must include budgets  
+- Winning bid must be returned within operator-defined latency
+
+## 3. Deliver AuctionResults  
+Operators send the **winning recommendation** back to the platform.
+
+This includes:
+
+- product data  
+- click URL (signed)  
+- serveToken  
+- billing model (CPX, CPC, CPA)
+
+## 4. Verify Events (CPX, CPC, CPA)  
+Operators must verify:
+
+- **Exposure**: fired when UI SDK renders result  
+- **Click**: via signed click redirect  
+- **Conversion**: via advertiser callback or partner API  
+
+All events must resolve to **one** billable unit per serveToken.
+
+## 5. Maintain Wallets & Monthly Settlement  
+Operators:
+
+- track advertiser balances  
+- track spend per serveToken  
+- maintain signed ledger entries  
+- generate monthly payouts to AI platforms  
+
+AIP defines the rules. Operators implement them.
+
+---
+
+# Operator Responsibilities
+
+| Responsibility | Required | Description |
+|---------------|----------|-------------|
+| Context ingestion | Yes | Handle ContextRequests from platforms |
+| Auction engine | Yes | Implement CPA > CPC > CPX logic |
+| Event pipeline | Yes | Exposure, click, and conversion validation |
+| Serve token system | Yes | Generate and sign immutable tokens |
+| Wallet accounting | Yes | Maintain advertiser balances |
+| Ledger & payouts | Yes | Monthly platform payments |
+| UI SDK | Yes | Provide a frontend SDK for platforms |
+| Weave SDK | Optional | Provide backend inline-weave SDK |
+| Reporting dashboard | Optional | For advertisers and platforms |
+
+---
+
+# SDKs Provided by Operators (AdMesh Example)
+
+An AIP operator may publish one or more SDKs.
+
+AdMesh provides:
+
+### **1. UI SDK** (required for platforms)
+
+```bash
+npm install admesh-ui-sdk
+```
+
+Used for:
+
+- rendering results  
+- exposure tracking  
+- click tracking  
+- fallback logic  
+- session ID + message ID tracking  
+
+### **2. Backend Weave SDK** (optional)
+
+Node.js:
+
+```bash
+npm install @admesh/weave-node
+```
+
+Python:
+
+```bash
+pip install admesh-weave-python
+```
+
+Used for:
+
+- fetching recommendations server-side  
+- feeding the LLM for inline weaving  
+- reducing follow-up fetches  
+
+---
+
+# Operator Architecture (High-Level)
+
+```
+AI Platform (Frontend)
+   → UI SDK
+   → ContextRequest
+   → AuctionResult render
+   → Exposure/Click events
+
+Brand Agents
+   → Bid on auctions
+   → Provide CPA/CPC/CPX values
+
+Operator (You)
+   → Context ingestion
+   → Auction engine
+   → Event verification
+   → Wallet + ledger
+   → Monthly payouts
+```
+
+---
+
+# Implementing Your Own AIP Operator
+
+To become an AIP operator, you must implement:
+
+1. **ContextRequest API**  
+2. **Auction API**  
+3. **Bid API**  
+4. **Event Verification API**  
+5. **Wallets & Ledger logic**  
+6. **UI SDK for platforms**  
+7. **Click redirect system**  
+8. **Platform authentication**  
+9. **Advertiser authentication**  
+
+The protocol defines the rules.  
+Your operator defines the implementation.
+
+---
+
+# Why Become an Operator?
+
+- Own the ad marketplace in your ecosystem  
+- Monetize intent from AI platforms  
+- Create your own advertiser marketplace  
+- Maintain full transparency with AIP  
+- Attract brand agents with performance-first bidding  
+- Enable new revenue streams (CPX, CPC, CPA)
+
+---
+
+# AdMesh as an Operator (Reference Implementation)
+
+AdMesh is the first operator built on AIP.
+
+It provides:
+
+- UI SDK (admesh-ui-sdk)  
+- Weave backend SDKs  
+- Wallet system  
+- Real-time ledger  
+- Advertiser dashboard  
+- Platform dashboard  
+
+Platforms can choose any operator, but AdMesh is the default reference.
+
+---
+
+# How to Integrate an Operator
+
+Platforms must:
+
+1. Sign up with the operator  
+2. Get API key  
+3. Install operator UI SDK  
+4. Render results via UI SDK or Weave  
+5. Post events (exposures, clicks)  
+6. Receive monthly payouts
+
+Brand Agents must:
+
+1. Register with operator  
+2. Create offers  
+3. Bid programmatically  
+4. Track spend  
+5. Track conversions  
+
+---

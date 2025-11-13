@@ -1,81 +1,92 @@
----
-title: Platforms
-description: Learn how to integrate AIP into your AI platform and monetize verified user intent.
----
+# Platform
 
-This guide helps AI platforms integrate AIP and start monetizing verified user intent in minutes.
+A **Platform** is any user-facing system that collects natural language intent and displays monetized recommendations returned through the Agentic Intent Protocol (AIP). Platforms act as the **publishers** within AIP.
 
----
-
-## Step 1: Get Credentials
-
-Create an account in the [AdMesh Console](https://console.admesh.example/signup) and generate your **Platform API Key**.  
-You will use this key to authenticate with AIP services.
+Platforms do not interact with Brand Agents directly and do not implement auctions. All auction logic, scoring, and billing is handled by an AIP Operator.
 
 ---
 
-## Step 2: Install SDK
+## Definition
 
-Choose one of the official SDKs based on your stack:
+A **Platform** is an application, interface, or agentic environment that:
 
-```bash
-# Node.js
-npm install admesh-weave-node
+1. **Receives user intent**  
+   Platforms capture user queries, commands, or questions expressed in natural language.
 
-# Python
-pip install admesh-weave-python
-```
+2. **Emits a `ContextRequest` to an AIP Operator**  
+   The operator handles auctions, ranking, and selection internally.
 
----
+3. **Renders recommendations**  
+   Platforms display operator-returned recommendations using protocol-standard formats  
+   (Citation, Product, or Weave).
 
-## Step 3: Send a ContextRequest
+4. **Tracks and forwards signed events**  
+   Platforms report exposure and click events using the operator SDK, ensuring  
+   serve-token integrity and attribution.
 
-Detect when a user query or conversation shows monetizable intent, then send a `ContextRequest`.
-
-```js
-import { sendContextRequest } from "admesh-weave-node";
-
-const response = await sendContextRequest({
-  intent: "Best CRM for startups",
-  userRegion: "US",
-  sessionId: "abc123"
-});
-```
+5. **Receives payouts for verified events**  
+   Operators credit platforms for valid exposures, clicks, or conversions based on  
+   AIP settlement rules.
 
 ---
 
-## Step 4: Render the AuctionResult
+## Characteristics
 
-Render the response from AIP with a clear disclosure label `[Ad]`.
+Platforms MUST:
 
-```jsx
-<div>
-  <p>{response.recommendation}</p>
-  <span>[Ad]</span>
-</div>
-```
+- Run an operator-provided UI SDK  
+- Maintain a session identifier for each user conversation  
+- Display transparency labels  
+- Ensure accurate event propagation
 
----
+Platforms MAY:
 
-## Step 5: Post Events
-
-Track verified events to ensure accurate billing.
-
-- **Exposure** → When the ad is rendered  
-- **Click** → When the user interacts  
-- **Conversion** → When the user signs up or purchases
-
-```js
-await postEvent({ type: "exposure", serveToken });
-await postEvent({ type: "click", serveToken });
-await postEvent({ type: "conversion", serveToken });
-```
+- Use optional backend SDKs for inline (Weave) embedding  
+- Add platform-specific UI or UX layers around recommendations  
+- Surface recommendations inside various modalities (text, voice, multimodal)
 
 ---
 
-## Step 6: Monitor Payouts
+## What a Platform Is Not
 
-- **Real-time ledger:** View exposures, clicks, and conversions as they occur.  
-- **Monthly settlement:** Platform requests payout after reconciliation.  
+Platforms do **not**:
 
-✅ **Integration complete.** Your platform now earns revenue from verified AI intent.
+- Execute auctions  
+- Score bids  
+- Validate events  
+- Communicate with Brand Agents  
+- Manage advertiser budgets  
+- Perform billing or attribution logic  
+
+These responsibilities belong exclusively to the **Operator**.
+
+---
+
+## Examples of Platforms
+
+A Platform can be:
+
+- AI assistants  
+- Chat-based search engines  
+- Browsers with conversational UI  
+- Voice assistants  
+- Productivity apps with embedded AI  
+- Messaging apps with AI features  
+- Browser extensions or agent runtimes  
+- Autonomous multi-agent surfaces  
+- Any interface capable of receiving natural language input and showing results
+
+If a system can “hear” a user request and show a returned recommendation, it can be a Platform in AIP.
+
+---
+
+## Role Within the Protocol
+
+Platforms are the entry point for user intent.  
+Operators manage the economic layer.  
+Brand Agents participate in auctions.
+
+**Intent → Platform → Operator → Recommendations → Events → Payouts**
+
+The Platform is the surface where intent is captured and value is created.
+

@@ -1,95 +1,79 @@
 ---
 title: Overview
-description: How AIP turns user or agent intent into verified, monetizable events.
+description: This page explains how AIP works at a system level.It covers the core roles, the event units, and the life cycle of an AIP event.
 ---
 
-## What is AIP?
-AIP converts user or agent intent into a **verified economic event** that platforms, advertisers, and networks can trust.  
-It defines clear roles, event types, and settlement rules to make AI-native advertising measurable and interoperable.
+
+AIP defines one shared way for platforms, brand agents, and operators to exchange intent and settle results.  
 
 ---
 
-## Core Roles
+## Core roles
+
+AIP involves three main actors:
 
 | Role | Description |
-|------|--------------|
-| **Platform** | Any AI surface that integrates the AdMesh SDK and sends anonymized intent data. |
-| **Advertiser Agent** | A brand-owned or third-party bidding service that responds to verified intent. |
-| **Operator** | Any ad network implementing the AIP standard. AdMesh is the reference operator. |
+|------|-------------|
+| **Platform** | Any AI surface that uses an ad network(AIP Operator) SDK to send anonymized intent. |
+| **Brand Agent** | A brand owned or third party agent that reads intent and decides to bid. |
+| **Operator** | Any ad network that implements AIP. AdMesh is the reference operator. |
 
-Each request in AIP flows between these three entities, ensuring full transparency and verified settlement.
+Each AIP request moves through these three roles in a predictable flow.
 
 ---
 
-## Event Ladder
+## Event units
 
-AIP defines three progressive units of verified engagement.  
-Only **one unit** can settle per serve token.
+AIP uses three verified units of engagement.  
+Only one unit can settle for each serve token.
 
 | Unit | Meaning | Trigger |
-|------|----------|---------|
-| **CPX (Exposure)** | User saw a verified recommendation | Exposure pixel fired |
-| **CPC (Click)** | User clicked or engaged with the recommendation | Click event verified |
-| **CPA (Conversion)** | User completed a transaction or signup | Conversion verified through callback or API |
+|------|----------|----------|
+| **CPX (Exposure)** | The AI showed a verified recommendation | Exposure event recorded |
+| **CPC (Click)** | User clicked or interacted | Click event verified |
+| **CPA (Conversion)** | User completed a signup or transaction | Conversion verified |
 
-A single exposure can upgrade to a click or a conversion, but lower tiers never double-bill once a higher unit is confirmed.
-
----
-
-## Lifecycle of an AIP Event
-
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant P as Platform
-  participant AIP as AIP Network
-  participant AA as Advertiser Agent
-  participant W as Wallet Ledger
-
-  U->>P: "Find best CRM for startups"
-  P->>AIP: Send intent payload
-  AIP->>AA: Run real-time auction
-  AA->>AIP: Return bids
-  AIP->>P: Deliver top bid
-  P->>U: Show sponsored response
-  U->>AIP: Click or conversion tracked
-  AIP->>W: Log and settle verified payout
-```
+A lower unit upgrades to a higher one if it occurs.  
+No event is billed twice.
 
 ---
 
-## Verification and Settlement
+## Life cycle of an AIP event
 
-Each AIP event carries a **serve token** that links all downstream actions.  
-This ensures:
-- One verified charge per event  
-- No duplicate billing across tiers  
-- Deterministic payout flow through connected wallets  
+Below is the typical flow from intent to settlement:
 
-Monthly settlements occur through signed ledgers managed by the operator.  
-All events are auditable and traceable by both platforms and advertisers.
-
----
-
-## Transparency and Compliance
-
-AIP is designed for verifiable advertising inside AI ecosystems:
-- **Privacy-safe:** No user identifiers are shared.  
-- **Verifiable:** Every event is cryptographically signed.  
-- **Interoperable:** Works with any network that adopts the same schema.  
-- **Auditable:** Logs can be inspected by all participants in the chain.  
+1. User expresses intent inside an AI conversation.  
+2. Platform sends anonymized context to the operator.  
+3. Operator runs a real time auction.  
+4. Brand agents submit bids.  
+5. Operator selects the winning bid and returns it to the platform.  
+6. Platform displays the sponsored response.  
+7. User may see, click, or convert.  
+8. Operator verifies the event and settles the payout in the ledger.  
 
 ---
 
-## In summary
+## Verification and settlement
 
-> AIP turns every qualified user intent into a trusted, auditable, and monetizable signal across the AI economy.
+Every AIP event uses a serve token that links all downstream actions.  
+This guarantees:
+
+- one verified charge per event  
+- no double billing  
+- consistent upgrade rules (CPA over CPC over CPX)  
+- deterministic settlement through connected wallets  
+
+Monthly settlements use signed ledger records that both platforms and advertisers can audit.
 
 ---
 
-### Next steps
+## Transparency and compliance
 
-- [Protocol Basics](/protocol)  
-- [Auction and Scoring](/auction)  
-- [Wallets and Payouts](/wallets-and-payouts)  
-- [JSON Schemas](/schemas/README)  
+AIP is designed to be simple and verifiable:
+
+- no personal identifiers  
+- every event is signed  
+- works with any network that supports the schema  
+- full audit trail is available to all parties  
+
+---

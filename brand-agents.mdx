@@ -1,75 +1,214 @@
 ---
 title: Brand Agents
-description: Learn how to connect your advertiser agent and bid on verified user intent.
+description: How AI and autonomous advertiser agents participate in AIP auctions and respond to verified intent.
 ---
+Brand Agents are AI agents or autonomous bidding systems that act on behalf of advertisers.  They evaluate incoming intent, decide whether to participate, and submit structured bids into AIP auctions.  
 
-# Quickstart for Brand Agents
-
-This guide shows how to connect your advertiser system to AIP and start bidding on verified AI intents.
-
----
-
-## Step 1: Get Access
-
-Create an advertiser account and obtain your **Agent API Key** from the [AdMesh Console](https://console.admesh.example/signup).
+A Brand Agent can be rule based, ML driven, or fully autonomous. AIP does not prescribe how it is built, only how it must speak to the protocol.
 
 ---
 
-## Step 2: Set Up Your Endpoint
+## 1. What Brand Agents Do
 
-Brand Agents expose a bidding endpoint to receive intent data.
+A Brand Agent:
 
-```python
-from flask import Flask, request, jsonify
-app = Flask(__name__)
+- receives BidRequests from an AIP Operator  
+- evaluates anonymized user intent  
+- decides whether the advertiser wants to compete  
+- returns a structured BidResponse  
+- participates in real time auctions  
+- receives verified CPX, CPC, and CPA callbacks  
+- optimizes spend based on Operator ledger records  
 
-@app.route("/bid", methods=["POST"])
-def handle_bid():
-    data = request.get_json()
-    bid_value = calculate_bid(data["intent"])
-    return jsonify({
-        "price": bid_value,
-        "creative": "Try our CRM for startups",
-        "landing_url": "https://example.com/crm"
-    })
-```
+Brand Agents can be operated by:
 
----
+- SaaS or software companies  
+- e commerce brands  
+- mobile apps  
+- marketplaces  
+- agencies  
+- affiliate networks  
+- AI native advertiser bots  
+- third party autonomous agents  
 
-## Step 3: Return Bid Payloads
-
-Your endpoint should respond with structured JSON within 100–200 ms.
-
-| Field | Description |
-|--------|-------------|
-| `price` | Bid value per exposure or click |
-| `creative` | Message or recommendation text |
-| `landing_url` | Target link |
-| `ttl` | Expiration time for bid validity |
+AIP imposes no limit on who can operate a Brand Agent.
 
 ---
 
-## Step 4: Handle Verification Callbacks
+## 2. Normative Responsibilities
 
-AIP will notify you of verified **exposures**, **clicks**, or **conversions**.
+The following are MUST, MUST NOT, and MAY requirements for all Brand Agents.
 
-Use these webhooks to track spend and ROI accurately.
+### Brand Agents MUST
 
-```python
-@app.route("/event", methods=["POST"])
-def event_callback():
-    event = request.get_json()
-    log_event(event)
-    return "ok"
-```
+- expose a stable HTTP endpoint or another transport supported by the Operator  
+- respond to BidRequests within the Operator timeout  
+- return one BidResponse per request  
+- include at least one valid price field:  
+  - `price_cpc` and or  
+  - `price_cpa`  
+- provide a valid `landing_url`  
+- include required creative metadata  
+- respect the AIP event ladder: CPA overrides CPC, CPC overrides CPX  
+- verify serve tokens in event callbacks  
+- maintain spend accuracy using Operator ledger entries  
+
+### Brand Agents MUST NOT
+
+- submit malformed or incomplete bid payloads  
+- return bids without pricing  
+- manipulate or forge serve tokens  
+- generate artificial events or simulated traffic  
+- submit multiple bids for a single BidRequest  
+
+### Brand Agents MAY
+
+- use any internal logic, including rules, heuristics, ML, LTV models, or autonomous agents  
+- dynamically adjust pricing based on performance  
+- decline to bid using `no_bid: true`  
+- use contextual embeddings, RAG, or classifier models  
+- implement their own budget and ROAS controls  
 
 ---
 
-## Step 5: Track Performance
+## 3. BidRequest (What Brand Agents Receive)
 
-Use your AdMesh dashboard to view:
-- Bids served
-- Verified events
-- Wallet balance and CPA performance
+Operators send a BidRequest when a platform submits user intent.
 
-✅ **Your advertiser agent is now live and participating in real-time auctions.**
+### Typical fields
+
+| Field             | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `intent.text`     | Anonymized user query or derived summary         |
+| `session_id`      | Unique session identifier                        |
+| `serve_token_hint`| Pre auction token reference                      |
+| `categories`      | Optional taxonomies                              |
+| `timestamp`       | Request creation time                            |
+| `policy`          | Operator defined bidding rules or limits         |
+
+Operators MAY include additional metadata.  
+AIP allows extensibility.
+
+---
+
+## 4. BidResponse (What Brand Agents Return)
+
+A BidResponse MUST conform to the AIP bid schema.
+
+| Field        | Required | Description                                      |
+| ------------ | -------- | ------------------------------------------------ |
+| `price_cpc`  | optional | Amount willing to pay for a click               |
+| `price_cpa`  | optional | Amount willing to pay for a conversion          |
+| `creative`   | required | Text or metadata used in the recommendation     |
+| `landing_url`| required | Advertiser destination URL                      |
+| `ttl`        | required | Validity window in milliseconds                 |
+| `no_bid`     | optional | Indicates declining the request                 |
+
+At least one of `price_cpc` or `price_cpa` MUST be included for a valid bid.
+
+CPX does not require explicit bidding because it is always settled by the Operator when no higher event occurs.
+
+---
+
+## 5. Event Callbacks
+
+Once a Brand Agent wins an auction, the Operator sends event notifications tied to the serve token.
+
+### Event types
+
+| Event | Meaning                                                    |
+| ----- | ---------------------------------------------------------- |
+| CPX   | Exposure happened, settled only if no CPC or CPA occurs    |
+| CPC   | User clicked the recommendation                            |
+| CPA   | User completed the target action                           |
+
+Brand Agents MUST:
+
+- verify the serve token  
+- confirm the event order is valid per the event ladder  
+- use callbacks for optimization and budget management  
+
+Brand Agents MAY ignore CPX or CPC if they optimize only for CPA.
+
+---
+
+## 6. Wallets, Spend, and Settlement
+
+AIP does not dictate a specific wallet architecture.
+
+### Operator responsibilities
+
+Operators MUST:
+
+- maintain accurate spend ledgers  
+- settle based on CPX, CPC, CPA event ladder  
+- expose ledger records to Brand Agents  
+- guarantee no double billing  
+
+### Brand Agent responsibilities
+
+Brand Agents MUST:
+
+- track spend using Operator ledger entries  
+- manage advertiser budgets  
+- ensure funding is available for bidding  
+
+Brand Agents MAY:
+
+- pause bidding when caps are reached  
+- adjust bids dynamically using ROAS or CAC targets  
+- run ML pipelines that optimize by event type  
+
+---
+
+## 7. Implementation Guidance (Non Normative)
+
+A Brand Agent can be implemented in any technology stack.
+
+### Simple rules engine
+
+```ts
+if (intent.text.includes("CRM")) {
+  bid_cpc = 2.0;
+} else {
+  no_bid = true;
+}
+````
+
+### ML driven agent
+
+* classify the query
+* predict user value
+* compute an optimal bid
+* enforce margin and budget constraints
+
+### Fully autonomous agent
+
+* runs continuously
+* learns from verified events
+* adjusts pricing in real time
+* optimizes cross operator ROAS
+
+AIP cares only about interface correctness, not internal strategy.
+
+---
+
+## 8. Summary
+
+Brand Agents are AI or autonomous advertiser agents that:
+
+* receive intent
+* evaluate relevance
+* submit structured bids
+* participate in real time auctions
+* receive CPX, CPC, and CPA callbacks
+* manage budgets and performance
+
+AIP ensures:
+
+* fair auction behavior
+* transparent event settlement
+* consistent interaction across Operators
+* interoperability between advertiser agents
+
+Brand Agents can be simple or deeply intelligent. The protocol defines the contract, not the strategy.
