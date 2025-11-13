@@ -42,7 +42,7 @@ sequenceDiagram
   AdNetwork->>BrandAgent: BidRequest
   BrandAgent->>AdNetwork: BidResponse
   AdNetwork->>Platform: AuctionResult
-  Platform->>AdNetwork: EventPacket (exposure, click, conversion)
+  Platform->>AdNetwork: Events (cpx_exposure, cpc_click, cpa_conversion)
 ```
 
 Each message is signed, timestamped, and stored for verification.
@@ -110,5 +110,3 @@ These identifiers make AIP fully auditable end-to-end.
 ## Summary
 
 > AIP provides the reliable transport, identifiers, and security foundation that make the entire ad ecosystem interoperable.
-
-Next: [Auction and Scoring](/auction)

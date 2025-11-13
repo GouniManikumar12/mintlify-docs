@@ -107,10 +107,10 @@ This ensures every message is unique and time-bounded.
 
 ## 8. Secure Event Verification
 
-Each `EventPacket` (CPX, CPC, CPA) is verified using:
+Each event (`cpx_exposure`, `cpc_click`, `cpa_conversion`) is verified using:
 - **Cross-signatures** (Platform + Ad Network + Brand Agent)
 - **Serve token hash validation**
-- **Timestamp checks**  
+- **Timestamp checks**
 
 Example:
 
@@ -141,5 +141,3 @@ This ledger can be verified by independent auditors or connected to external com
 ## Summary
 
 > AIP’s security model makes every dollar traceable and every event verifiable — creating a zero-trust, fraud-proof foundation for AI advertising.
-
-Next: [Observability](/observability)

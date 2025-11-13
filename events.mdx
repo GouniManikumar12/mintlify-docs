@@ -58,24 +58,49 @@ If no further event occurs, the lifecycle ends at the last verified state.
 
 ## 5. EventPacket schema
 
-All events follow a shared structure that makes them cryptographically verifiable.
+All events share common required fields that link them back to the auction and enable verification.
+
+### Common Required Fields
+
+| Field | Type | Description |
+|--------|------|-------------|
+| `event_type` | string | Event type identifier (`cpx_exposure`, `cpc_click`, or `cpa_conversion`) |
+| `serve_token` | string | Serve token from the auction result - links event to original bid |
+| `ts` | string | ISO 8601 timestamp of when the event occurred |
+
+### Event-Specific Fields
+
+Each event type has additional required and optional fields:
+
+**CPX (Exposure)** - Requires: `session_id`, `platform_id`, `agent_id`, `wallet_id`, `pricing`
+**CPC (Click)** - Requires: `event_id`
+**CPA (Conversion)** - Requires: `conversion_id`, `conversion_type`
+
+### Example: CPX Exposure Event
 
 ```json
 {
-  "serve_token": "srv_20381f",
-  "event_type": "click",
-  "timestamp": "2025-11-12T01:42:00Z",
-  "signature": "a3f0ab92...",
-  "metadata": {
-    "platform_id": "plat_ai_example",
-    "agent_id": "brand_quickbooks",
-    "session_id": "sess_441",
-    "user_region": "US"
-  }
+  "event_type": "cpx_exposure",
+  "serve_token": "stk_abcxyz123",
+  "session_id": "s_001",
+  "platform_id": "pf_chatapp",
+  "agent_id": "ag_123",
+  "wallet_id": "w_890",
+  "pricing": {
+    "unit": "CPX",
+    "amount": "0.034",
+    "currency": "USD"
+  },
+  "ts": "2025-11-11T18:00:00Z"
 }
 ```
 
 The `serve_token` links each event back to the original auction and winning bid.
+
+For complete schemas, see:
+- [CPX Exposure Event Schema](/schemas/event-cpx)
+- [CPC Click Event Schema](/schemas/event-cpc)
+- [CPA Conversion Event Schema](/schemas/event-cpa)
 
 ---
 
@@ -121,5 +146,3 @@ Discrepancies automatically trigger reconciliation or rejection.
 ## Summary
 
 > Events are the backbone of AIP — they turn user actions into verified, auditable, and monetizable outcomes.
-
-Next: [State Machine](/state-machine)

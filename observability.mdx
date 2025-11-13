@@ -59,18 +59,22 @@ Each participant maintains an **immutable event log**:
 
 ```json
 {
-  "timestamp": "2025-11-12T02:15:00Z",
-  "event_type": "click",
-  "serve_token": "srv_20381f",
-  "verified_by": ["Platform", "AdNetwork"],
-  "signature": "a8e3bf9d..."
+  "event_type": "cpc_click",
+  "serve_token": "stk_abcxyz123",
+  "event_id": "ev_991",
+  "ts": "2025-11-12T02:15:00Z"
 }
 ```
 
 These logs can be streamed to:
-- Cloud logging (Stackdriver, Datadog, CloudWatch)  
-- Internal monitoring dashboards  
-- AdMesh console for visual reporting  
+- Cloud logging (Stackdriver, Datadog, CloudWatch)
+- Internal monitoring dashboards
+- AdMesh console for visual reporting
+
+For complete event schemas, see:
+- [CPX Exposure Event](/schemas/event-cpx)
+- [CPC Click Event](/schemas/event-cpc)
+- [CPA Conversion Event](/schemas/event-cpa)
 
 ---
 
@@ -100,9 +104,12 @@ sequenceDiagram
   participant BrandAgent
   participant Ledger
 
-  Platform->>AdNetwork: Send EventPacket
-  AdNetwork->>Ledger: Log verification + signature hash
-  BrandAgent->>Ledger: Confirm event via callback
+  Platform->>AdNetwork: Send cpx_exposure event
+  AdNetwork->>Ledger: Log event + timestamp
+  Platform->>AdNetwork: Send cpc_click event
+  AdNetwork->>Ledger: Update ledger state
+  BrandAgent->>AdNetwork: Send cpa_conversion event
+  AdNetwork->>Ledger: Finalize ledger entry
   Ledger->>Dashboard: Aggregate metrics + update insights
 ```
 
@@ -134,5 +141,3 @@ This keeps the system transparent but privacy-safe.
 ## Summary
 
 > Observability turns AIP from a protocol into a living, measurable ecosystem — where every action is visible, auditable, and trusted.
-
-Next: [Compliance](/compliance)

@@ -63,16 +63,29 @@ If a participant receives a higher version than supported, they can:
 
 ## 5. Schema Versioning
 
-Each JSON schema in the AIP specification includes a `"$version"` field.
+Each JSON schema in the AIP specification follows the JSON Schema standard.
 
 Example:
 
 ```json
 {
-  "$schema": "https://aip.dev/schemas/auction-result.json",
-  "$version": "0.1.0",
-  "auction_id": "auc_92b134",
-  "winner": { "agent_id": "brand_quickbooks", "score": 0.87 }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuctionResult",
+  "auction_id": "auc_981",
+  "serve_token": "stk_abcxyz123",
+  "winner": {
+    "agent_id": "ag_123",
+    "clearing_price_cpx": "0.042",
+    "preferred_unit": "CPA"
+  },
+  "render": {
+    "label": "[Ad]",
+    "title": "Pipedrive CRM",
+    "body": "Built for founders.",
+    "cta": "Try for free",
+    "url": "https://admesh.click/stk_abcxyz123"
+  },
+  "ttl_ms": 60000
 }
 ```
 
@@ -149,5 +162,3 @@ Response:
 ## Summary
 
 > Versioning in AIP ensures progress without disruption — enabling innovation while maintaining trust and stability.
-
-Next: [Conformance](/conformance)

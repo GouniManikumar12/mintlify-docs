@@ -30,18 +30,22 @@ This makes every transaction:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Unserved
-    Unserved --> Exposed: Exposure event verified
-    Exposed --> Clicked: Click event verified
-    Clicked --> Converted: Conversion event verified
-    Exposed --> Expired: Time window exceeded
-    Clicked --> Expired: Conversion window exceeded
-    Converted --> Settled: Payout finalized
-    Expired --> Settled: Ledger reconciliation
-    Settled --> [*]
+    [*] --> PENDING
+    PENDING --> EXPOSED: Exposure event verified
+    EXPOSED --> CLICKED: Click event verified
+    CLICKED --> CONVERTED: Conversion event verified
+    CONVERTED --> FINALIZED: Payout finalized
+    EXPOSED --> FINALIZED: Timeout (no click)
+    CLICKED --> FINALIZED: Timeout (no conversion)
+    PENDING --> REFUNDED: Refund issued
+    EXPOSED --> REFUNDED: Refund issued
+    CLICKED --> REFUNDED: Refund issued
+    CONVERTED --> REFUNDED: Refund issued
+    FINALIZED --> [*]
+    REFUNDED --> [*]
 ```
 
-Each state represents a **billing condition**.  
+Each state represents a **billing condition**.
 Once a token moves forward, it cannot regress (e.g., a converted ad cannot revert to “clicked”).
 
 ---
@@ -50,28 +54,30 @@ Once a token moves forward, it cannot regress (e.g., a converted ad cannot rever
 
 | From | To | Trigger | Verified By |
 |------|----|----------|--------------|
-| Unserved | Exposed | `exposure` event | Platform |
-| Exposed | Clicked | `click` event | Platform + Ad Network |
-| Clicked | Converted | `conversion` event | Brand Agent + Ad Network |
-| Exposed/Clicked | Expired | Timeout reached | Ad Network |
-| Converted/Expired | Settled | Ledger processed | Ad Network |
+| PENDING | EXPOSED | `cpx_exposure` event | Platform |
+| EXPOSED | CLICKED | `cpc_click` event | Platform + Ad Network |
+| CLICKED | CONVERTED | `cpa_conversion` event | Brand Agent + Ad Network |
+| EXPOSED | FINALIZED | Timeout (no click) | Ad Network |
+| CLICKED | FINALIZED | Timeout (no conversion) | Ad Network |
+| CONVERTED | FINALIZED | Ledger processed | Ad Network |
+| Any State | REFUNDED | Refund request | Ad Network |
 
 AIP defines strict expiration windows:
-- **Exposure → Click:** 30 minutes  
-- **Click → Conversion:** 24 hours  
-- **Settlement:** Once per billing cycle  
+- **Exposure → Click:** 30 minutes
+- **Click → Conversion:** 24 hours
+- **Settlement:** Once per billing cycle
 
 ---
 
 ## 5. Example lifecycle
 
-1. User query triggers a winning `serve_token`.  
-2. Platform logs an **exposure** → state = *Exposed*  
-3. User clicks the ad → state = *Clicked*  
-4. User completes signup → state = *Converted*  
-5. At the end of the month → state = *Settled*  
+1. Auction completes, `serve_token` generated → state = *PENDING*
+2. Platform logs an **exposure** → state = *EXPOSED*
+3. User clicks the ad → state = *CLICKED*
+4. User completes signup → state = *CONVERTED*
+5. At the end of the billing cycle → state = *FINALIZED*
 
-Each transition is cryptographically signed and appended to the ledger.
+Each transition is timestamped and recorded in the ledger.
 
 ---
 
@@ -89,18 +95,32 @@ This guarantees **billing integrity** and **logical consistency** across all par
 ## 7. Ledger integration
 
 Every final state is logged to the **Ad Network ledger**, ensuring:
-- Immutable event chains  
-- Deterministic reconciliation  
-- Verified payout records  
+- Immutable event chains
+- Deterministic reconciliation
+- Verified payout records
 
 ```json
 {
-  "serve_token": "srv_20381f",
-  "final_state": "Converted",
-  "verified_by": ["Platform", "AdNetwork", "BrandAgent"],
-  "settled_at": "2025-11-30T00:00:00Z"
+  "serve_token": "stk_abcxyz123",
+  "session_id": "s_001",
+  "platform_id": "pf_chatapp",
+  "agent_id": "ag_123",
+  "auction_id": "auc_981",
+  "state": "FINALIZED",
+  "final_unit": "CPA",
+  "final_charge": "10.00",
+  "currency": "USD",
+  "timestamps": {
+    "auction": "2025-11-11T18:00:00Z",
+    "exposure": "2025-11-11T18:00:00Z",
+    "click": "2025-11-11T18:02:00Z",
+    "conversion": "2025-11-11T18:30:00Z",
+    "finalized": "2025-11-11T19:00:00Z"
+  }
 }
 ```
+
+For complete ledger schema, see: [Ledger Record Schema](/schemas/ledger-record)
 
 ---
 
@@ -116,5 +136,3 @@ Every final state is logged to the **Ad Network ledger**, ensuring:
 ## Summary
 
 > The AIP state machine enforces a single source of truth for every ad — preventing duplicates, enforcing fairness, and keeping the ecosystem financially clean.
-
-Next: [Wallets and Payouts](/wallets-and-payouts)

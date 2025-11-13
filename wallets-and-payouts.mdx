@@ -46,11 +46,15 @@ sequenceDiagram
   participant BrandAgent
   participant Ledger
 
-  Platform->>AdNetwork: EventPacket (verified CPX/CPC/CPA)
-  AdNetwork->>Ledger: Record transaction
-  Ledger->>BrandAgent: Debit (spend)
-  Ledger->>Platform: Credit (share)
-  Ledger->>AdNetwork: Fee + reserve balance
+  Platform->>AdNetwork: cpx_exposure event
+  AdNetwork->>Ledger: Record CPX charge
+  Platform->>AdNetwork: cpc_click event
+  AdNetwork->>Ledger: Update to CPC charge
+  BrandAgent->>AdNetwork: cpa_conversion event
+  AdNetwork->>Ledger: Update to CPA charge
+  Ledger->>BrandAgent: Debit final_charge
+  Ledger->>Platform: Credit platform_share
+  Ledger->>AdNetwork: Credit network_share
   AdNetwork->>All: Monthly reconciliation & payout
 ```
 
@@ -62,18 +66,37 @@ The flow runs continuously, with monthly finalization for confirmed balances.
 
 ```json
 {
-  "ledger_entry_id": "led_583f12",
-  "serve_token": "srv_20381f",
-  "event_type": "CPA",
-  "platform_credit": 2.00,
-  "adnetwork_fee": 0.50,
-  "agent_debit": 2.50,
-  "status": "settled",
-  "timestamp": "2025-11-30T00:00:00Z"
+  "serve_token": "stk_abcxyz123",
+  "session_id": "s_001",
+  "platform_id": "pf_chatapp",
+  "agent_id": "ag_123",
+  "auction_id": "auc_981",
+  "state": "FINALIZED",
+  "final_unit": "CPA",
+  "final_charge": "10.00",
+  "currency": "USD",
+  "timestamps": {
+    "auction": "2025-11-11T18:00:00Z",
+    "exposure": "2025-11-11T18:00:00Z",
+    "click": "2025-11-11T18:02:00Z",
+    "conversion": "2025-11-11T18:30:00Z",
+    "finalized": "2025-11-11T19:00:00Z"
+  },
+  "charges": {
+    "cpx": "0.034",
+    "cpc": "0.45",
+    "cpa": "10.00"
+  },
+  "revenue_share": {
+    "platform_share": "3.00",
+    "network_share": "7.00"
+  }
 }
 ```
 
 Each entry maps one verified event to monetary movement across wallets.
+
+For complete ledger schema, see: [Ledger Record Schema](/schemas/ledger-record)
 
 ---
 
@@ -104,17 +127,7 @@ All adjustments are recorded transparently under a new `revision_id`.
 
 ---
 
-## 8. Example of Reconciliation Summary
-
-| Participant | Debit | Credit | Net | Status |
-|--------------|--------|---------|------|---------|
-| Brand Agent | $2,500 | - | ($2,500) | Paid |
-| AI Platform | - | $1,750 | $1,750 | Paid |
-| Ad Network | - | $750 | $750 | Paid |
-
----
-
-## 9. Guarantees
+## 8. Guarantees
 
 - No manual invoicing — all payouts are event-driven.  
 - Balances and ledgers are cryptographically signed.  

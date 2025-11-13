@@ -3,125 +3,120 @@ title: Auction and Scoring
 description: Learn how AIP auctions rank bids and select the most relevant recommendation for each user intent.
 ---
 
-When an AI user expresses intent, AIP runs a **real-time auction** to determine which advertiser’s offer should appear.  
-Every auction is privacy-safe, transparent, and built on verifiable logic.
+# Auction and Scoring
 
----
+AIP auctions rank offers from Brand Agents and select the most suitable recommendation for each user intent. Each auction is deterministic, verifiable, and grounded in protocol-defined principles.
+
+AIP creates a consistent framework for evaluating bids so Platforms receive helpful, high-quality recommendations while Brand Agents operate within a fair and transparent system.
 
 ## 1. TL;DR
 
-> AIP auctions decide which advertiser offer best matches a user’s intent, balancing price, relevance, and trust.
+AIP evaluates all eligible bids and returns the offer with the highest protocol-defined score.
 
----
+## 2. Why It Matters
 
-## 2. Why it matters
+AIP enables AI systems to monetize intent responsibly.  
+Auctions prioritize relevance, quality, and economic value, creating recommendations that feel useful, aligned, and trustworthy.
 
-Traditional ad systems optimize for the highest bidder.  
-AIP optimizes for **verified value** — where the winning ad is both *relevant* to the user and *fairly priced* for the advertiser.  
-This keeps AI experiences useful while still driving monetization.
+This ensures:
 
----
+- AI experiences remain user-centric  
+- Brands compete on merit and integrity  
+- Platforms gain a predictable monetization layer  
 
-## 3. How an auction works
+## 3. How an Auction Works
 
-Each user intent triggers a micro-auction that completes in under 300 ms.
+Every user intent triggers a micro-auction. The sequence is:
 
-```mermaid
-sequenceDiagram
-  participant Platform
-  participant AdNetwork
-  participant BrandAgents
+### **1. Intent Enters the System**
+A Platform sends a `ContextRequest` describing the user’s query or action.
 
-  Platform->>AdNetwork: ContextRequest (intent: "best CRM for startups")
-  AdNetwork->>BrandAgents: BidRequest
-  BrandAgents->>AdNetwork: BidResponse (price + creative)
-  AdNetwork->>Platform: AuctionResult (winning ad)
-```
+### **2. Bid Requests Are Issued**
+The Operator distributes the request to all eligible Brand Agents.
 
-1. The **Platform** sends a `ContextRequest` to the **Ad Network**.  
-2. The **Ad Network** forwards that intent to multiple **Brand Agents**.  
-3. Each Brand Agent returns a **BidResponse** with price, creative, and metadata.  
-4. AIP scores all bids and sends back one **AuctionResult** to the platform.  
+### **3. Bids Are Returned**
+Each Brand Agent submits a `BidResponse` with:
+- an offer  
+- a bid price  
+- necessary metadata  
 
----
+### **4. Scoring Pipeline Evaluates Bids**
+The Operator runs its scoring model and produces a ranking.
 
-## 4. Scoring formula
+### **5. A Single Winner Is Returned**
+The Operator sends the `AuctionResult` and `serve_token` back to the Platform.
 
-AIP uses a **weighted scoring model** that rewards both relevance and verified performance.
+## 4. Scoring Model
 
-| Factor | Description | Typical Weight |
-|---------|--------------|----------------|
-| **Bid Value** | Price per exposure, click, or conversion | 40% |
-| **Relevance Score** | How well the ad matches the user’s query or conversation | 30% |
-| **Trust Score** | Historical accuracy and event verification rate | 20% |
-| **Latency & Quality** | Speed and success rate of agent responses | 10% |
+AIP scoring evaluates each bid using three core signals:
 
-**Final Score** = Weighted sum of all factors.
+### **Value**
+Economic strength of the bid relative to the current intent.
 
-The highest total score wins, not just the highest bid.
+### **Relevance**
+Alignment between the offer and the user’s query, conversation, or task context.
 
----
+### **Quality**
+Trust, integrity, and historical performance signals from the Brand Agent’s verified events.
 
-## 5. The AuctionResult
+The Operator applies these pillars consistently for all bids, producing a deterministic score for each candidate.  
+The highest-scoring offer becomes the result of the auction.
 
-The winning bid is returned to the platform as an `AuctionResult` object.
+## 5. AuctionResult
 
 ```json
 {
-  "auction_id": "auc_92b134",
+  "auction_id": "auc_981",
+  "serve_token": "stk_abcxyz123",
   "winner": {
-    "agent_id": "brand_quickbooks",
-    "score": 0.87,
-    "price": 0.05,
-    "creative": "Try QuickBooks for Startups",
-    "landing_url": "https://quickbooks.example"
+    "agent_id": "ag_123",
+    "clearing_price_cpx": "0.042",
+    "preferred_unit": "CPA"
   },
-  "serve_token": "srv_20381f"
+  "render": {
+    "label": "[Ad]",
+    "title": "Pipedrive CRM",
+    "body": "Built for founders.",
+    "cta": "Try for free",
+    "url": "https://admesh.click/stk_abcxyz123"
+  },
+  "ttl_ms": 60000
 }
 ```
 
-The `serve_token` connects this result to all future events (exposure, click, conversion).
+For complete auction result schema, see: [Auction Result Schema](/schemas/auction-result)
 
----
+## 6. Transparency and Verification
 
-## 6. Transparency and verification
+Every exchange in the auction cycle is logged as verifiable artifacts:
 
-Every auction and result is logged with:
-- Signed request and response payloads  
-- Timestamps and nonces  
-- Version ID for reproducibility  
+- signed `ContextRequest`  
+- signed `BidResponse`  
+- signed `AuctionResult`  
+- timestamps and nonces  
+- protocol version identifiers  
 
-Ad Networks and Brand Agents can independently verify that:
-- Their bids were received  
-- Scoring was deterministic  
-- The outcome was fair  
+## 7. Example Flow
 
----
+User asks: **“Best AI note-taking tools.”**
 
-## 7. Example flow in plain language
-
-1. User asks “Best AI note-taking tools.”  
-2. Ad Network sends that intent to four Brand Agents.  
-3. Each Brand Agent bids — Notion, Evernote, Otter, and ClickUp.  
-4. AIP ranks them:  
-   - Notion (score 0.92)  
-   - ClickUp (0.81)  
-   - Evernote (0.74)  
-5. Notion wins. The AI platform shows a sponsored result: “Try Notion for teams.”  
-
----
+1. A `ContextRequest` is issued.  
+2. The Operator distributes it to eligible Brand Agents.  
+3. Agents return bids.  
+4. The scoring pipeline ranks them.  
+5. The Platform receives a single recommendation and a `serve_token`.  
+6. Exposure and click events connect cleanly to the same attribution chain.
 
 ## 8. Guarantees
 
-- Every auction runs in real time and closes deterministically.  
-- Scoring weights are transparent and auditable.  
-- No two agents can manipulate results.  
-- All participants can verify their bids post-auction.
+AIP ensures:
 
----
+- consistent evaluation across all Brand Agents  
+- deterministic outcomes for identical inputs  
+- complete verifiability via signed artifacts  
+- unified attribution through the `serve_token`  
+- scalable real-time performance  
 
 ## Summary
 
-> AIP auctions balance relevance, trust, and price to choose the best possible ad for each AI conversation.
-
-Next: [Events](/events)
+AIP auctions transform user intent into ranked recommendations through a structured, deterministic evaluation system. The protocol harmonizes how Platforms monetize intent, how Brand Agents compete, and how Operators deliver transparent, reproducible outcomes.
