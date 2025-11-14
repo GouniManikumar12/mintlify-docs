@@ -49,6 +49,12 @@
       ]
     },
     {
+      "group": "Samples",
+      "pages": [
+        "samples/python"
+      ]
+    },
+    {
       "group": "Important Concepts",
       "pages": [
         "agentic-advertising",

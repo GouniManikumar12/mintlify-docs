@@ -1,0 +1,119 @@
+---
+title: Python
+description: Learn how to explore, run, and extend the official AIP Server Python reference implementation.
+---
+
+# AIP Server Python Sample
+
+The Python reference implementation is the canonical, vendor-neutral runtime for the **Agentic Intent Protocol (AIP)**. It showcases how to enforce canonical JSON transport, validate schemas, orchestrate asynchronous auctions, and persist ledger state using FastAPI and asyncio.
+
+- **Source:** [github.com/GouniManikumar12/aip-server-python](https://github.com/GouniManikumar12/aip-server-python)
+- **Purpose:** Learning tool and starting point for building your own AIP-compliant server
+- **License:** Apache 2.0
+
+## 1. Clone the Repository
+```bash
+git clone https://github.com/GouniManikumar12/aip-server-python.git
+cd aip-server
+```
+
+## 2. Install Prerequisites
+- Python 3.11 (works on 3.10+)
+- pip 23+
+- Optional: Docker & Docker Compose
+
+Create a virtual environment and install dependencies:
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+## 3. Project Overview
+```
+aip-server/
+├── app/
+│   ├── auction/         # Runner, fanout, selection logic
+│   ├── bidders/         # Registry + HTTP client abstractions
+│   ├── events/          # Event ingestion & bid-response services
+│   ├── ledger/          # State machine + persistence helpers
+│   ├── storage/         # In-memory, Redis, Postgres, Firestore backends
+│   ├── transport/       # Canonical JSON, signatures, timestamps, nonces
+│   └── main.py          # FastAPI wiring + dependency graph
+├── app/config/          # server.yaml, bidders.yaml samples
+├── scripts/             # Placeholder maintenance utilities
+├── tests/               # (Add your own conformance/integration suites)
+├── Dockerfile           # Production-ready image definition
+└── docker-compose.yml   # Local orchestration helper
+```
+
+Key endpoints:
+- `POST /context` – accept `context_request` and launch async auctions
+- `POST /aip/bid-response` – intake signed bids within the auction window
+- `POST /events/{event_type}` – ingest CPX/CPC/CPA events
+- `GET /admin/*` – health, stats, and config inspection
+
+## 4. Configuration
+
+### Environment variables
+| Name | Description |
+|------|-------------|
+| `AIP_CONFIG_PATH` | Override path to `server.yaml`. |
+| `AIP_BIDDERS_PATH` | Override path to `bidders.yaml`. |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Service-account JSON for Google Cloud integrations. |
+
+### YAML files
+- `app/config/bidders.yaml`: declare bidder endpoints, public keys, timeouts, and category pools.
+- `app/config/server.yaml`: configure listener settings, transport guardrails, ledger backend, and auction window/distribution backend.
+
+Example snippet:
+```yaml
+ledger:
+  backend: postgres
+  options:
+    dsn: postgresql://user:pass@localhost:5432/aip
+auction:
+  window_ms: 50
+  distribution:
+    backend: pubsub
+    pubsub:
+      project_id: your-gcp-project
+      topic_prefix: aip-context
+```
+
+## 5. Run the Server Locally
+```bash
+uvicorn app.main:app --reload --port 8080
+```
+Verify the API:
+```bash
+curl http://localhost:8080/health
+curl -X POST http://localhost:8080/context \
+  -H "Content-Type: application/json" \
+  -d '{"request_id":"ctx_123","context":{"categories":["default"],"query":"best crm"}}'
+```
+
+### Docker & Compose
+```bash
+docker-compose up --build
+# or
+docker build -t aip-server .
+docker run -p 8080:8080 aip-server
+```
+
+## 6. Run Tests
+The repo currently ships with lightweight sanity checks. Extend with pytest/mypy/conformance suites as needed.
+```bash
+python -m compileall app      # syntax check
+pytest                        # (add your own tests under tests/)
+```
+
+## 7. Use as a Starting Point
+1. Fork the repository and rename it for your organization.
+2. Swap `ledger.backend` for your production datastore and lock in Pub/Sub (or SNS/SQS/Event Grid/Kafka) distribution.
+3. Replace placeholder configs with your bidder registry and security material.
+4. Add CI that runs schema validation, conformance tests from `aip-spec`, and your integration suite.
+5. Keep your fork rebased against upstream to track protocol updates.
+
+By following these steps you can bootstrap a compliant AIP runtime quickly, then iterate on business-specific logic (budgeting, analytics, partner integrations) without deviating from the open specification.
