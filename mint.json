@@ -42,6 +42,13 @@
       ]
     },
     {
+      "group": "Advanced Topics",
+      "pages": [
+        "distributed-auctions",
+        "cloud-quickstart"
+      ]
+    },
+    {
       "group": "Important Concepts",
       "pages": [
         "agentic-advertising",

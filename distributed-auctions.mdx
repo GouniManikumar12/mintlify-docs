@@ -1,0 +1,39 @@
+---
+title: Distributed Auctions
+description: Deep dive on AIP's time-bounded asynchronous auction window and category-based selective distribution.
+---
+
+# Distributed Auctions
+
+The AIP bidding model uses a **time-bounded asynchronous auction window** rather than full broadcast fanout. When a platform sends a `context_request`, the AIP Server classifies the request into one or more **category pools**. Only brand agents and advertiser networks that have explicitly subscribed to those pools receive the request. Distribution to bidders is handled through a cloud-agnostic **publish/subscribe transport**, starting with Google Pub/Sub in v1.0 and extendable to AWS SNS/SQS, Azure Event Grid, Kafka, or other message buses. After publishing the context, the AIP Server opens a short **auction window** (typically 30–70 ms) during which bidders may submit signed bids via `POST /aip/bid-response`. When the window closes, the server collects all bids received within the allowed timeframe, applies the AIP selection rules (CPA > CPC > CPX), and returns the `auction_result` to the platform. If no bids are received before the window expires, the server returns a valid `no_bid` response. This design enables scalable, category-aware bidding, minimizes latency, prevents unnecessary bidder fanout, and ensures that only relevant brand agents compete for each user intent.
+
+## Architecture Overview
+
+1. **Classification** – The Operator derives zero or more category pools from the `context_request` (vertical, SKU, geography, etc.).
+2. **Publish** – The context payload plus metadata (`auction_id`, pools, bidder allowlist) is published to the matching topics/streams.
+3. **Window** – A 30–70 ms timer starts; bidders subscribe to their pools and push signed bids to `POST /aip/bid-response`.
+4. **Collect** – The Operator drains the bid inbox the moment the window expires and runs selection logic (CPA > CPC > CPX, deterministic tie-breakers).
+5. **Respond** – Platforms receive either a fully populated `auction_result` or a `no_bid` JSON document that conforms to the schema.
+
+## Why Pub/Sub
+
+- **Cloud agnostic** – Works with Google Pub/Sub, AWS SNS/SQS, Azure Event Grid, Kafka, Pulsar, or on-prem buses.
+- **Selective fanout** – Only the subscribers for a pool receive the payload; no wasted bidder compute.
+- **Elastic scaling** – Topics and subscriptions can be sharded per geography, product set, or latency class.
+- **Resilience** – Message ordering and retry policies ensure late bidders are rejected while the system stays healthy.
+
+## Operator Responsibilities
+
+- Maintain the category taxonomy and pool ownership lists.
+- Ensure transport security (mutual TLS or signed service accounts) for publish/subscribe channels.
+- Enforce the auction window and drop bids that arrive late or from unauthorized bidders.
+- Record `no_bid` outcomes so Platforms can differentiate “no eligible bidders” from transport failures.
+
+## Brand Agent Responsibilities
+
+- Subscribe only to pools the advertiser is entitled to join.
+- Keep a low-latency subscriber close to the Operator region.
+- Cache credentials required to sign `bid-response` payloads.
+- Back off gracefully if they cannot respond within the window.
+
+For deployment walkthroughs on each cloud, see [Quickstart for Cloud Providers](/cloud-quickstart).
