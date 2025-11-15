@@ -1,30 +1,41 @@
 # CPA Conversion Event Schema
 
 ## Overview
-Event fired when a user completes a conversion action (signup, purchase, etc.).
+Event fired when a user completes a CPA-eligible action (signup, purchase, trial start, etc.). This records the final billing event for the serve_token.
 
 ## Required Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| `event_type` | string | Event type identifier (always `cpa_conversion`) |
-| `serve_token` | string | Serve token from the auction result |
+| `event_type` | string | Always `cpa_conversion` |
+| `serve_token` | string | Token linking exposure → click → conversion |
 | `conversion_id` | string | Unique identifier for this conversion |
-| `conversion_type` | string | Type of conversion action. Enum: `signup`, `purchase`, `trial_start`, `demo_request`, `download`, `custom` |
-| `ts` | string | ISO 8601 timestamp of the conversion |
+| `conversion_type` | string | Enum: `signup`, `purchase`, `trial_start`, `demo_request`, `download`, `custom` |
+| `wallet_id` | string | Wallet to apply the final CPA charge |
+| `brand_agent_id` | string | Brand agent associated with the conversion |
+| `pricing.unit` | string | Must be `CPA` |
+| `pricing.amount_cents` | integer | Final CPA charge (in cents) |
+| `timestamp` | string | ISO 8601 timestamp for the conversion |
 
 ## Optional Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| `order_value_cents` | integer | Order value in cents (for purchase conversions, minimum: 0) |
-| `currency` | string | Currency code for order value (pattern: `^[A-Z]{3}$`) |
-| `conversion_metadata` | object | Additional conversion context |
+| `order_value_cents` | integer | Optional purchase value in cents |
+| `currency` | string | Currency for order value (ISO 4217) |
+| `conversion_metadata` | object | Advertiser-side metadata (user/order/product IDs) |
+| `ext` | object | Vendor extensions |
+
+## Pricing Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `unit` | string | Always `CPA` |
+| `amount_cents` | integer | Final charge in cents |
 
 ## Conversion Metadata Object
 | Field | Type | Description |
 |--------|------|-------------|
-| `user_id` | string | Advertiser's internal user ID |
+| `user_id` | string | Advertiser user identifier |
 | `order_id` | string | Order or transaction ID |
-| `product_ids` | array | List of product IDs purchased (array of strings) |
+| `product_ids` | string[] | List of product IDs linked to this conversion |
 
 ## Example
 ```json
@@ -32,21 +43,26 @@ Event fired when a user completes a conversion action (signup, purchase, etc.).
   "event_type": "cpa_conversion",
   "serve_token": "stk_abcxyz123",
   "conversion_id": "cnv_001",
-  "conversion_type": "signup",
-  "order_value_cents": 4900,
+  "conversion_type": "purchase",
+  "wallet_id": "wal_ba451",
+  "brand_agent_id": "ba_451",
+  "pricing": {
+    "unit": "CPA",
+    "amount_cents": 4900
+  },
+  "order_value_cents": 25000,
   "currency": "USD",
   "conversion_metadata": {
     "user_id": "usr_12345",
     "order_id": "ord_67890",
     "product_ids": ["prod_crm_pro", "prod_addon_analytics"]
   },
-  "ts": "2025-11-11T18:30:00Z"
+  "timestamp": "2025-11-14T18:30:00Z"
 }
 ```
 
 ## Validation Rules
-- `event_type` must be exactly `cpa_conversion`
-- `conversion_type` must be one of: `signup`, `purchase`, `trial_start`, `demo_request`, `download`, `custom`
-- `order_value_cents` must be at least 0
-- `currency` must match pattern: `^[A-Z]{3}$`
-- `ts` must be in ISO 8601 date-time format
+- `pricing.amount_cents` must be an integer ≥ 0
+- `conversion_type` must match the defined enum
+- `order_value_cents`, when present, must be ≥ 0
+- `timestamp` must be ISO 8601 formatted

@@ -72,9 +72,9 @@ All events share common required fields that link them back to the auction and e
 
 Each event type has additional required and optional fields:
 
-**CPX (Exposure)** - Requires: `session_id`, `platform_id`, `agent_id`, `wallet_id`, `pricing`
-**CPC (Click)** - Requires: `event_id`
-**CPA (Conversion)** - Requires: `conversion_id`, `conversion_type`
+**CPX (Exposure)** - Requires: `session_id`, `platform_id`, `brand_agent_id`, `wallet_id`, `pricing`
+**CPC (Click)** - Requires: `session_id`, `platform_id`, `brand_agent_id`, `wallet_id`, `pricing.unit`, `pricing.amount_cents`, `timestamp`
+**CPA (Conversion)** - Requires: `conversion_id`, `conversion_type`, `wallet_id`, `brand_agent_id`, `pricing.unit`, `pricing.amount_cents`, `timestamp`
 
 ### Example: CPX Exposure Event
 

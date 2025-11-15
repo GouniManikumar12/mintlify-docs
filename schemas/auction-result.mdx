@@ -1,32 +1,36 @@
 # Auction Result Schema
 
 ## Overview
-Result of an ad auction, returned to the platform with the winning creative.
+Winning bid response returned to AI platforms, including reservation info so platforms understand committed spend.
 
 ## Required Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| `auction_id` | string | Unique identifier for this auction |
-| `serve_token` | string | Token used to track events for this ad serve |
-| `winner` | object | Information about the winning bid |
-| `render` | object | Creative content to display to the user |
-| `ttl_ms` | integer | Time-to-live in milliseconds for this auction result |
+| `auction_id` | string | Auction identifier |
+| `serve_token` | string | Token used to track downstream events |
+| `ttl_ms` | integer | Result time-to-live in milliseconds |
 
 ## Winner Object
 | Field | Type | Description |
 |--------|------|-------------|
-| `agent_id` | string | ID of the winning advertiser agent |
-| `clearing_price_cpx` | string | Clearing price for CPX in USD (pattern: `^\d+\.\d{2,}$`) |
-| `preferred_unit` | string | Charging model for this serve. Enum: `CPX`, `CPC`, `CPA` |
+| `brand_agent_id` | string | Winning Brand Agent |
+| `preferred_unit` | string | Requested billing unit (`CPX`, `CPC`, `CPA`) |
+| `reserved_amount_cents` | integer | Amount placed on hold at auction time |
 
 ## Render Object
 | Field | Type | Description |
 |--------|------|-------------|
-| `label` | string | Disclosure label (always `[Ad]`) |
-| `title` | string | Ad title |
-| `body` | string | Ad body text |
+| `label` | string | Disclosure label (`[Ad]`) |
+| `title` | string | Creative title |
+| `body` | string | Creative description |
 | `cta` | string | Call-to-action text |
-| `url` | string | Click-through URL with tracking (must be valid URI) |
+| `url` | string | Tracking/deep link URL |
+
+## Optional Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| `no_bid` | boolean | Set to `true` when no bidder responded |
+| `ext` | object | Vendor extensions |
 
 ## Example
 ```json
@@ -34,13 +38,13 @@ Result of an ad auction, returned to the platform with the winning creative.
   "auction_id": "auc_981",
   "serve_token": "stk_abcxyz123",
   "winner": {
-    "agent_id": "ag_123",
-    "clearing_price_cpx": "0.042",
-    "preferred_unit": "CPA"
+    "brand_agent_id": "ba_451",
+    "preferred_unit": "CPA",
+    "reserved_amount_cents": 500
   },
   "render": {
     "label": "[Ad]",
-    "title": "Pipedrive CRM",
+    "title": "Scale your CRM",
     "body": "Built for founders.",
     "cta": "Try for free",
     "url": "https://admesh.click/stk_abcxyz123"
@@ -50,6 +54,7 @@ Result of an ad auction, returned to the platform with the winning creative.
 ```
 
 ## Validation Rules
-- `clearing_price_cpx` must match pattern: `^\d+\.\d{2,}$`
-- `url` must be a valid URI
-- `ttl_ms` must be between 1000 and 300000 (1 second to 5 minutes)
+- `ttl_ms` must be between 1,000 and 300,000
+- `preferred_unit` must be `CPX`, `CPC`, or `CPA`
+- `reserved_amount_cents` must be an integer ≥ 0
+- When `no_bid` is true, `winner` and `render` should be omitted

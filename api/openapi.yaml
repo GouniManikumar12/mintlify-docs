@@ -110,45 +110,57 @@ components:
 
     Bid:
       type: object
-      required: [bid_id, agent_id, context_id, wallet_id, bid_vector, ts, auth]
+      required: [bid_id, brand_agent_id, context_id, wallet_id, pricing, offer, timestamp, auth]
       properties:
-        bid_id: { type: string, example: "b_7823" }
-        agent_id: { type: string, example: "ag_123" }
+        bid_id: { type: string, example: "bid_7823" }
+        brand_agent_id: { type: string, example: "brand_agent_123" }
         context_id: { type: string, example: "ctx_92f" }
-        wallet_id: { type: string, example: "w_890" }
-        bid_vector:
+        wallet_id: { type: string, example: "wallet_890" }
+        pricing:
           type: object
           required: [cpx]
           properties:
             cpx: { type: string, example: "0.05" }
             cpc: { type: string, example: "0.45" }
             cpa: { type: string, example: "10.00" }
-        preferred_unit:
-          type: string
-          enum: [CPX, CPC, CPA]
-        creative:
+            currency: { type: string, example: "USD" }
+        offer:
           type: object
           properties:
-            title: { type: string, example: "Pipedrive CRM" }
-            body: { type: string, example: "CRM built for growing teams." }
-            cta: { type: string, example: "Start free trial" }
-            deeplink: { type: string, format: uri, example: "https://pipedrive.com/signup" }
-        caps:
-          type: object
-          properties:
-            daily: { type: integer, example: 10000 }
-            geo_allow:
-              type: array
-              items: { type: string }
-              example: ["US", "CA"]
-        ts:
+            creative_input:
+              type: object
+              required: [brand_name, product_name, descriptions, value_props, resource_urls, image_urls]
+              properties:
+                brand_name: { type: string, example: "Nimbus" }
+                product_name: { type: string, example: "Nimbus CRM Pro" }
+                descriptions:
+                  type: array
+                  items: { type: string }
+                  example: ["AI-native CRM for 5-50 person teams."]
+                value_props:
+                  type: array
+                  items: { type: string }
+                  example: ["Automated pipeline insights", "Embedded copilots"]
+                resource_urls:
+                  type: array
+                  items: { type: string, format: uri }
+                  example: ["https://nimbus.example/signup"]
+                image_urls:
+                  type: array
+                  items: { type: string, format: uri }
+                  example: ["https://cdn.example.com/nimbus/crm.png"]
+        timestamp:
           type: string
           format: date-time
         auth:
           type: object
+          required: [nonce, signature]
           properties:
-            nonce: { type: string, example: "n_456" }
-            sig: { type: string, example: "sig_789" }
+            nonce: { type: string, example: "nonce_456" }
+            signature: { type: string, example: "sig_789" }
+        extensions:
+          type: object
+          additionalProperties: true
 
     AuctionResult:
       type: object
@@ -158,16 +170,16 @@ components:
         serve_token: { type: string, example: "stk_abcxyz123" }
         winner:
           type: object
-          required: [agent_id, clearing_price_cpx, preferred_unit]
+          required: [brand_agent_id, preferred_unit, reserved_amount_cents]
           properties:
-            agent_id: { type: string, example: "ag_123" }
-            clearing_price_cpx: { type: string, example: "0.042" }
+            brand_agent_id: { type: string, example: "brand_agent_123" }
             preferred_unit: { type: string, enum: [CPX, CPC, CPA], example: "CPA" }
+            reserved_amount_cents: { type: integer, minimum: 0, example: 500 }
         render:
           type: object
           properties:
             label: { type: string, enum: ["[Ad]"] }
-            title: { type: string, example: "Pipedrive CRM" }
+            title: { type: string, example: "Scale your CRM" }
             body: { type: string, example: "Built for founders." }
             cta: { type: string, example: "Try for free" }
             url: { type: string, format: uri, example: "https://admesh.click/stk_abcxyz123" }
@@ -198,25 +210,60 @@ components:
 
     EventCPC:
       type: object
-      required: [event_type, serve_token, event_id, ts]
+      required: [event_type, serve_token, session_id, platform_id, brand_agent_id, wallet_id, pricing, timestamp]
       properties:
         event_type: { type: string, const: "cpc_click" }
         serve_token: { type: string }
-        event_id: { type: string }
-        s2s: { type: boolean }
-        ts: { type: string, format: date-time }
+        session_id: { type: string }
+        platform_id: { type: string }
+        brand_agent_id: { type: string }
+        wallet_id: { type: string }
+        pricing:
+          type: object
+          required: [unit, amount_cents]
+          properties:
+            unit: { type: string, const: "CPC" }
+            amount_cents: { type: integer, minimum: 0, example: 45 }
+        click_metadata:
+          type: object
+          properties:
+            source:
+              type: string
+              enum: [deep_link, button, voice_confirmation, agent_action]
+            position:
+              type: integer
+              minimum: 1
+        timestamp: { type: string, format: date-time }
 
     EventCPA:
       type: object
-      required: [event_type, serve_token, conversion_id, ts]
+      required: [event_type, serve_token, conversion_id, conversion_type, wallet_id, brand_agent_id, pricing, timestamp]
       properties:
         event_type: { type: string, const: "cpa_conversion" }
         serve_token: { type: string }
         conversion_id: { type: string }
-        conversion_type: { type: string, example: "signup" }
-        order_value_cents: { type: integer, example: 4900 }
-        currency: { type: string, example: "USD" }
-        ts: { type: string, format: date-time }
+        conversion_type:
+          type: string
+          enum: [signup, purchase, trial_start, demo_request, download, custom]
+        wallet_id: { type: string }
+        brand_agent_id: { type: string }
+        pricing:
+          type: object
+          required: [unit, amount_cents]
+          properties:
+            unit: { type: string, const: "CPA" }
+            amount_cents: { type: integer, minimum: 0 }
+        order_value_cents: { type: integer, minimum: 0 }
+        currency: { type: string, pattern: "^[A-Z]{3}$" }
+        conversion_metadata:
+          type: object
+          properties:
+            user_id: { type: string }
+            order_id: { type: string }
+            product_ids:
+              type: array
+              items: { type: string }
+        timestamp: { type: string, format: date-time }
 
     Balance:
       type: object

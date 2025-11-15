@@ -1,61 +1,59 @@
 # Context Request Schema
 
 ## Overview
-Operator request distributed to subscribed brand agents after the AI platform submits a `platform_request`. It contains the normalized context, pricing constraints, and auth that bidders need to participate.
+Normalized request that an Operator sends to subscribed Brand Agents when opening an auction. It includes the enriched intent, allowed creative formats, and an operator-signed auth block.
 
 ## Required Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| `request_id` | string | Unique identifier for this context request |
-| `session_id` | string | Session identifier for grouping related requests |
-| `platform_id` | string | Identifier of the AI platform making the request |
-| `query_text` | string | User's query or prompt text |
-| `locale` | string | User's locale in BCP 47 format (e.g., `en-US`) |
-| `geo` | string | User's country code (ISO 3166-1 alpha-2, e.g., `US`) |
-| `ts` | string | ISO 8601 timestamp of the request |
-| `auth` | object | Authentication credentials (nonce and signature) |
+| `context_id` | string | Unique ID for this auction request |
+| `session_id` | string | Conversation/session identifier |
+| `operator_id` | string | Identifier of the operator sending the request |
+| `platform_id` | string | Upstream AI platform identifier |
+| `query_text` | string | Operator-curated user query |
+| `locale` | string | Locale (BCP 47, e.g., `en-US`) |
+| `geo` | string | Country code (ISO 3166-1 alpha-2) |
+| `intent.type` | enum | Intent class: `informational`, `commercial`, `transactional` |
+| `allowed_formats` | array | Creative formats allowed: `weave`, `citation`, `product_card` |
+| `timestamp` | string | ISO 8601 timestamp created by the operator |
+| `auth.nonce` | string | Nonce for replay protection |
+| `auth.sig` | string | Operator signature authenticating the request |
 
 ## Optional Fields
 | Field | Type | Description |
 |--------|------|-------------|
-| `surface` | string | UI surface where the ad will be displayed. Enum: `chat`, `voice`, `page`, `result_card` |
-| `pricing.cpx_floor` | string | Minimum CPX bid price in USD |
-| `features.topic` | array | Detected topics or categories |
-| `features.user_type` | string | Type of user making the query. Enum: `human`, `agent` |
-
-## Authentication Object
-| Field | Type | Description |
-|--------|------|-------------|
-| `nonce` | string | One-time nonce for replay protection |
-| `sig` | string | HMAC signature of the request |
+| `verticals` | array | Normalized topical verticals, e.g., `["crm", "smb_software"]` |
+| `intent.decision_phase` | enum | Funnel stage: `research`, `compare`, `decide`, `act` |
+| `intent.context_summary` | string | Operator generated summary |
+| `intent.turn_index` | integer | Conversation turn index |
+| `extensions` | object | Vendor-namespaced operator metadata (e.g., `extensions.admesh.*`) |
 
 ## Example
 ```json
 {
-  "request_id": "rq_92f",
-  "session_id": "s_001",
-  "platform_id": "pf_chatapp",
+  "context_id": "ctx_92fA1",
+  "session_id": "sess_001",
+  "operator_id": "admesh_operator",
+  "platform_id": "openai_chat",
   "query_text": "best CRM for small teams",
-  "surface": "chat",
   "locale": "en-US",
   "geo": "US",
-  "pricing": {
-    "cpx_floor": "0.03"
+  "verticals": ["crm", "smb_software"],
+  "intent": {
+    "type": "commercial",
+    "decision_phase": "compare",
+    "context_summary": "User is evaluating CRM tools and narrowing down options.",
+    "turn_index": 3
   },
-  "features": {
-    "topic": ["crm", "smb"],
-    "user_type": "human"
-  },
-  "ts": "2025-11-11T18:00:00Z",
-  "auth": {
-    "nonce": "n_123",
-    "sig": "sig_abcd"
+  "allowed_formats": ["weave", "citation", "product_card"],
+  "timestamp": "2025-11-14T18:22:00Z",
+  "auth": { "nonce": "nonce_123", "sig": "sig_hmac_123abc" },
+  "extensions": {
+    "admesh": { "operator_relevance_score": 0.87 }
   }
 }
 ```
 
-## Validation Rules
-- `locale` must match pattern: `^[a-z]{2}-[A-Z]{2}$`
-- `geo` must match pattern: `^[A-Z]{2}$`
-- `cpx_floor` must match pattern: `^\\d+\\.\\d{2,}$`
-- `ts` must be in ISO 8601 date-time format
+## Notes
+- `extensions` must be vendor-namespaced objects; operators should only write inside their namespace (e.g., `extensions.admesh`).
+- `allowed_formats` lets operators constrain how creatives render for the requesting platform surface.

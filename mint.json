@@ -73,9 +73,7 @@
         "schemas/event-cpc",
         "schemas/event-cpa",
         "schemas/ledger-record",
-        "schemas/wallet-record",
-        "schemas/version"
-      ]
+        "schemas/wallet-record"      ]
     },
     {
       "group": "FAQ",

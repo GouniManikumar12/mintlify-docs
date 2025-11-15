@@ -12,7 +12,7 @@ Each file defines required fields, validation rules, and example payloads.
 
 | Schema | Description |
 |---------|--------------|
-| [context-request.json](context-request.json) | AI platform request that starts an auction |
+| [context-request.json](context-request.json) | Operator → Brand Agent request containing normalized intent |
 | [bid.json](bid.json) | Advertiser agent bid payload |
 | [auction-result.json](auction-result.json) | Auction winner response |
 | [event-cpx.json](event-cpx.json) | Exposure event |
@@ -41,16 +41,24 @@ const ajv = new Ajv();
 const validate = ajv.compile(contextRequestSchema);
 
 const payload = {
-  request_id: "rq_92f",
-  session_id: "s_001",
-  platform_id: "pf_chatapp",
+  context_id: "ctx_92fA1",
+  session_id: "sess_001",
+  operator_id: "admesh_operator",
+  platform_id: "openai_chat",
   query_text: "best CRM for small teams",
   locale: "en-US",
   geo: "US",
-  ts: new Date().toISOString(),
+  intent: {
+    type: "commercial",
+    decision_phase: "compare",
+    context_summary: "User evaluating CRM tools",
+    turn_index: 3
+  },
+  allowed_formats: ["weave", "citation"],
+  timestamp: new Date().toISOString(),
   auth: {
-    nonce: "n_123",
-    sig: "sig_abcd"
+    nonce: "nonce_123",
+    sig: "sig_hmac_123abc"
   }
 };
 
@@ -73,4 +81,3 @@ npx json-schema-to-typescript schemas/context-request.json > types/ContextReques
 - [Auction Mechanics](/auction) - How bidding and clearing works
 - [Events](/events) - Event tracking and ledger finalization
 - [API Reference](/api/openapi) - OpenAPI specification
-

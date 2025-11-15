@@ -1,77 +1,79 @@
 # Bid Schema
 
 ## Overview
-Advertiser agent bid submitted in response to a context request.
+Brand Agent bid submitted in response to a `ContextRequest`. Includes pricing for CPX/CPC/CPA, structured offer metadata, and a signed auth block.
 
 ## Required Fields
 | Field | Type | Description |
 |--------|------|-------------|
 | `bid_id` | string | Unique identifier for this bid |
-| `agent_id` | string | Identifier of the advertiser agent placing the bid |
-| `context_id` | string | ID of the context request being bid on |
-| `wallet_id` | string | Wallet to charge if this bid wins |
-| `bid_vector` | object | Pricing for different charging models (CPX required, CPC/CPA optional) |
-| `ts` | string | ISO 8601 timestamp of the bid |
-| `auth` | object | Authentication credentials (nonce and signature) |
+| `brand_agent_id` | string | Identifier of the Brand Agent placing the bid |
+| `context_id` | string | ID of the `ContextRequest` being bid on |
+| `wallet_id` | string | Wallet to debit if the bid wins |
+| `pricing` | object | Pricing vector (CPX required, CPC/CPA optional) |
+| `offer` | object | Offer metadata + creative input |
+| `timestamp` | string | ISO 8601 timestamp for the bid |
+| `auth` | object | Nonce + signature for replay prevention |
 
-## Bid Vector Object
+## Pricing Object
 | Field | Type | Required | Description |
 |--------|------|----------|-------------|
-| `cpx` | string | Yes | Price per exposure in USD (pattern: `^\d+\.\d{2,}$`) |
-| `cpc` | string | No | Price per click in USD (pattern: `^\d+\.\d{2,}$`) |
-| `cpa` | string | No | Price per conversion in USD (pattern: `^\d+\.\d{2,}$`) |
+| `cpx` | string | Yes | Price per exposure (USD). Pattern: `^\d+\.\d{2,}$` |
+| `cpc` | string | No | Price per click (USD). Pattern: `^\d+\.\d{2,}$` |
+| `cpa` | string | No | Price per conversion (USD). Pattern: `^\d+\.\d{2,}$` |
+| `currency` | string | No | ISO 4217 currency code (default `USD`) |
 
-## Optional Fields
-| Field | Type | Description |
-|--------|------|-------------|
-| `preferred_unit` | string | Preferred charging model for this bid. Enum: `CPX`, `CPC`, `CPA` |
-| `creative` | object | Ad creative to display if bid wins |
+## Offer Object
+Contains `creative_input`, the normalized asset payload shared with the operator.
 
-## Creative Object
-| Field | Type | Description |
-|--------|------|-------------|
-| `title` | string | Ad title (max 120 characters) |
-| `body` | string | Ad body text (max 500 characters) |
-| `cta` | string | Call-to-action text (max 60 characters) |
-| `deeplink` | string | Destination URL (must be valid URI) |
+| Field | Type | Required | Description |
+|--------|------|----------|-------------|
+| `brand_name` | string | Yes | Brand or advertiser name |
+| `product_name` | string | Yes | Product or offer name |
+| `descriptions` | string[] | Yes | Long-form descriptions / copy |
+| `value_props` | string[] | Yes | Short bullet value props |
+| `resource_urls` | URI[] | Yes | Destination / tracking URLs |
+| `image_urls` | URI[] | Yes | Creative image URLs |
 
 ## Authentication Object
 | Field | Type | Description |
 |--------|------|-------------|
-| `nonce` | string | One-time nonce for replay protection |
-| `sig` | string | HMAC signature of the bid |
+| `nonce` | string | One-time nonce used to prevent replays |
+| `signature` | string | Signature over the canonical bid payload |
 
 ## Example
 ```json
 {
-  "bid_id": "b_7823",
-  "agent_id": "ag_123",
+  "bid_id": "bid_7823",
+  "brand_agent_id": "brand_agent_123",
   "context_id": "ctx_92f",
-  "wallet_id": "w_890",
-  "bid_vector": {
+  "wallet_id": "wallet_890",
+  "pricing": {
     "cpx": "0.05",
     "cpc": "0.45",
-    "cpa": "10.00"
+    "cpa": "10.00",
+    "currency": "USD"
   },
-  "preferred_unit": "CPA",
-  "creative": {
-    "title": "Pipedrive CRM",
-    "body": "CRM built for growing teams.",
-    "cta": "Start free trial",
-    "deeplink": "https://pipedrive.com/signup"
+  "offer": {
+    "creative_input": {
+      "brand_name": "Nimbus",
+      "product_name": "Nimbus CRM Pro",
+      "descriptions": ["AI-native CRM for 5-50 person teams."],
+      "value_props": ["Automated pipeline insights", "Embedded copilots"],
+      "resource_urls": ["https://nimbus.example/signup"],
+      "image_urls": ["https://cdn.example.com/nimbus/crm.png"]
+    }
   },
-  "ts": "2025-11-11T18:00:01Z",
+  "timestamp": "2025-11-11T18:00:01Z",
   "auth": {
-    "nonce": "n_456",
-    "sig": "sig_789"
+    "nonce": "nonce_456",
+    "signature": "sig_789"
   }
 }
 ```
 
 ## Validation Rules
-- All price fields (`cpx`, `cpc`, `cpa`) must match pattern: `^\d+\.\d{2,}$`
-- `title` max length: 120 characters
-- `body` max length: 500 characters
-- `cta` max length: 60 characters
-- `deeplink` must be a valid URI
-- `ts` must be in ISO 8601 date-time format
+- `cpx`, `cpc`, `cpa` must match `^\d+\.\d{2,}$`
+- Arrays in `creative_input` must contain at least one entry
+- `resource_urls` and `image_urls` must be valid URIs
+- `timestamp` must be ISO 8601 / RFC 3339 formatted
