@@ -29,6 +29,7 @@
       "group": "Protocol",
       "pages": [
         "protocol",
+        "extensions",
         "auction",
         "events",
         "state-machine",
@@ -64,6 +65,7 @@
     {
       "group": "Schemas",
       "pages": [
+        "schemas/platform-request",
         "schemas/context-request",
         "schemas/bid",
         "schemas/auction-result",
@@ -85,6 +87,10 @@
       ]
     }
   ],
+  "topbarCtaButton": {
+    "name": "AIP Spec",
+    "url": "https://github.com/GouniManikumar12/aip-spec"
+  },
   "footerSocials": {
     "github": "https://github.com/admesh",
     "x": "https://x.com/admesh",

@@ -49,6 +49,15 @@ Each message is signed, timestamped, and stored for verification.
 
 ---
 
+## 3.1 PlatformRequest vs ContextRequest
+
+- **PlatformRequest** – Sent by the AI platform to the operator; includes raw query text, optional message history, locale/geo, minimum CPX, and any namespaced metadata inside `ext`.
+- **ContextRequest** – Derived by the operator from the PlatformRequest before it is fanned out to subscribed brand agents. Operators may redact, enrich, or reformat the data while keeping identifiers stable.
+
+This split keeps the platform/operator contract predictable while allowing operators to tailor what bidders see.
+
+---
+
 ## 4. Transport and Security
 
 All requests use **HTTPS or gRPC** for transport.  

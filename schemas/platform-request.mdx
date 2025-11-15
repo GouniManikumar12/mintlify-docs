@@ -1,0 +1,61 @@
+# Platform Request Schema
+
+## Overview
+AI platform request sent to an AIP operator to initiate an ad auction. This payload contains the raw user intent, optional conversation snippets, and platform-specific extensions. Operators transform it into a `context_request` before distributing to brand agents.
+
+## Required Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| `request_id` | string | Unique identifier for this auction request |
+| `session_id` | string | Conversation or interaction session ID |
+| `platform_id` | string | Identifier of the AI platform sending this request |
+| `query_text` | string | User’s raw query text |
+| `locale` | string | User locale in BCP 47 format (e.g., `en-US`) |
+| `geo` | string | User country code (ISO 3166-1 alpha-2, e.g., `US`) |
+| `timestamp` | string | ISO 8601 timestamp when the platform generated the request |
+| `auth` | object | Transport authentication (nonce + signature) |
+
+## Optional Fields
+| Field | Type | Description |
+|--------|------|-------------|
+| `model` | string | AI model handling the interaction |
+| `messages` | array | Short conversation history (last N turns) |
+| `platform_surface` | string | Platform-defined surface or view type (e.g., `ai_chat`) |
+| `cpx_floor` | number | Minimum CPX (USD) enforced by the platform |
+| `ext` | object | Vendor-namespaced extensions (e.g., `ext.openai.model`) |
+
+## Authentication Object
+| Field | Type | Description |
+|--------|------|-------------|
+| `nonce` | string | One-time nonce for replay protection |
+| `sig` | string | HMAC signature of the request |
+
+## Example
+```json
+{
+  "request_id": "req_92fA1",
+  "session_id": "sess_001",
+  "platform_id": "openai_chat",
+  "model": "gpt-4.3-mini",
+  "query_text": "best CRM for small teams",
+  "messages": [
+    { "role": "user", "content": "best CRM tools?" },
+    { "role": "assistant", "content": "HubSpot, Zoho, Salesforce…" }
+  ],
+  "locale": "en-US",
+  "geo": "US",
+  "platform_surface": "ai_chat",
+  "cpx_floor": 0.05,
+  "timestamp": "2025-11-14T18:22:00Z",
+  "auth": { "nonce": "nonce_12345", "sig": "sig_d41d8cd98f00b204e9800998ecf8427e" },
+  "ext": {
+    "openai": { "model": "gpt-4.3-mini", "conversation_mode": "assistant" }
+  }
+}
+```
+
+## Validation Rules
+- `locale` must match pattern `^[a-z]{2}-[A-Z]{2}$`
+- `geo` must match pattern `^[A-Z]{2}$`
+- `timestamp` must be RFC 3339 / ISO 8601 compliant
+- `ext` keys must be vendor namespaces (e.g., `openai`, `vectorgrid`, `acme_ai`)

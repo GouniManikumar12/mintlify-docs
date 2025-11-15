@@ -4,7 +4,7 @@ description: Learn how AIP auctions rank bids and select the most relevant recom
 ---
 
 # Auction and Scoring
-AIP runs a short timed auction. When a platform sends a context_request, the Operator tags it into category pools and sends it only to Brand Agents subscribed to those pools. Delivery happens through a pub/sub system.
+AIP runs a short timed auction. When a platform sends a `PlatformRequest`, the operator tags it into category pools, derives a `ContextRequest`, and sends it only to Brand Agents subscribed to those pools. Delivery happens through a pub/sub system.
 
 Agents have about 30–70 ms to send a signed bid. When the window closes, the Operator scores all bids (CPA first, then CPC, then CPX) and returns the winner. If no one responds in time, it returns no_bid.
 
@@ -30,10 +30,10 @@ This ensures:
 Every user intent triggers a micro-auction. The sequence is:
 
 ### **1. Intent Enters the System**
-A Platform sends a `ContextRequest` describing the user’s query or action.
+An AI platform submits a `PlatformRequest` describing the user’s query or action.
 
 ### **2. Bid Requests Are Issued**
-The Operator classifies the request into category pools and uses publish/subscribe transport to deliver it only to Brand Agents subscribed to those pools.
+The Operator classifies the request into category pools, derives a `ContextRequest`, and uses publish/subscribe transport to deliver it only to Brand Agents subscribed to those pools.
 
 ### **3. Bids Are Returned**
 During the 30–70 ms auction window, each Brand Agent sends a signed `POST /aip/bid-response` payload with:
