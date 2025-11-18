@@ -29,7 +29,6 @@
       "group": "Protocol",
       "pages": [
         "protocol",
-        "extensions",
         "auction",
         "events",
         "state-machine",
@@ -39,12 +38,16 @@
         "compliance",
         "versioning",
         "conformance",
-        "glossary"
+        "glossary",
+        "extensions"
+
       ]
     },
     {
       "group": "Advanced Topics",
       "pages": [
+          "agentic-advertising",
+        "cpm-vs-cpx",
         "distributed-auctions",
         "cloud-quickstart"
       ]
@@ -53,13 +56,6 @@
       "group": "Samples",
       "pages": [
         "samples/python"
-      ]
-    },
-    {
-      "group": "Important Concepts",
-      "pages": [
-        "agentic-advertising",
-        "cpm-vs-cpx"
       ]
     },
     {
