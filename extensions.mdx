@@ -5,9 +5,9 @@ description: How operators leverage the AIP extension namespace to innovate with
 
 # Extension Namespace
 
-AIP supports innovation without fragmentation through a controlled extension namespace. Any operator can add new fields immediately inside a dedicated `ext` object, where their custom parameters live under their own vendor ID. This gives companies full flexibility to experiment, pass proprietary data, or build advanced features without ever touching or breaking the core protocol. If an extension proves useful across the ecosystem, the operator can submit a lightweight RFC, and we evaluate it for inclusion in the next version of AIP. This model keeps the standard stable, predictable, and clean, while allowing rapid evolution on the edges — the same governance pattern used by OpenRTB, OAuth, and Kubernetes.
+AIP supports innovation without fragmentation through a controlled extension namespace. Any operator can add new fields immediately inside a dedicated `metadata` object, where their custom parameters live under their own vendor ID. This gives companies full flexibility to experiment, pass proprietary data, or build advanced features without ever touching or breaking the core protocol. If an extension proves useful across the ecosystem, the operator can submit a lightweight RFC, and we evaluate it for inclusion in the next version of AIP. This model keeps the standard stable, predictable, and clean, while allowing rapid evolution on the edges — the same governance pattern used by OpenRTB, OAuth, and Kubernetes.
 
-> ✅ Every AIP payload may include an optional `ext` container.
+> ✅ Every AIP payload may include an optional `metadata` container.
 
 Each vendor controls their slice of the namespace by placing data under their ID. Example vendor IDs: `acme_ai`, `vectorgrid`, `pluto-search`.
 
@@ -29,7 +29,7 @@ Some downstream payloads (such as the normalized `ContextRequest`) expose this d
   "geo": "US",
   "ts": "2025-05-01T12:00:00Z",
   "auth": { "nonce": "n_1", "sig": "sig_abc" },
-  "ext": {
+  "metadata": {
     "acme_ai": {
       "intent_embedding": [0.12, -0.8, 0.44],
       "policy_version": "2025.05"
@@ -95,7 +95,7 @@ Operators may add as many vendor IDs as needed, as long as each namespace remain
 
 ## Promotion Workflow (RFC)
 
-1. **Prototype** — ship the feature under `ext.<vendor_id>` and document it for partners.
+1. **Prototype** — ship the feature under `metadata.<vendor_id>` and document it for partners.
 2. **Prove Value** — collect adoption signals, performance metrics, or interoperability data.
 3. **Submit RFC** — open a lightweight RFC describing intent, schema changes, and rollout plan.
 4. **Review & Merge** — the specification council evaluates within one release cycle; accepted extensions graduate into the next minor/major version.

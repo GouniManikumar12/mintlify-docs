@@ -22,7 +22,7 @@ AI platform request sent to an AIP operator to initiate an ad auction. This payl
 | `messages` | array | Short conversation history (last N turns) |
 | `platform_surface` | string | Platform-defined surface or view type (e.g., `ai_chat`) |
 | `cpx_floor` | number | Minimum CPX (USD) enforced by the platform |
-| `ext` | object | Vendor-namespaced extensions (e.g., `ext.openai.model`) |
+| `metadata` | object | Vendor-namespaced extensions (e.g., `metadata.openai.model`) |
 
 ## Authentication Object
 | Field | Type | Description |
@@ -48,7 +48,7 @@ AI platform request sent to an AIP operator to initiate an ad auction. This payl
   "cpx_floor": 0.05,
   "timestamp": "2025-11-14T18:22:00Z",
   "auth": { "nonce": "nonce_12345", "sig": "sig_d41d8cd98f00b204e9800998ecf8427e" },
-  "ext": {
+  "metadata": {
     "openai": { "model": "gpt-4.3-mini", "conversation_mode": "assistant" }
   }
 }
@@ -58,4 +58,4 @@ AI platform request sent to an AIP operator to initiate an ad auction. This payl
 - `locale` must match pattern `^[a-z]{2}-[A-Z]{2}$`
 - `geo` must match pattern `^[A-Z]{2}$`
 - `timestamp` must be RFC 3339 / ISO 8601 compliant
-- `ext` keys must be vendor namespaces (e.g., `openai`, `vectorgrid`, `acme_ai`)
+- `metadata` keys must be vendor namespaces (e.g., `openai`, `vectorgrid`, `acme_ai`)
