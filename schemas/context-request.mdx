@@ -22,11 +22,18 @@ Normalized request that an Operator sends to subscribed Brand Agents when openin
 ## Optional Fields
 | Field | Type | Description |
 |--------|------|-------------|
+| `platform_surface` | string | Platform surface type: chat, voice, browser, extension, ui panel |
+| `model` | string | AI model provided by platform (e.g., `gpt-4.3-mini`) |
+| `messages` | array | Conversation history (user + assistant turns) |
 | `verticals` | array | Normalized topical verticals, e.g., `["crm", "smb_software"]` |
 | `intent.decision_phase` | enum | Funnel stage: `research`, `compare`, `decide`, `act` |
 | `intent.context_summary` | string | Operator generated summary |
 | `intent.turn_index` | integer | Conversation turn index |
-| `metadata` | object | Vendor-namespaced operator metadata (e.g., `metadata.admesh.*`) |
+| `latency_budget_ms` | integer | Platform latency budget in milliseconds |
+| `user_id` | string | Anonymous hashed user ID for pacing & personalization |
+| `conversation_id` | string | Conversation session from platform |
+| `device_type` | string | Device type: `mobile`, `desktop`, `tablet` |
+| `metadata` | object | Unified metadata with platform and operator data |
 
 ## Example
 ```json
@@ -35,7 +42,10 @@ Normalized request that an Operator sends to subscribed Brand Agents when openin
   "session_id": "sess_001",
   "operator_id": "admesh_operator",
   "platform_id": "openai_chat",
+  "platform_surface": "ai_chat",
+  "model": "gpt-4.3-mini",
   "query_text": "best CRM for small teams",
+  "messages": [],
   "locale": "en-US",
   "geo": "US",
   "verticals": ["crm", "smb_software"],
@@ -47,6 +57,10 @@ Normalized request that an Operator sends to subscribed Brand Agents when openin
   },
   "allowed_formats": ["weave", "citation", "product_card"],
   "timestamp": "2025-11-14T18:22:00Z",
+  "latency_budget_ms": 500,
+  "user_id": "user_hash_abc123",
+  "conversation_id": "conv_xyz789",
+  "device_type": "desktop",
   "auth": { "nonce": "nonce_123", "sig": "sig_hmac_123abc" },
   "metadata": {
     "admesh": { "operator_relevance_score": 0.87 }
