@@ -26,7 +26,7 @@ Normalized request that an Operator sends to subscribed Brand Agents when openin
 | `intent.decision_phase` | enum | Funnel stage: `research`, `compare`, `decide`, `act` |
 | `intent.context_summary` | string | Operator generated summary |
 | `intent.turn_index` | integer | Conversation turn index |
-| `extensions` | object | Vendor-namespaced operator metadata (e.g., `extensions.admesh.*`) |
+| `metadata` | object | Vendor-namespaced operator metadata (e.g., `metadata.admesh.*`) |
 
 ## Example
 ```json
@@ -48,12 +48,12 @@ Normalized request that an Operator sends to subscribed Brand Agents when openin
   "allowed_formats": ["weave", "citation", "product_card"],
   "timestamp": "2025-11-14T18:22:00Z",
   "auth": { "nonce": "nonce_123", "sig": "sig_hmac_123abc" },
-  "extensions": {
+  "metadata": {
     "admesh": { "operator_relevance_score": 0.87 }
   }
 }
 ```
 
 ## Notes
-- `extensions` must be vendor-namespaced objects; operators should only write inside their namespace (e.g., `extensions.admesh`).
+- `metadata` must be vendor-namespaced objects; operators should only write inside their namespace (e.g., `metadata.admesh`).
 - `allowed_formats` lets operators constrain how creatives render for the requesting platform surface.
