@@ -22,7 +22,11 @@ AI platform request sent to an AIP operator to initiate an ad auction. This payl
 | `messages` | array | Short conversation history (last N turns) |
 | `platform_surface` | string | Platform-defined surface or view type (e.g., `ai_chat`) |
 | `cpx_floor` | number | Minimum CPX (USD) enforced by the platform |
-| `metadata` | object | Vendor-namespaced extensions (e.g., `metadata.openai.model`) |
+| `device_type` | string | Device type: `mobile`, `desktop`, `tablet` |
+| `conversation_id` | string | Conversation ID if independent from session_id |
+| `user_id` | string | Anonymous hashed user ID for pacing & personalization |
+| `latency_budget_ms` | integer | Optional latency budget from platform (milliseconds) |
+| `metadata` | object | Platform extensions, modes, structured session metadata |
 
 ## Authentication Object
 | Field | Type | Description |
@@ -46,7 +50,10 @@ AI platform request sent to an AIP operator to initiate an ad auction. This payl
   "geo": "US",
   "platform_surface": "ai_chat",
   "cpx_floor": 0.05,
+  "device_type": "desktop",
+  "user_id": "user_hash_abc123",
   "timestamp": "2025-11-14T18:22:00Z",
+  "latency_budget_ms": 500,
   "auth": { "nonce": "nonce_12345", "sig": "sig_d41d8cd98f00b204e9800998ecf8427e" },
   "metadata": {
     "openai": { "model": "gpt-4.3-mini", "conversation_mode": "assistant" }
