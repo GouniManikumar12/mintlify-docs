@@ -1,0 +1,519 @@
+---
+title: Complete Flow
+description: Complete flow from PlatformRequest through every schema and JSON structure
+---
+
+# Complete AIP Flow: Platform Request to Final Response
+
+This document maps the complete flow from when an AI platform sends a request through every schema and JSON structure in the AIP protocol.
+
+## Flow Overview
+
+```
+AI Platform → PlatformRequest → Operator → ContextRequest → Brand Agents
+                                                                    ↓
+                                                              Bid (with CreativeInput)
+                                                                    ↓
+AI Platform ← AuctionResult (with Creative) ← Operator ← Auction Selection
+                                                                    ↓
+                                                              Events (CPX/CPC/CPA)
+                                                                    ↓
+                                                              Ledger/Wallet Records
+```
+
+## 1. Platform Request (AI Platform → Operator)
+
+**Schema:** [`platform-request.json`](/schemas/platform-request)
+
+The AI platform initiates an ad auction by sending a `PlatformRequest` to the operator.
+
+### Key Fields:
+- `request_id`: Unique identifier for this auction request
+- `session_id`: Conversation or interaction session ID
+- `platform_id`: Identifier of the AI platform
+- `query_text`: User's raw query text
+- `locale`: User locale (BCP 47 format, e.g., "en-US")
+- `geo`: User country code (ISO 3166-1 alpha-2, e.g., "US")
+- `cpx_floor`: Minimum CPX (USD) required by the platform
+- `auth`: Authentication with nonce and signature
+
+### Example:
+```json
+{
+  "request_id": "req_92fA1",
+  "session_id": "sess_001",
+  "platform_id": "openai_chat",
+  "model": "gpt-4.3-mini",
+  "query_text": "best CRM for small teams",
+  "locale": "en-US",
+  "geo": "US",
+  "platform_surface": "ai_chat",
+  "cpx_floor": 0.05,
+  "device_type": "desktop",
+  "user_id": "user_hash_abc123",
+  "timestamp": "2025-11-14T18:22:00Z",
+  "latency_budget_ms": 500,
+  "auth": {
+    "nonce": "nonce_12345",
+    "sig": "sig_d41d8cd98f00b204e9800998ecf8427e"
+  }
+}
+```
+
+---
+
+## 2. Context Request (Operator → Brand Agents)
+
+**Schema:** [`context-request.json`](/schemas/context-request)
+
+The operator normalizes the platform request and enriches it with intent analysis, then sends a `ContextRequest` to brand agents.
+
+### Key Fields:
+- `context_id`: Unique ID for this auction request (maps to `request_id`)
+- `operator_id`: Identifier of the operator
+- `query_text`: Normalized query text
+- `intent`: Operator-generated semantic understanding
+  - `type`: "informational" | "commercial" | "transactional"
+  - `decision_phase`: "research" | "compare" | "decide" | "act"
+  - `context_summary`: Short summary of conversation context
+- `verticals`: Normalized topical verticals (e.g., ["crm", "smb_software"])
+- `allowed_formats`: Creative formats allowed (["weave", "tail", "product_card"])
+
+### Example:
+```json
+{
+  "context_id": "ctx_92fA1",
+  "session_id": "sess_001",
+  "operator_id": "admesh_operator",
+  "platform_id": "openai_chat",
+  "query_text": "best CRM for small teams",
+  "locale": "en-US",
+  "geo": "US",
+  "verticals": ["crm", "smb_software"],
+  "intent": {
+    "type": "commercial",
+    "decision_phase": "compare",
+    "context_summary": "User is evaluating CRM tools and narrowing down options."
+  },
+  "allowed_formats": ["weave", "tail", "product_card"],
+  "timestamp": "2025-11-14T18:22:00Z",
+  "auth": {
+    "nonce": "nonce_123",
+    "sig": "sig_hmac_123abc"
+  }
+}
+```
+
+---
+
+## 3. Bid (Brand Agents → Operator)
+
+**Schema:** [`bid.json`](/schemas/bid)
+
+Brand agents evaluate the context request and submit bids containing pricing and creative input.
+
+### Key Fields:
+- `bid_id`: Unique identifier for this bid
+- `brand_agent_id`: Identifier of the brand agent
+- `context_id`: ID of the ContextRequest being bid on
+- `wallet_id`: Wallet to debit if the bid wins
+- `pricing`: Pricing vector
+  - `cpx`: Price per exposure (USD, required)
+  - `cpc`: Price per click (USD, optional)
+  - `cpa`: Price per conversion (USD, optional)
+  - `preferred_pricing_model`: Preferred billing model
+- `offer.creative_input`: Unified creative input structure (see [CreativeInput](/schemas/creative-input))
+- `auth`: Nonce and signature for replay protection
+
+### Example:
+```json
+{
+  "bid_id": "bid_7823",
+  "brand_agent_id": "brand_agent_123",
+  "context_id": "ctx_92f",
+  "wallet_id": "wallet_890",
+  "pricing": {
+    "cpx": "0.05",
+    "cpc": "0.45",
+    "cpa": "10.00",
+    "currency": "USD",
+    "preferred_pricing_model": "CPA"
+  },
+  "offer": {
+    "creative_input": {
+      "brand_name": "Nimbus",
+      "product_name": "Nimbus CRM Pro",
+      "short_description": "CRM built for growing teams, with AI-assisted workflows.",
+      "long_description": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management.",
+      "value_props": [
+        "Automated pipeline insights",
+        "Collaborative forecasting"
+      ],
+      "context_snippet": "For startups needing higher limits and automated expense workflows.",
+      "cta_label": "Start Free Trial",
+      "cta_url": "https://nimbus.example.com/signup",
+      "assets": {
+        "logo_url": "https://cdn.example.com/nimbus/logo.png",
+        "image_urls": ["https://cdn.example.com/nimbus/crm.png"],
+        "resource_urls": ["https://nimbus.example.com/signup"]
+      }
+    }
+  },
+  "timestamp": "2025-11-11T18:00:01Z",
+  "auth": {
+    "nonce": "nonce_456",
+    "signature": "sig_789"
+  }
+}
+```
+
+---
+
+## 4. Creative Input (Part of Bid)
+
+**Schema:** [`creative-input.json`](/schemas/creative-input)
+
+The unified creative input structure that brand agents generate. Contains all fields needed for any ad format.
+
+### Key Fields:
+- `brand_name`: Brand or advertiser name
+- `product_name`: Product or offer name
+- `short_description`: 1-2 sentence summary (max 200 chars)
+- `long_description`: 2-4 sentence expanded description (max 500 chars)
+- `value_props`: Short value propositions or bullet points
+- `context_snippet`: 60-100 character contextual hint for weave format
+- `cta_label`: Call-to-action label
+- `cta_url`: Call-to-action URL
+- `assets`: Creative assets (logo, images, resource URLs)
+
+---
+
+## 5. Auction Result (Operator → AI Platform)
+
+**Schema:** [`auction-result.json`](/schemas/auction-result)
+
+The operator selects the winning bid, generates format-specific creative, and returns the result to the AI platform.
+
+### Key Fields:
+- `auction_id`: Unique identifier for this auction
+- `serve_token`: Token used to track downstream events
+- `winner`: Winning bid info
+  - `brand_agent_id`: Winning Brand Agent
+  - `preferred_unit`: Requested billing unit (CPX, CPC, or CPA)
+  - `reserved_amount_cents`: Amount placed on hold at auction time
+- `render`: Format-specific creative content (see [Creative](/schemas/creative))
+- `ttl_ms`: Time-to-live in milliseconds (1000-300000)
+
+### Example:
+```json
+{
+  "auction_id": "auc_981",
+  "serve_token": "stk_abcxyz123",
+  "winner": {
+    "brand_agent_id": "ba_451",
+    "preferred_unit": "CPA",
+    "reserved_amount_cents": 500
+  },
+  "render": {
+    "format": "weave",
+    "weave_content": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
+  },
+  "ttl_ms": 60000
+}
+```
+
+---
+
+## 6. Creative (Part of Auction Result)
+
+**Schema:** [`creative.json`](/schemas/creative)
+
+Format-specific creative content generated by the operator from CreativeInput. Supports three formats: weave, tail, and product_card.
+
+### Format 1: Weave
+Short, inline, contextual text to insert into assistant response.
+
+```json
+{
+  "format": "weave",
+  "weave_content": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
+}
+```
+
+### Format 2: Tail
+Paragraph-level block ad to show after organic response.
+
+```json
+{
+  "format": "tail",
+  "tail_content": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management.\n\nStart Free Trial: https://admesh.click/stk_abcxyz123"
+}
+```
+
+### Format 3: Product Card
+Structured card data with title, description, value props, and assets.
+
+```json
+{
+  "format": "product_card",
+  "product_card": {
+    "title": "Nimbus CRM Pro",
+    "subtitle": "Nimbus",
+    "description": "CRM built for growing teams, with AI-assisted workflows.",
+    "value_props": [
+      "Automated pipeline insights",
+      "Collaborative forecasting"
+    ],
+    "assets": {
+      "logo_url": "https://cdn.example.com/nimbus/logo.png",
+      "primary_image_url": "https://cdn.example.com/nimbus/crm.png"
+    },
+    "admesh_url": "https://admesh.click/stk_abcxyz123"
+  }
+}
+```
+
+---
+
+## 7. Events (Platform → Operator)
+
+After the ad is served, the platform sends events to track user engagement.
+
+### 7.1 CPX Exposure Event
+
+**Schema:** [`event-cpx`](/schemas/event-cpx)
+
+Sent when the user sees the ad.
+
+```json
+{
+  "event_id": "evt_cpx_001",
+  "serve_token": "stk_abcxyz123",
+  "event_type": "cpx_exposure",
+  "timestamp": "2025-11-14T18:22:05Z",
+  "platform_id": "openai_chat",
+  "session_id": "sess_001",
+  "user_id": "user_hash_abc123",
+  "geo": "US",
+  "auth": {
+    "nonce": "nonce_exposure_123",
+    "sig": "sig_exposure_456"
+  }
+}
+```
+
+### 7.2 CPC Click Event
+
+**Schema:** [`event-cpc`](/schemas/event-cpc)
+
+Sent when the user clicks the ad.
+
+```json
+{
+  "event_id": "evt_cpc_001",
+  "serve_token": "stk_abcxyz123",
+  "event_type": "cpc_click",
+  "timestamp": "2025-11-14T18:22:10Z",
+  "platform_id": "openai_chat",
+  "session_id": "sess_001",
+  "click_url": "https://admesh.click/stk_abcxyz123",
+  "auth": {
+    "nonce": "nonce_click_123",
+    "sig": "sig_click_456"
+  }
+}
+```
+
+### 7.3 CPA Conversion Event
+
+**Schema:** [`event-cpa`](/schemas/event-cpa)
+
+Sent when the user completes a conversion action (e.g., signup, purchase).
+
+```json
+{
+  "event_id": "evt_cpa_001",
+  "serve_token": "stk_abcxyz123",
+  "event_type": "cpa_conversion",
+  "timestamp": "2025-11-14T18:25:00Z",
+  "platform_id": "openai_chat",
+  "session_id": "sess_001",
+  "conversion_type": "signup",
+  "conversion_value_cents": 0,
+  "conversion_window_hours": 168,
+  "auth": {
+    "nonce": "nonce_conversion_123",
+    "sig": "sig_conversion_456"
+  }
+}
+```
+
+---
+
+## 8. Ledger Record
+
+**Schema:** [`ledger-record`](/schemas/ledger-record)
+
+Records all financial transactions for billing and reconciliation.
+
+```json
+{
+  "ledger_id": "ledger_001",
+  "timestamp": "2025-11-14T18:22:05Z",
+  "transaction_type": "debit",
+  "amount_cents": 5,
+  "currency": "USD",
+  "entity_type": "brand_agent",
+  "entity_id": "brand_agent_123",
+  "wallet_id": "wallet_890",
+  "context_id": "ctx_92f",
+  "bid_id": "bid_7823",
+  "serve_token": "stk_abcxyz123",
+  "event_type": "cpx_exposure",
+  "event_id": "evt_cpx_001",
+  "description": "CPX exposure charge for auction auc_981"
+}
+```
+
+---
+
+## 9. Wallet Record
+
+**Schema:** [`wallet-record`](/schemas/wallet-record)
+
+Tracks wallet balances and transactions for brand agents.
+
+```json
+{
+  "wallet_id": "wallet_890",
+  "brand_agent_id": "brand_agent_123",
+  "balance_cents": 995,
+  "currency": "USD",
+  "last_transaction_at": "2025-11-14T18:22:05Z",
+  "last_transaction_id": "ledger_001",
+  "created_at": "2025-11-01T00:00:00Z",
+  "updated_at": "2025-11-14T18:22:05Z"
+}
+```
+
+---
+
+## Complete Flow Diagram
+
+```
+┌─────────────────┐
+│  AI Platform    │
+│  (OpenAI, etc.) │
+└────────┬────────┘
+         │
+         │ 1. PlatformRequest
+         │
+         ▼
+┌─────────────────┐
+│    Operator     │
+│  (AdMesh, etc.) │
+└────────┬────────┘
+         │
+         │ 2. ContextRequest
+         │
+         ▼
+┌─────────────────┐
+│  Brand Agents   │
+│  (Nimbus, etc.) │
+└────────┬────────┘
+         │
+         │ 3. Bid (with CreativeInput)
+         │
+         ▼
+┌─────────────────┐
+│    Operator     │
+│  (Selects winner│
+│   & generates   │
+│    creative)    │
+└────────┬────────┘
+         │
+         │ 4. AuctionResult (with Creative)
+         │
+         ▼
+┌─────────────────┐
+│  AI Platform    │
+│  (Displays ad)  │
+└────────┬────────┘
+         │
+         │ 5. Events
+         │    (CPX → CPC → CPA)
+         │
+         ▼
+┌─────────────────┐
+│    Operator      │
+│  (Processes     │
+│   events &      │
+│   updates       │
+│   ledger/wallet)│
+└─────────────────┘
+```
+
+---
+
+## Schema Relationships
+
+| Schema | Used In | Purpose |
+|--------|---------|---------|
+| `platform-request` | AI Platform → Operator | Initial auction request |
+| `context-request` | Operator → Brand Agents | Normalized request with intent |
+| `creative-input` | Part of `bid` | Unified creative structure |
+| `bid` | Brand Agents → Operator | Bid submission with pricing |
+| `creative` | Part of `auction-result` | Format-specific creative |
+| `auction-result` | Operator → AI Platform | Winning bid response |
+| `event-cpx` | AI Platform → Operator | Exposure tracking |
+| `event-cpc` | AI Platform → Operator | Click tracking |
+| `event-cpa` | AI Platform → Operator | Conversion tracking |
+| `ledger-record` | Operator internal | Financial transactions |
+| `wallet-record` | Operator internal | Wallet balance tracking |
+
+---
+
+## Key Identifiers Flow
+
+```
+request_id (PlatformRequest)
+    ↓
+context_id (ContextRequest) ← maps to request_id
+    ↓
+bid_id (Bid) ← references context_id
+    ↓
+auction_id (AuctionResult) ← references context_id
+    ↓
+serve_token (AuctionResult) ← used in all events
+    ↓
+event_id (Events) ← references serve_token
+    ↓
+ledger_id (LedgerRecord) ← references event_id, bid_id, context_id
+```
+
+---
+
+## Common Patterns
+
+### Authentication
+All requests include an `auth` object with:
+- `nonce`: One-time nonce for replay protection
+- `sig` or `signature`: HMAC signature of the request
+
+### Timestamps
+All timestamps use ISO 8601 / RFC 3339 format:
+- Format: `YYYY-MM-DDTHH:mm:ssZ`
+- Example: `2025-11-14T18:22:00Z`
+
+### Money/Currency
+- Prices in `pricing` object: Decimal strings (e.g., `"0.05"`)
+- Amounts in events/ledger: Integer cents (e.g., `5` for $0.05)
+- Currency: ISO 4217 code (e.g., `"USD"`)
+
+### IDs
+- Platform-generated: `req_*`, `sess_*`, `user_*`
+- Operator-generated: `ctx_*`, `auc_*`, `stk_*`
+- Brand Agent-generated: `bid_*`
+- Event-generated: `evt_*`
+- System-generated: `ledger_*`, `wallet_*`
+

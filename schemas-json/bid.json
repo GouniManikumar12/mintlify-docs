@@ -159,6 +159,12 @@
     "metadata": {
       "$ref": "./common.json#/definitions/extensionNamespace",
       "description": "Optional vendor-namespaced metadata"
+    },
+    "processing_latency_ms": {
+      "type": "integer",
+      "description": "Round-trip latency from auction request receipt to bid submission (milliseconds). Used by operator to track brand agent response times.",
+      "minimum": 0,
+      "example": 42
     }
   },
   "examples": [
@@ -187,7 +193,8 @@
       "auth": {
         "nonce": "nonce_456",
         "signature": "sig_789"
-      }
+      },
+      "processing_latency_ms": 42
     }
   ],
   "$id": "https://aip.org/schemas/bid.json"

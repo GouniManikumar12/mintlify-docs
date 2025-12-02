@@ -1,0 +1,94 @@
+# Creative Schema
+
+## Overview
+Format-specific creative content returned to AI platforms. The operator generates this from `CreativeInput` based on the platform's allowed formats and the brand agent's preferred format.
+
+## Required Fields
+| Field | Type | Description |
+|-------|------|-------------|
+| `format` | string | Ad format type (enum: "weave", "tail", "product_card") |
+
+## Format-Specific Fields
+
+### Weave Format
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `weave_content` | string | Yes | Short, inline, contextual text to insert into assistant response. Format: `[Ad] {context_snippet} {short_description} Learn more: {url}` |
+
+### Tail Format
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tail_content` | string | Yes | Paragraph-level block ad to show after organic response. Format: `{long_description}\n\n{cta_label}: {url}` |
+
+### Product Card Format
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `product_card` | object | Yes | Structured card data with title, description, value props, and assets |
+
+## Product Card Object
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | Yes | Product title |
+| `admesh_url` | URI | Yes | Tracking URL for clicks with serve token |
+| `subtitle` | string | No | Brand name or subtitle |
+| `description` | string | No | Product description |
+| `value_props` | string[] | No | Value propositions (bullet points), limited to 5 |
+| `assets` | object | No | Product card assets |
+
+### Product Card Assets Object
+| Field | Type | Description |
+|-------|------|-------------|
+| `logo_url` | URI | Product or brand logo URL |
+| `primary_image_url` | URI | Primary product image URL |
+| `image_urls` | URI[] | Additional image URLs, limited to 3 |
+
+## Examples
+
+### Weave Format
+```json
+{
+  "format": "weave",
+  "weave_content": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
+}
+```
+
+### Tail Format
+```json
+{
+  "format": "tail",
+  "tail_content": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management. It includes automated follow-ups, collaborative forecasting, and embedded AI copilots that help close deals faster.\n\nStart Free Trial: https://admesh.click/stk_abcxyz123"
+}
+```
+
+### Product Card Format
+```json
+{
+  "format": "product_card",
+  "product_card": {
+    "title": "Nimbus CRM Pro",
+    "subtitle": "Nimbus",
+    "description": "CRM built for growing teams, with AI-assisted workflows.",
+    "value_props": [
+      "Automated pipeline insights",
+      "Collaborative forecasting",
+      "AI-powered deal recommendations"
+    ],
+    "assets": {
+      "logo_url": "https://cdn.example.com/nimbus/logo.png",
+      "primary_image_url": "https://cdn.example.com/nimbus/crm.png",
+      "image_urls": ["https://cdn.example.com/nimbus/crm.png"]
+    },
+    "admesh_url": "https://admesh.click/stk_abcxyz123"
+  }
+}
+```
+
+## Validation Rules
+- `format` must be one of: "weave", "tail", "product_card"
+- For `weave` format: `weave_content` is required
+- For `tail` format: `tail_content` is required
+- For `product_card` format: `product_card` object with `title` and `admesh_url` is required
+- `value_props` in product_card is limited to 5 items
+- `image_urls` in product_card assets is limited to 3 items
+- All URLs must be valid URIs
+

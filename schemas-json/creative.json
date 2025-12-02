@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Creative",
+  "description": "Format-specific creative content returned to AI platforms. The operator generates this from CreativeInput based on the platform's allowed formats and the brand agent's preferred format.",
+  "type": "object",
+  "required": ["format"],
+  "properties": {
+    "format": {
+      "type": "string",
+      "enum": ["weave", "tail", "product_card"],
+      "description": "Ad format type",
+      "example": "weave"
+    },
+    "weave_content": {
+      "type": "string",
+      "description": "Weave format: short, inline, contextual text to insert into assistant response. Format: '[Ad] {context_snippet} {short_description} Learn more: {url}'",
+      "example": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
+    },
+    "tail_content": {
+      "type": "string",
+      "description": "Tail format: paragraph-level block ad to show after organic response. Format: '{long_description}\\n\\n{cta_label}: {url}'",
+      "example": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management. It includes automated follow-ups, collaborative forecasting, and embedded AI copilots that help close deals faster.\n\nStart Free Trial: https://admesh.click/stk_abcxyz123"
+    },
+    "product_card": {
+      "type": "object",
+      "description": "Product Card format: structured card data with title, description, value props, and assets",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Product title",
+          "example": "Nimbus CRM Pro"
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Brand name or subtitle",
+          "example": "Nimbus"
+        },
+        "description": {
+          "type": "string",
+          "description": "Product description",
+          "example": "CRM built for growing teams, with AI-assisted workflows."
+        },
+        "value_props": {
+          "type": "array",
+          "description": "Value propositions (bullet points), limited to 5",
+          "items": { "type": "string" },
+          "maxItems": 5,
+          "example": [
+            "Automated pipeline insights",
+            "Collaborative forecasting",
+            "AI-powered deal recommendations"
+          ]
+        },
+        "assets": {
+          "type": "object",
+          "description": "Product card assets",
+          "properties": {
+            "logo_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Product or brand logo URL",
+              "example": "https://cdn.example.com/nimbus/logo.png"
+            },
+            "primary_image_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Primary product image URL",
+              "example": "https://cdn.example.com/nimbus/crm.png"
+            },
+            "image_urls": {
+              "type": "array",
+              "description": "Additional image URLs, limited to 3",
+              "items": { "type": "string", "format": "uri" },
+              "maxItems": 3,
+              "example": ["https://cdn.example.com/nimbus/crm.png"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "admesh_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Tracking URL for clicks with serve token",
+          "example": "https://admesh.click/stk_abcxyz123"
+        }
+      },
+      "required": ["title", "admesh_url"],
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "format": { "const": "weave" }
+      },
+      "required": ["format", "weave_content"]
+    },
+    {
+      "properties": {
+        "format": { "const": "tail" }
+      },
+      "required": ["format", "tail_content"]
+    },
+    {
+      "properties": {
+        "format": { "const": "product_card" }
+      },
+      "required": ["format", "product_card"]
+    }
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "format": "weave",
+      "weave_content": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
+    },
+    {
+      "format": "tail",
+      "tail_content": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management. It includes automated follow-ups, collaborative forecasting, and embedded AI copilots that help close deals faster.\n\nStart Free Trial: https://admesh.click/stk_abcxyz123"
+    },
+    {
+      "format": "product_card",
+      "product_card": {
+        "title": "Nimbus CRM Pro",
+        "subtitle": "Nimbus",
+        "description": "CRM built for growing teams, with AI-assisted workflows.",
+        "value_props": [
+          "Automated pipeline insights",
+          "Collaborative forecasting",
+          "AI-powered deal recommendations"
+        ],
+        "assets": {
+          "logo_url": "https://cdn.example.com/nimbus/logo.png",
+          "primary_image_url": "https://cdn.example.com/nimbus/crm.png",
+          "image_urls": ["https://cdn.example.com/nimbus/crm.png"]
+        },
+        "admesh_url": "https://admesh.click/stk_abcxyz123"
+      }
+    }
+  ],
+  "$id": "https://aip.org/schemas/creative.json"
+}
+
