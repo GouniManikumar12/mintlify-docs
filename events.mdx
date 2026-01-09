@@ -31,11 +31,11 @@ This means:
 AIP defines three progressive event types — each building on the last.  
 Only **one unit** settles per `serve_token`.
 
-| Event Type | Abbreviation | Trigger | Billing Unit | Verified By |
-|-------------|--------------|----------|---------------|--------------|
-| **Exposure** | CPX | User sees an ad or recommendation | Cost per Exposure | Platform |
-| **Click** | CPC | User clicks or engages | Cost per Click | Platform + Ad Network |
-| **Conversion** | CPA | User completes a purchase or signup | Cost per Action | Brand Agent + Ad Network |
+| Event Type | Abbreviation | Trigger | Billing Unit | Verification Responsibility |
+|-------------|--------------|----------|---------------|---------------------------|
+| **Exposure** | CPX | User sees an ad or recommendation | Cost per Exposure | Operator (may use platform signals) |
+| **Click** | CPC | User clicks or engages | Cost per Click | Operator (may use platform and network signals) |
+| **Conversion** | CPA | User completes a purchase or signup | Cost per Action | Operator (may use brand agent and network signals) |
 
 Once a higher event (like CPA) is verified, lower-tier events (CPX or CPC) are not billed again.
 
@@ -70,11 +70,7 @@ All events share common required fields that link them back to the auction and e
 
 ### Event-Specific Fields
 
-Each event type has additional required and optional fields:
-
-**CPX (Exposure)** - Requires: `session_id`, `platform_id`, `brand_agent_id`, `wallet_id`, `pricing`
-**CPC (Click)** - Requires: `session_id`, `platform_id`, `brand_agent_id`, `wallet_id`, `pricing.unit`, `pricing.amount_cents`, `timestamp`
-**CPA (Conversion)** - Requires: `conversion_id`, `conversion_type`, `wallet_id`, `brand_agent_id`, `pricing.unit`, `pricing.amount_cents`, `timestamp`
+At the protocol level, events require `event_type`, `serve_token`, and `timestamp`. Each event type has additional required and optional fields that are implementation-specific.
 
 ### Example: CPX Exposure Event
 
@@ -97,23 +93,19 @@ Each event type has additional required and optional fields:
 
 The `serve_token` links each event back to the original auction and winning bid.
 
-For complete schemas, see:
-- [CPX Exposure Event Schema](/schemas/event-cpx)
-- [CPC Click Event Schema](/schemas/event-cpc)
-- [CPA Conversion Event Schema](/schemas/event-cpa)
-
 ---
 
 ## 6. Verification process
 
-| Stage | Who Verifies | What’s Checked |
-|--------|---------------|----------------|
-| **Exposure** | Platform | Display logs and visibility events |
-| **Click** | Platform + Ad Network | User interaction + timestamp |
-| **Conversion** | Brand Agent + Ad Network | Server-side callback or API confirmation |
+Operators define their own verification logic for each event type. Acceptable signal sources include:
 
-Every event is digitally signed and validated against the original `serve_token`.  
-Discrepancies automatically trigger reconciliation or rejection.
+| Event Type | Signal Sources (Informational) |
+|------------|-------------------------------|
+| **Exposure** | Platform display logs, visibility events, viewability metrics |
+| **Click** | Platform interaction logs, user click events, timestamp validation |
+| **Conversion** | Brand agent callbacks, server-side API confirmations, conversion tracking pixels |
+
+Every event is digitally signed and validated against the original `serve_token`. Operators implement their own verification and reconciliation logic to ensure event integrity.
 
 ---
 
@@ -128,9 +120,7 @@ Discrepancies automatically trigger reconciliation or rejection.
 
 ## 8. Payout implications
 
-- Platforms are paid for verified **CPX** and **CPC** events.  
-- Advertisers pay only for **CPC** or **CPA** events that pass verification.  
-- Ad Networks mediate settlement and ledger reconciliation at the end of each cycle.
+Operators determine settlement based on verified events according to the event ladder (CPA > CPC > CPX). Settlement terms, revenue sharing, and payout schedules are defined by each operator's policies and agreements with platforms and brand agents.
 
 ---
 

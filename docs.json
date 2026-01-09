@@ -1,5 +1,6 @@
 {
-  "theme": "quill",
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
   "name": "Agentic Intent Protocol (AIP)",
   "logo": {
     "light": "/logo-light.svg",
@@ -9,7 +10,23 @@
   "colors": {
     "primary": "#059669"
   },
-  "navigation": [
+  "topbarLinks": [
+    {
+      "name": "AIP Spec",
+      "url": "https://github.com/GouniManikumar12/aip-spec"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "AIP Spec",
+    "url": "https://github.com/GouniManikumar12/aip-spec"
+  },
+  "footerSocials": {
+    "github": "https://github.com/admesh",
+    "x": "https://x.com/admesh",
+    "linkedin": "https://www.linkedin.com/company/admesh"
+  },
+  "navigation": {
+    "groups": [
     {
       "group": "Welcome",
       "pages": [
@@ -29,19 +46,14 @@
       "group": "Protocol",
       "pages": [
         "protocol",
-        "complete-flow",
         "auction",
         "events",
         "state-machine",
         "wallets-and-payouts",
         "security",
-        "observability",
         "compliance",
-        "versioning",
-        "conformance",
         "glossary",
-        "extensions"
-
+        "end-to-end-flow"
       ]
     },
     {
@@ -52,25 +64,13 @@
       ]
     },
     {
-      "group": "Samples",
-      "pages": [
-        "samples/python"
-      ]
-    },
-    {
       "group": "Schemas",
       "pages": [
         "schemas/platform-request",
         "schemas/context-request",
-        "schemas/creative-input",
-        "schemas/creative",
         "schemas/bid",
-        "schemas/auction-result",
-        "schemas/event-cpx",
-        "schemas/event-cpc",
-        "schemas/event-cpa",
-        "schemas/ledger-record",
-        "schemas/wallet-record"      ]
+        "schemas/auction-result"
+      ]
     },
     {
       "group": "FAQ",
@@ -81,14 +81,6 @@
         "faq/compliance-and-audit"
       ]
     }
-  ],
-  "topbarCtaButton": {
-    "name": "AIP Spec",
-    "url": "https://github.com/GouniManikumar12/aip-spec"
-  },
-  "footerSocials": {
-    "github": "https://github.com/admesh",
-    "x": "https://x.com/admesh",
-    "linkedin": "https://www.linkedin.com/company/admesh"
+    ]
   }
 }

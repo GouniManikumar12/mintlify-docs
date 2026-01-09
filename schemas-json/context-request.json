@@ -1,212 +1,329 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "ContextRequest",
-  "description": "Normalized request sent from an AIP operator to Brand Agents to request bids.",
+  "description": "Normalized request sent from an AIP operator to Brand Agents to request bids. Uses UCP-like format with enriched context.",
   "type": "object",
   "required": [
-    "context_id",
-    "session_id",
-    "operator_id",
-    "platform_id",
-    "query_text",
-    "locale",
-    "geo",
+    "spec_version",
+    "message_id",
     "timestamp",
+    "producer",
+    "session_id",
+    "turn_index",
+    "context_id",
+    "language",
+    "publisher",
+    "placement",
+    "device",
+    "geography",
     "intent",
-    "allowed_formats",
-    "auth"
+    "verticals"
   ],
   "properties": {
-    "context_id": {
+    "spec_version": {
       "type": "string",
-      "description": "Unique ID for this auction request",
-      "example": "ctx_92fA1"
+      "description": "AIP specification version",
+      "default": "aip/1.0",
+      "example": "aip/1.0"
+    },
+    "message_id": {
+      "type": "string",
+      "description": "Unique identifier for this context request (maps to PlatformRequest message_id)",
+      "example": "req_92fA1"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp of the event",
+      "example": "2025-11-14T18:22:00Z"
+    },
+    "producer": {
+      "type": "object",
+      "description": "Producer information (from PlatformRequest)",
+      "required": ["agent_id", "agent_role", "software", "software_version"],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "description": "Identifier of the AI platform",
+          "example": "openai_chat"
+        },
+        "agent_role": {
+          "type": "string",
+          "description": "Role of the agent, typically 'publisher'",
+          "example": "publisher"
+        },
+        "software": {
+          "type": "string",
+          "description": "Software name",
+          "example": "chatgpt"
+        },
+        "software_version": {
+          "type": "string",
+          "description": "Software version or model identifier",
+          "example": "4.3-mini"
+        }
+      },
+      "additionalProperties": false
     },
     "session_id": {
       "type": "string",
-      "description": "Conversation/session identifier",
+      "description": "Conversation or interaction session ID",
       "example": "sess_001"
     },
-    "operator_id": {
-      "type": "string",
-      "description": "Identifier of the operator sending this request",
-      "example": "admesh_operator"
+    "turn_index": {
+      "type": "integer",
+      "description": "Turn index in the conversation",
+      "minimum": 0,
+      "example": 3
     },
-    "platform_id": {
-      "type": "string",
-      "description": "Identifier of the source AI platform",
-      "example": "openai_chat"
-    },
-    "platform_surface": {
-      "type": "string",
-      "description": "Platform surface type: chat, voice, browser, extension, ui panel, etc.",
-      "example": "ai_chat"
-    },
-    "model": {
-      "type": "string",
-      "description": "AI model provided by platform",
-      "example": "gpt-4.3-mini"
-    },
-    "query_text": {
-      "type": "string",
-      "description": "User's normalized query text",
-      "example": "best CRM for small teams"
-    },
-    "messages": {
-      "type": "array",
-      "description": "Conversation history",
-      "items": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": ["user", "assistant", "system"]
-          },
-          "content": {
-            "type": "string"
-          }
-        }
-      },
-      "default": []
-    },
-    "locale": {
-      "type": "string",
-      "pattern": "^[a-z]{2}-[A-Z]{2}$",
-      "description": "User locale in BCP 47 format",
-      "example": "en-US"
-    },
-    "geo": {
-      "type": "string",
-      "pattern": "^[A-Z]{2}$",
-      "description": "User country code",
-      "example": "US"
-    },
-    "verticals": {
-      "type": "array",
-      "description": "Normalized topical verticals identified by the operator",
-      "items": { "type": "string" },
-      "example": ["crm", "smb_software"]
-    },
-    "intent": {
-      "type": "object",
-      "description": "Operator-generated semantic understanding of the user's intent",
-      "required": ["type"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["informational", "commercial", "transactional"],
-          "description": "High-level intent classification",
-          "example": "commercial"
-        },
-        "decision_phase": {
-          "type": "string",
-          "enum": ["research", "compare", "decide", "act"],
-          "description": "Commercial funnel decision phase",
-          "example": "compare"
-        },
-        "context_summary": {
-          "type": "string",
-          "description": "Short operator-generated summary of the relevant conversation context",
-          "example": "User is evaluating CRM tools and narrowing down options."
-        },
-        "turn_index": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "How many turns into the session the user is",
-          "example": 3
-        }
-      }
+    "latency_budget_ms": {
+      "type": "integer",
+      "description": "End-to-end latency budget (ms) for the same session_id + message_id within a period to complete the action and return the response",
+      "minimum": 0,
+      "example": 500
     },
     "allowed_formats": {
       "type": "array",
       "description": "Creative formats allowed by the operator for rendering",
       "items": {
         "type": "string",
-        "enum": ["weave", "citation", "product_card"]
+        "enum": ["weave", "tail", "product_card", "bridge"]
       },
-      "example": ["weave", "citation", "product_card"]
+      "default": [],
+      "example": ["weave", "tail", "product_card"]
     },
-    "timestamp": {
+    "context_id": {
       "type": "string",
-      "format": "date-time",
-      "description": "Original event timestamp",
-      "example": "2025-11-14T18:22:00Z"
+      "description": "Unique identifier generated after transforming to ContextRequest",
+      "example": "ctx_92fA1"
     },
-    "latency_budget_ms": {
-      "type": "integer",
-      "description": "How long the platform will wait for an ad response (milliseconds)",
-      "example": 500
-    },
-    "user_id": {
+    "language": {
       "type": "string",
-      "description": "Anonymous hashed user ID for pacing & personalization",
-      "example": "user_hash_abc123"
+      "pattern": "^[a-z]{2}-[A-Z]{2}$",
+      "description": "User locale in BCP 47 format",
+      "example": "en-US"
     },
-    "conversation_id": {
+    "publisher": {
       "type": "string",
-      "description": "Conversation session from platform",
-      "example": "conv_abc123"
+      "description": "Publisher identifier (same as producer.agent_id)",
+      "example": "openai_chat"
     },
-    "device_type": {
-      "type": "string",
-      "description": "Device type: mobile, desktop, tablet",
-      "enum": ["mobile", "desktop", "tablet"],
-      "example": "desktop"
-    },
-    "auth": {
+    "placement": {
       "type": "object",
-      "required": ["nonce", "sig"],
+      "description": "Placement information",
+      "required": ["ad_unit"],
       "properties": {
-        "nonce": {
+        "ad_unit": {
           "type": "string",
-          "description": "One-time nonce for replay protection",
-          "example": "nonce_123"
-        },
-        "sig": {
-          "type": "string",
-          "description": "HMAC signature validating this request",
-          "example": "sig_hmac_123abc"
+          "description": "Platform surface type: 'conversation', 'chat', 'voice', etc.",
+          "example": "conversation"
         }
       },
-      "example": {
-        "nonce": "nonce_123",
-        "sig": "sig_hmac_123abc"
+      "additionalProperties": false
+    },
+    "device": {
+      "type": "object",
+      "description": "Device information",
+      "required": ["platform", "form_factor"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "description": "Device platform: 'web', 'mobile', etc.",
+          "example": "web"
+        },
+        "form_factor": {
+          "type": "string",
+          "description": "Device form factor: 'mobile', 'desktop', 'tablet'",
+          "enum": ["mobile", "desktop", "tablet"],
+          "example": "desktop"
+        }
+      },
+      "additionalProperties": false
+    },
+    "geography": {
+      "type": "object",
+      "description": "Geographic information",
+      "required": ["country"],
+      "properties": {
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$",
+          "description": "User country code (ISO 3166-1 alpha-2)",
+          "example": "US"
+        }
+      },
+      "additionalProperties": false
+    },
+    "intent": {
+      "type": "object",
+      "description": "Operator-generated semantic understanding of the user's intent",
+      "required": ["type", "decision_phase", "confidence", "summary"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "High-level intent classification",
+          "example": "commercial"
+        },
+        "decision_phase": {
+          "type": "string",
+          "description": "Commercial funnel decision phase",
+          "example": "compare"
+        },
+        "confidence": {
+          "type": "number",
+          "description": "Confidence score for intent classification",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "example": 0.87
+        },
+        "summary": {
+          "type": "string",
+          "description": "Short operator-generated summary of the relevant conversation context",
+          "example": "User is evaluating CRM tools and narrowing down options."
+        },
+        "operator_relevance_score": {
+          "type": "number",
+          "description": "Operator's relevance score for the query (0.0-1.0)",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.0,
+          "example": 0.87
+        },
+        "classification_reasoning": {
+          "type": "string",
+          "description": "LLM reasoning for intent classification",
+          "default": "",
+          "example": "User query indicates commercial intent with comparison phase based on keywords and context."
+        },
+        "intent_confidence": {
+          "type": "number",
+          "description": "Confidence score for intent classification (0.0-1.0)",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.0,
+          "example": 0.92
+        }
+      },
+      "additionalProperties": false
+    },
+    "verticals": {
+      "type": "array",
+      "description": "Normalized topical verticals identified by the operator",
+      "items": { "type": "string" },
+      "default": [],
+      "example": ["crm", "smb_software"]
+    },
+    "embeddings": {
+      "type": "array",
+      "description": "Optional embedding information for semantic search",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "dimension", "origin"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Embedding identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Embedding type"
+          },
+          "dimension": {
+            "type": "integer",
+            "description": "Embedding dimension"
+          },
+          "origin": {
+            "type": "object",
+            "description": "Origin information for the embedding"
+          }
+        }
       }
     },
-    "metadata": {
-      "$ref": "./common.json#/definitions/extensionNamespace",
-      "description": "Unified metadata containing platform and operator data: { platform: {...}, admesh: {...} }"
+    "consent": {
+      "type": "object",
+      "description": "Optional consent information",
+      "properties": {
+        "purposes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Consent purposes"
+        },
+        "permissible_uses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Permissible uses"
+        },
+        "ttl_seconds": {
+          "type": "integer",
+          "description": "Time to live in seconds"
+        },
+        "legal_basis": {
+          "type": "string",
+          "description": "Legal basis for consent"
+        }
+      }
+    },
+    "usage_constraints": {
+      "type": "object",
+      "description": "Optional usage constraints",
+      "properties": {
+        "disallowed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of disallowed uses"
+        }
+      }
+    },
+    "platform_type": {
+      "type": "string",
+      "description": "Platform type (e.g., 'chat', 'search', 'assistant', 'vibe_coding_platform'). Used by brand agents to determine preferred format (e.g., bridge format for vibe_coding_platform)",
+      "example": "chat"
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Additional extension metadata from PlatformRequest (non-AIP)",
+      "additionalProperties": true
     }
   },
   "examples": [
     {
-      "context_id": "ctx_92fA1",
+      "spec_version": "aip/1.0",
+      "message_id": "req_92fA1",
+      "timestamp": "2025-11-14T18:22:00Z",
+      "producer": {
+        "agent_id": "openai_chat",
+        "agent_role": "publisher",
+        "software": "chatgpt",
+        "software_version": "4.3-mini"
+      },
       "session_id": "sess_001",
-      "operator_id": "admesh_operator",
-      "platform_id": "openai_chat",
-      "platform_surface": "ai_chat",
-      "model": "gpt-4.3-mini",
-      "query_text": "best CRM for small teams",
-      "messages": [],
-      "locale": "en-US",
-      "geo": "US",
-      "verticals": ["crm", "smb_software"],
+      "turn_index": 3,
+      "latency_budget_ms": 500,
+      "allowed_formats": ["weave", "tail", "product_card"],
+      "context_id": "ctx_92fA1",
+      "language": "en-US",
+      "publisher": "openai_chat",
+      "placement": {
+        "ad_unit": "conversation"
+      },
+      "device": {
+        "platform": "web",
+        "form_factor": "desktop"
+      },
+      "geography": {
+        "country": "US"
+      },
       "intent": {
         "type": "commercial",
         "decision_phase": "compare",
-        "context_summary": "User is evaluating CRM tools and narrowing down options.",
-        "turn_index": 3
+        "confidence": 0.87,
+        "summary": "User is evaluating CRM tools and narrowing down options.",
+        "operator_relevance_score": 0.87,
+        "classification_reasoning": "User query indicates commercial intent with comparison phase based on keywords and context.",
+        "intent_confidence": 0.92
       },
-      "allowed_formats": ["weave", "citation", "product_card"],
-      "timestamp": "2025-11-14T18:22:00Z",
-      "latency_budget_ms": 500,
-      "user_id": "user_hash_abc123",
-      "conversation_id": "conv_xyz789",
-      "device_type": "desktop",
-      "auth": { "nonce": "nonce_123", "sig": "sig_hmac_123abc" },
-      "metadata": {
-        "admesh": { "operator_relevance_score": 0.87 }
-      }
+      "verticals": ["crm", "smb_software"],
+      "platform_type": "chat"
     }
   ],
   "$id": "https://aip.org/schemas/context-request.json"

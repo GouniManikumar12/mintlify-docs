@@ -1,28 +1,30 @@
 ---
 title: State Machine
-description: Understand how AIP tracks the lifecycle of every ad from exposure to conversion using a deterministic state model.
+description: Understand how AIP defines allowed state transitions and invariants for ad lifecycle tracking.
 ---
 
-The **State Machine** defines how an ad moves through verified stages of engagement — exposure, click, and conversion.  
-It ensures each `serve_token` transitions in one direction only, making billing and verification deterministic.
+The **State Machine** defines protocol-level constraints on how a `serve_token` may transition through states — exposure, click, and conversion.  
+It ensures each `serve_token` transitions in one direction only, making billing and verification deterministic. Operators implement their own state handling logic as long as these protocol guarantees are met.
 
 ---
 
 ## 1. TL;DR
 
-> The AIP state machine controls how an ad progresses from exposure to conversion, ensuring no event is double-counted or reversed.
+> The AIP state machine defines allowed state transitions and invariants for ad lifecycle tracking, ensuring no event is double-counted or reversed. Operators implement their own detection, verification, and enforcement logic.
 
 ---
 
 ## 2. Why it matters
 
 In legacy ad systems, duplicate impressions, repeated clicks, or delayed conversions often lead to inaccurate billing.  
-AIP eliminates this by applying **finite state logic** — each serve token can only exist in one state at a time, with defined transitions.
+AIP eliminates this by defining **protocol-level state constraints** — each serve token can only exist in one state at a time, with defined allowed transitions.
 
 This makes every transaction:
 - Verifiable  
 - Reproducible  
-- Auditable  
+- Auditable
+
+Operators implement their own state management systems as long as they respect these protocol constraints.  
 
 ---
 
@@ -46,58 +48,62 @@ stateDiagram-v2
 ```
 
 Each state represents a **billing condition**.
-Once a token moves forward, it cannot regress (e.g., a converted ad cannot revert to “clicked”).
+The protocol guarantees that once a token moves forward, it cannot regress (e.g., a converted ad cannot revert to "clicked"). Operators implement their own state detection and transition logic to enforce these constraints.
 
 ---
 
 ## 4. State transitions
 
-| From | To | Trigger | Verified By |
-|------|----|----------|--------------|
-| PENDING | EXPOSED | `cpx_exposure` event | Platform |
-| EXPOSED | CLICKED | `cpc_click` event | Platform + Ad Network |
-| CLICKED | CONVERTED | `cpa_conversion` event | Brand Agent + Ad Network |
-| EXPOSED | FINALIZED | Timeout (no click) | Ad Network |
-| CLICKED | FINALIZED | Timeout (no conversion) | Ad Network |
-| CONVERTED | FINALIZED | Ledger processed | Ad Network |
-| Any State | REFUNDED | Refund request | Ad Network |
+The protocol defines allowed transitions and constraints. Operators implement their own detection, verification, and enforcement logic.
 
-AIP defines strict expiration windows:
-- **Exposure → Click:** 30 minutes
-- **Click → Conversion:** 24 hours
-- **Settlement:** Once per billing cycle
+| From | To | Trigger | Verification Responsibility |
+|------|----|----------|---------------------------|
+| PENDING | EXPOSED | `cpx_exposure` event | Operator (may use platform signals) |
+| EXPOSED | CLICKED | `cpc_click` event | Operator (may use platform and network signals) |
+| CLICKED | CONVERTED | `cpa_conversion` event | Operator (may use brand agent and network signals) |
+| EXPOSED | FINALIZED | Operator-defined expiration or attribution window | Operator |
+| CLICKED | FINALIZED | Operator-defined expiration or attribution window | Operator |
+| CONVERTED | FINALIZED | Operator-defined settlement processing | Operator |
+| Any State | REFUNDED | Operator-defined refund or reversal action | Operator |
+
+AIP does not mandate specific time windows. Operators define their own expiration and attribution windows for state transitions. The protocol only guarantees that:
+- Transitions are one-directional
+- No regression once a higher state is reached
+- At most one billable terminal state per `serve_token`
 
 ---
 
 ## 5. Example lifecycle
 
 1. Auction completes, `serve_token` generated → state = *PENDING*
-2. Platform logs an **exposure** → state = *EXPOSED*
-3. User clicks the ad → state = *CLICKED*
-4. User completes signup → state = *CONVERTED*
-5. At the end of the billing cycle → state = *FINALIZED*
+2. Operator verifies an **exposure** event → state = *EXPOSED*
+3. Operator verifies a **click** event → state = *CLICKED*
+4. Operator verifies a **conversion** event → state = *CONVERTED*
+5. Operator finalizes settlement → state = *FINALIZED*
 
-Each transition is timestamped and recorded in the ledger.
+Each transition is timestamped and recorded according to operator-defined ledger policies.
 
 ---
 
 ## 6. How it prevents double billing
 
-Because every event must follow a defined transition:
-- Two exposures for the same token are ignored.  
-- A click without prior exposure is invalid.  
-- A conversion without a verified click is rejected.  
+The protocol constrains allowed transitions:
+- Two exposures for the same token cannot both transition the state forward.  
+- A click without prior exposure state is not a valid transition.  
+- A conversion without a verified click state is not a valid transition.  
 
-This guarantees **billing integrity** and **logical consistency** across all participants.
+Operators implement their own logic to detect and enforce these constraints, ensuring **billing integrity** and **logical consistency**.
 
 ---
 
 ## 7. Ledger integration
 
-Every final state is logged to the **Ad Network ledger**, ensuring:
+Operators maintain ledgers that record state transitions and final states, ensuring:
 - Immutable event chains
 - Deterministic reconciliation
 - Verified payout records
+
+The protocol guarantees that finalized states are immutable. Operators define their own ledger structure and settlement policies.
 
 ```json
 {
@@ -120,19 +126,20 @@ Every final state is logged to the **Ad Network ledger**, ensuring:
 }
 ```
 
-For complete ledger schema, see: [Ledger Record Schema](/schemas/ledger-record)
-
 ---
 
 ## 8. Guarantees
 
+The protocol guarantees:
 - State transitions are one-directional and irreversible.  
-- Each transition is signed by at least one verifier.  
-- Expired states auto-close for settlement.  
-- Finalized ledgers are immutable and audit-safe.
+- No regression once a higher state is reached.  
+- At most one billable terminal state per `serve_token`.  
+- Finalized states are immutable and audit-safe.
+
+Operators implement their own logic for detecting transitions, verifying events, handling expiration windows, and processing refunds or reversals.
 
 ---
 
 ## Summary
 
-> The AIP state machine enforces a single source of truth for every ad — preventing duplicates, enforcing fairness, and keeping the ecosystem financially clean.
+> The AIP state machine defines protocol-level constraints that ensure a single source of truth for every ad — preventing duplicates, enforcing fairness, and keeping the ecosystem financially clean. Operators implement their own state management systems to enforce these constraints.

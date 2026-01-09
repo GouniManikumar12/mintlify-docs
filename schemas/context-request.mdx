@@ -1,73 +1,154 @@
 # Context Request Schema
 
 ## Overview
-Normalized request that an Operator sends to subscribed Brand Agents when opening an auction. It includes the enriched intent, allowed creative formats, and an operator-signed auth block.
+Normalized request that an Operator sends to subscribed Brand Agents when opening an auction. Uses UCP-like format with enriched context, intent classification, and operator-generated metadata. It includes the enriched intent, allowed creative formats, and timing information.
+
+## UCP-like Structure
+
+The ContextRequest follows a UCP-like structure with the following top-level fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `spec_version` | string | AIP specification version (default: "aip/1.0") |
+| `message_id` | string | Unique identifier for this context request (maps to PlatformRequest message_id) |
+| `timestamp` | string | ISO 8601 timestamp of the event |
+| `producer` | object | Producer information (from PlatformRequest) |
+| `session_id` | string | Conversation or interaction session ID |
+| `turn_index` | integer | Turn index in the conversation |
+| `latency_budget_ms` | integer | End-to-end latency budget in milliseconds (optional) |
+| `allowed_formats` | array | Creative formats allowed by the operator |
+| `context_id` | string | Unique identifier generated after transforming to ContextRequest |
+| `language` | string | User locale in BCP 47 format |
+| `publisher` | string | Publisher identifier (same as producer.agent_id) |
+| `placement` | object | Placement information |
+| `device` | object | Device information |
+| `geography` | object | Geographic information |
+| `intent` | object | Operator-generated semantic understanding |
+| `verticals` | array | Normalized topical verticals |
+| `embeddings` | array | Optional embedding information (optional) |
+| `consent` | object | Optional consent information (optional) |
+| `usage_constraints` | object | Optional usage constraints (optional) |
+| `platform_type` | string | Platform type for format determination (optional) |
+| `extensions` | object | Additional extension metadata (optional) |
+
+## Producer Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `agent_id` | string | Identifier of the AI platform |
+| `agent_role` | string | Role of the agent, typically "publisher" |
+| `software` | string | Software name |
+| `software_version` | string | Software version or model identifier |
+
+## Placement Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ad_unit` | string | Platform surface type: "conversation", "chat", "voice", etc. |
+
+## Device Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `platform` | string | Device platform: "web", "mobile", etc. |
+| `form_factor` | string | Device form factor: "mobile", "desktop", "tablet" |
+
+## Geography Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `country` | string | User country code (ISO 3166-1 alpha-2) |
+
+## Intent Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | High-level intent classification |
+| `decision_phase` | string | Commercial funnel decision phase |
+| `confidence` | number | Confidence score for intent classification (0.0-1.0) |
+| `summary` | string | Short operator-generated summary of the relevant conversation context |
+| `operator_relevance_score` | number | Operator's relevance score for the query (0.0-1.0, optional) |
+| `classification_reasoning` | string | LLM reasoning for intent classification (optional) |
+| `intent_confidence` | number | Confidence score for intent classification (0.0-1.0, optional) |
 
 ## Required Fields
+
 | Field | Type | Description |
 |--------|------|-------------|
-| `context_id` | string | Unique ID for this auction request |
+| `spec_version` | string | AIP specification version |
+| `message_id` | string | Unique identifier for this context request |
+| `timestamp` | string | ISO 8601 timestamp |
+| `producer` | object | Producer information |
 | `session_id` | string | Conversation/session identifier |
-| `operator_id` | string | Identifier of the operator sending the request |
-| `platform_id` | string | Upstream AI platform identifier |
-| `query_text` | string | Operator-curated user query |
-| `locale` | string | Locale (BCP 47, e.g., `en-US`) |
-| `geo` | string | Country code (ISO 3166-1 alpha-2) |
-| `intent.type` | enum | Intent class: `informational`, `commercial`, `transactional` |
-| `allowed_formats` | array | Creative formats allowed: `weave`, `citation`, `product_card` |
-| `timestamp` | string | ISO 8601 timestamp created by the operator |
-| `auth.nonce` | string | Nonce for replay protection |
-| `auth.sig` | string | Operator signature authenticating the request |
+| `turn_index` | integer | Turn index in the conversation |
+| `context_id` | string | Unique ID for this auction request |
+| `language` | string | User locale in BCP 47 format |
+| `publisher` | string | Publisher identifier |
+| `placement` | object | Placement information |
+| `device` | object | Device information |
+| `geography` | object | Geographic information |
+| `intent` | object | Operator-generated semantic understanding |
+| `verticals` | array | Normalized topical verticals |
 
 ## Optional Fields
+
 | Field | Type | Description |
 |--------|------|-------------|
-| `platform_surface` | string | Platform surface type: chat, voice, browser, extension, ui panel |
-| `model` | string | AI model provided by platform (e.g., `gpt-4.3-mini`) |
-| `messages` | array | Conversation history (user + assistant turns) |
-| `verticals` | array | Normalized topical verticals, e.g., `["crm", "smb_software"]` |
-| `intent.decision_phase` | enum | Funnel stage: `research`, `compare`, `decide`, `act` |
-| `intent.context_summary` | string | Operator generated summary |
-| `intent.turn_index` | integer | Conversation turn index |
 | `latency_budget_ms` | integer | Platform latency budget in milliseconds |
-| `user_id` | string | Anonymous hashed user ID for pacing & personalization |
-| `conversation_id` | string | Conversation session from platform |
-| `device_type` | string | Device type: `mobile`, `desktop`, `tablet` |
-| `metadata` | object | Unified metadata with platform and operator data |
+| `allowed_formats` | array | Creative formats allowed: `weave`, `tail`, `product_card`, `bridge` |
+| `embeddings` | array | Optional embedding information for semantic search |
+| `consent` | object | Optional consent information |
+| `usage_constraints` | object | Optional usage constraints |
+| `platform_type` | string | Platform type (e.g., 'chat', 'search', 'assistant', 'vibe_coding_platform') |
+| `extensions` | object | Additional extension metadata from PlatformRequest (non-AIP) |
 
 ## Example
+
 ```json
 {
-  "context_id": "ctx_92fA1",
+  "spec_version": "aip/1.0",
+  "message_id": "req_92fA1",
+  "timestamp": "2025-11-14T18:22:00Z",
+  "producer": {
+    "agent_id": "openai_chat",
+    "agent_role": "publisher",
+    "software": "chatgpt",
+    "software_version": "4.3-mini"
+  },
   "session_id": "sess_001",
-  "operator_id": "admesh_operator",
-  "platform_id": "openai_chat",
-  "platform_surface": "ai_chat",
-  "model": "gpt-4.3-mini",
-  "query_text": "best CRM for small teams",
-  "messages": [],
-  "locale": "en-US",
-  "geo": "US",
-  "verticals": ["crm", "smb_software"],
+  "turn_index": 3,
+  "latency_budget_ms": 500,
+  "allowed_formats": ["weave", "tail", "product_card"],
+  "context_id": "ctx_92fA1",
+  "language": "en-US",
+  "publisher": "openai_chat",
+  "placement": {
+    "ad_unit": "conversation"
+  },
+  "device": {
+    "platform": "web",
+    "form_factor": "desktop"
+  },
+  "geography": {
+    "country": "US"
+  },
   "intent": {
     "type": "commercial",
     "decision_phase": "compare",
-    "context_summary": "User is evaluating CRM tools and narrowing down options.",
-    "turn_index": 3
+    "confidence": 0.87,
+    "summary": "User is evaluating CRM tools and narrowing down options.",
+    "operator_relevance_score": 0.87,
+    "classification_reasoning": "User query indicates commercial intent with comparison phase based on keywords and context.",
+    "intent_confidence": 0.92
   },
-  "allowed_formats": ["weave", "citation", "product_card"],
-  "timestamp": "2025-11-14T18:22:00Z",
-  "latency_budget_ms": 500,
-  "user_id": "user_hash_abc123",
-  "conversation_id": "conv_xyz789",
-  "device_type": "desktop",
-  "auth": { "nonce": "nonce_123", "sig": "sig_hmac_123abc" },
-  "metadata": {
-    "admesh": { "operator_relevance_score": 0.87 }
-  }
+  "verticals": ["crm", "smb_software"],
+  "platform_type": "chat"
 }
 ```
 
 ## Notes
-- `metadata` must be vendor-namespaced objects; operators should only write inside their namespace (e.g., `metadata.admesh`).
+
 - `allowed_formats` lets operators constrain how creatives render for the requesting platform surface.
+- `platform_type` is used by brand agents to determine preferred format (e.g., bridge format for vibe_coding_platform).
+- `intent.operator_relevance_score` and `intent.classification_reasoning` provide additional context for brand agent decision-making.
+- `extensions` may contain vendor-namespaced metadata from the original PlatformRequest.

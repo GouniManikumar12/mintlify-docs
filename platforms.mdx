@@ -1,72 +1,98 @@
-# Platform
+---
+title: Platforms
+description: Learn how AI platforms integrate with AIP to surface intent-driven recommendations.
+---
 
-A Platform is a user-facing application or interface where natural language intent is expressed. Platforms submit this intent to an AIP Operator and display the operator’s ranked recommendations back to the user. 
+# Platforms
 
-Within AIP, platforms function as the protocol’s publishers — they surface intent and deliver outcomes, while all auction, scoring, and billing processes are handled entirely by the Operator.
+A Platform is a user-facing application or interface where natural language intent is expressed. Platforms submit this intent to an AIP Operator and display the operator's ranked recommendations back to the user.
+
+Within AIP, platforms function as the protocol's publishers — they surface intent and deliver outcomes, while all auction, scoring, and billing processes are handled entirely by the Operator.
 
 ---
 
-## Definition
+## What is a Platform?
 
 A **Platform** is an application, interface, or agentic environment that:
 
 1. **Receives user intent**  
    Platforms capture user queries, commands, or questions expressed in natural language.
 
-2. **Emits a `PlatformRequest` to an AIP Operator**  
+2. **Emits a `PlatformRequest` (UCP-aligned format) to an AIP Operator**  
    The operator derives the downstream `ContextRequest`, then handles auctions, ranking, and selection internally.
 
 3. **Renders recommendations**  
-   Platforms display operator-returned recommendations using protocol-standard formats  
-   (Citation, Product, or Weave).
+   Platforms display operator-returned recommendations using protocol-standard formats (Citation, Product, or Weave).
 
 4. **Tracks and forwards signed events**  
-   Platforms report exposure and click events using the operator SDK, ensuring  
-   serve-token integrity and attribution.
+   Platforms report exposure and click events using the operator SDK, ensuring serve-token integrity and attribution.
 
 5. **Receives payouts for verified events**  
-   Operators credit platforms for valid exposures, clicks, or conversions based on  
-   AIP settlement rules.
+   Operators credit platforms for valid exposures, clicks, or conversions based on AIP settlement rules.
 
 ---
 
-## Characteristics
+## Examples of Platforms
 
-Platforms MUST:
+Examples of Platforms include:
 
-- Run an operator-provided UI SDK  
-- Maintain a session identifier for each user conversation  
-- Display transparency labels  
+- AI assistants and copilots
+- Chat-based search interfaces
+- Browsers with conversational or agentic UI
+- Voice assistants
+- Productivity applications with embedded AI
+- Messaging applications with AI features
+- Browser extensions or agent runtimes
+- Augmented reality (AR) and virtual reality (VR) environments with conversational or agentic interfaces
+- Autonomous multi-agent environments
+
+If a system can "hear" a user request and show a returned recommendation, it can be a Platform in AIP.
+
+---
+
+## Platform Responsibilities
+
+### Platforms MUST
+
+- Run an operator-provided UI SDK
+- Maintain a session identifier for each user conversation
+- Display transparency labels
 - Ensure accurate event propagation
+- Provide `latency_budget_ms` in PlatformRequest to specify the auction timing window
 
-Platforms MAY:
+### Platforms MAY
 
-- Use optional backend SDKs for inline (Weave) embedding  
-- Add platform-specific UI or UX layers around recommendations  
+- Use optional backend SDKs for inline (Weave) embedding
+- Add platform-specific UI or UX layers around recommendations
 - Surface recommendations inside various modalities (text, voice, multimodal)
+
+---
 
 ## Asynchronous Auction Interaction
 
-The AIP bidding model uses a **time-bounded asynchronous auction window** rather than full broadcast fanout. When a platform sends a `PlatformRequest`, the AIP Operator derives a `context_request`, classifies the request into one or more **category pools**, and only brand agents and advertiser networks that have explicitly subscribed to those pools receive it. Distribution to bidders is handled through a cloud-agnostic **publish/subscribe transport**, starting with Google Pub/Sub in v1.0 and extendable to AWS SNS/SQS, Azure Event Grid, Kafka, or other message buses. After publishing the context, the AIP Server opens a short **auction window** (typically 30–70 ms) during which bidders may submit signed bids via `POST /aip/bid-response`. When the window closes, the server collects all bids received within the allowed timeframe, applies the AIP selection rules (CPA > CPC > CPX), and returns the `auction_result` to the platform. If no bids are received before the window expires, the server returns a valid `no_bid` response. This design enables scalable, category-aware bidding, minimizes latency, prevents unnecessary bidder fanout, and ensures that only relevant brand agents compete for each user intent.
+The AIP bidding model uses a **time-bounded asynchronous auction window** rather than full broadcast fanout.
 
-Platform implication: always handle `no_bid` responses gracefully (render a fallback or continue the user workflow) while still recording the exposure attempt in your telemetry.
+### How it works
 
+1. Platform sends a `PlatformRequest` with `latency_budget_ms` to the Operator
+2. Operator derives a `ContextRequest`, classifies it into one or more **category pools**
+3. Only brand agents subscribed to those pools receive the request via publish/subscribe transport
+4. Operator computes the available bid window by subtracting operator overhead from the platform's `latency_budget_ms`
+5. Brand agents submit signed bids via `POST /aip/bid-response` within the computed window
+6. Operator collects bids, applies AIP selection rules (CPA > CPC > CPX), and returns the `auction_result`
+7. If no bids are received before the window expires, Operator returns a valid `no_bid` response
 
-## Examples of Platforms
+### Distribution transport
 
-A Platform can be:
+Distribution to bidders is handled through a cloud-agnostic **publish/subscribe transport**, starting with Google Pub/Sub in v1.0 and extendable to AWS SNS/SQS, Azure Event Grid, Kafka, or other message buses.
 
-- AI assistants  
-- Chat-based search engines  
-- Browsers with conversational UI  
-- Voice assistants  
-- Productivity apps with embedded AI  
-- Messaging apps with AI features  
-- Browser extensions or agent runtimes  
-- Autonomous multi-agent surfaces  
-- Any interface capable of receiving natural language input and showing results
+### Platform implications
 
-If a system can “hear” a user request and show a returned recommendation, it can be a Platform in AIP.
+- Always handle `no_bid` responses gracefully (render a fallback or continue the user workflow)
+- Record exposure attempts in your telemetry even when no bid is returned
+- Specify `latency_budget_ms` in PlatformRequest to control auction timing
+
+This design enables scalable, category-aware bidding, minimizes latency, prevents unnecessary bidder fanout, and ensures that only relevant brand agents compete for each user intent.
 
 ---
 

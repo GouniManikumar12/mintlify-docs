@@ -16,7 +16,7 @@ AIP involves three main actors:
 |------|-------------|
 | **Platform** | Any AI surface that uses an ad network(AIP Operator) SDK to send anonymized intent. |
 | **Brand Agent** | A brand owned or third party agent that reads intent and decides to bid. |
-| **Operator** | Any ad network that implements AIP. AdMesh is the reference operator. |
+| **Operator** | Any ad network that implements AIP. AdMesh is the reference operator. Any compliant operator may implement AIP. |
 
 Each AIP request moves through these three roles in a predictable flow.
 
@@ -29,12 +29,14 @@ Only one unit can settle for each serve token.
 
 | Unit | Meaning | Trigger |
 |------|----------|----------|
-| **CPX (Exposure)** | The AI showed a verified recommendation | Exposure event recorded |
+| **CPX (Exposure)** | A verified sponsored response was shown and met exposure criteria. | Exposure event recorded |
 | **CPC (Click)** | User clicked or interacted | Click event verified |
 | **CPA (Conversion)** | User completed a signup or transaction | Conversion verified |
 
 A lower unit upgrades to a higher one if it occurs.  
 No event is billed twice.
+
+Exposure criteria are defined by the operator and applied consistently across all platforms.
 
 ---
 
@@ -43,9 +45,9 @@ No event is billed twice.
 Below is the typical flow from intent to settlement:
 
 1. User expresses intent inside an AI conversation.  
-2. Platform sends anonymized context to the operator.  
+2. Platform sends anonymized context to the operator using a PlatformRequest (UCP format).  
 3. Operator runs a real time auction.  
-4. Brand agents submit bids.  
+4. Brand agents submit bids in response to a ContextRequest (UCP-like format).  
 5. Operator selects the winning bid and returns it to the platform.  
 6. Platform displays the sponsored response.  
 7. User may see, click, or convert.  
@@ -56,6 +58,7 @@ Below is the typical flow from intent to settlement:
 ## Verification and settlement
 
 Every AIP event uses a serve token that links all downstream actions.  
+The serve token is generated once per sponsored response and cannot be reused.  
 This guarantees:
 
 - one verified charge per event  
@@ -75,5 +78,6 @@ AIP is designed to be simple and verifiable:
 - every event is signed  
 - works with any network that supports the schema  
 - full audit trail is available to all parties  
+- The protocol is transport-agnostic and can coexist with other advertising systems.  
 
 ---

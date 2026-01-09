@@ -1,69 +1,74 @@
 ---
 title: Auction and Scoring
-description: Learn how AIP auctions rank bids and select the most relevant recommendation for each user intent.
+description: Learn how AIP defines auction constraints and outcome guarantees, while operators implement their own auction and scoring logic.
 ---
 
-# Auction and Scoring
-AIP runs a short timed auction. When a platform sends a `PlatformRequest`, the operator tags it into category pools, derives a `ContextRequest`, and sends it only to Brand Agents subscribed to those pools. Delivery happens through a pub/sub system.
 
-Agents have about 30–70 ms to send a signed bid. When the window closes, the Operator scores all bids (CPA first, then CPC, then CPX) and returns the winner. If no one responds in time, it returns no_bid.
-
-The model avoids blasting every bidder, keeps latency low, and ensures only relevant agents compete.
+AIP defines protocol-level constraints and guarantees for auctions, while operators implement their own auction mechanics and scoring algorithms. When a platform sends a `PlatformRequest`, the operator derives a `ContextRequest` and distributes it to Brand Agents. Operators define their own distribution mechanisms (e.g., category pools, publish/subscribe transport) and auction timing.
 
 ## 1. TL;DR
 
-AIP evaluates all eligible bids and returns the offer with the highest protocol-defined score.
+> AIP defines auction inputs, timing constraints, and outcome guarantees. Operators implement their own auction and scoring logic to select winning bids.
 
 ## 2. Why It Matters
 
-AIP enables AI systems to monetize intent responsibly.  
-Auctions prioritize relevance, quality, and economic value, creating recommendations that feel useful, aligned, and trustworthy.
+AIP enables AI systems to monetize intent responsibly by defining:
+
+- **Protocol-level constraints** that ensure fair competition
+- **Timing guarantees** that respect platform latency budgets
+- **Outcome guarantees** that ensure deterministic settlement
+
+Operators implement auction and scoring logic that prioritizes relevance, quality, and economic value, creating recommendations that feel useful, aligned, and trustworthy.
 
 This ensures:
 
-- AI experiences remain user-centric  
-- Brands compete on merit and integrity  
-- Platforms gain a predictable monetization layer  
+- AI experiences remain user-centric
+- Brands compete on merit and integrity
+- Platforms gain a predictable monetization layer
 
-## 3. How an Auction Works
+## 3. Protocol-Level Auction Constraints
 
-Every user intent triggers a micro-auction. The sequence is:
+AIP defines constraints and guarantees for auctions, not the specific algorithms:
 
-### **1. Intent Enters the System**
-An AI platform submits a `PlatformRequest` describing the user’s query or action.
+### **1. Input Requirements**
+An AI platform submits a `PlatformRequest` (UCP format) describing the user's query or action. The request includes `latency_budget_ms` to specify the platform's timing requirements.
 
-### **2. Bid Requests Are Issued**
-The Operator classifies the request into category pools, derives a `ContextRequest`, and uses publish/subscribe transport to deliver it only to Brand Agents subscribed to those pools.
+### **2. Distribution Requirements**
+The Operator derives a `ContextRequest` (UCP-like format) and distributes it to Brand Agents. Operators define their own distribution mechanisms (category pools, transport methods, etc.).
 
-### **3. Bids Are Returned**
-During the 30–70 ms auction window, each Brand Agent sends a signed `POST /aip/bid-response` payload with:
-- an offer  
-- a bid price  
-- necessary metadata  
+### **3. Timing Constraints**
+- The auction window is derived from the platform's `latency_budget_ms` field in the PlatformRequest
+- Operators compute the available bid window by subtracting operator overhead from the platform's latency budget
+- Brand Agents MUST submit bids within the computed window
+- Late bids are rejected and do not participate in selection or settlement
+- If no `latency_budget_ms` is provided, operators apply their own default fallback
 
-### **4. Scoring Pipeline Evaluates Bids**
-The Operator runs its scoring model and produces a ranking.
+### **4. Bid Collection**
+Brand Agents submit signed `BidResponse` payloads with pricing, creative input, and relevance scores. Operators collect bids received within the auction window.
 
-### **5. A Single Winner Is Returned**
-The Operator sends the `AuctionResult` (or `no_bid` when no responses arrive in time) and `serve_token` back to the Platform.
+### **5. Outcome Guarantees**
+The Operator MUST return a single `AuctionResult` (or `no_bid` when no responses arrive in time) and a `serve_token` back to the Platform. The protocol guarantees deterministic settlement based on the event ladder (CPA > CPC > CPX).
 
-## 4. Scoring Model
+## 4. Scoring (Informational)
 
-AIP scoring evaluates each bid using three core signals:
+Operators implement their own scoring algorithms to evaluate bids. While AIP does not prescribe a specific scoring model, operators typically consider signals such as:
 
 ### **Value**
 Economic strength of the bid relative to the current intent.
 
 ### **Relevance**
-Alignment between the offer and the user’s query, conversation, or task context.
+Alignment between the offer and the user's query, conversation, or task context.
 
 ### **Quality**
-Trust, integrity, and historical performance signals from the Brand Agent’s verified events.
+Trust, integrity, and historical performance signals from the Brand Agent's verified events.
 
-The Operator applies these pillars consistently for all bids, producing a deterministic score for each candidate.  
-The highest-scoring offer becomes the result of the auction.
+Operators apply their own scoring logic consistently for all bids, producing deterministic outcomes. The highest-scoring offer (according to the operator's algorithm) becomes the result of the auction.
+
+**Note**: AIP does not mandate how operators combine these signals or weight them. Each operator defines their own scoring methodology.
 
 ## 5. AuctionResult
+
+The operator returns an `AuctionResult` containing the winning bid and format-specific creative:
 
 ```json
 {
@@ -75,11 +80,8 @@ The highest-scoring offer becomes the result of the auction.
     "reserved_amount_cents": 500
   },
   "render": {
-    "label": "[Ad]",
-    "title": "Scale your CRM",
-    "body": "Built for founders.",
-    "cta": "Try for free",
-    "url": "https://admesh.click/stk_abcxyz123"
+    "format": "weave",
+    "weave_content": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
   },
   "ttl_ms": 60000
 }
@@ -91,33 +93,33 @@ For complete auction result schema, see: [Auction Result Schema](/schemas/auctio
 
 Every exchange in the auction cycle is logged as verifiable artifacts:
 
-- signed `ContextRequest`  
-- signed `BidResponse`  
-- signed `AuctionResult`  
-- timestamps and nonces  
-- protocol version identifiers  
+- signed `ContextRequest`
+- signed `BidResponse`
+- signed `AuctionResult`
+- timestamps and nonces
+- protocol version identifiers
 
 ## 7. Example Flow
 
-User asks: **“Best AI note-taking tools.”**
+User asks: **"Best AI note-taking tools."**
 
-1. A `ContextRequest` is issued.  
-2. The Operator distributes it to eligible Brand Agents.  
-3. Agents return bids.  
-4. The scoring pipeline ranks them.  
-5. The Platform receives a single recommendation and a `serve_token`.  
-6. Exposure and click events connect cleanly to the same attribution chain.
+1. Platform sends `PlatformRequest` with `latency_budget_ms` to Operator.
+2. Operator derives `ContextRequest` and distributes it to eligible Brand Agents using operator-defined mechanisms.
+3. Brand Agents return bids within the computed auction window.
+4. Operator applies its scoring algorithm to rank bids.
+5. Platform receives a single `AuctionResult` with `serve_token`.
+6. Exposure and click events connect cleanly to the same attribution chain via `serve_token`.
 
-## 8. Guarantees
+## 7. Protocol Guarantees
 
 AIP ensures:
 
-- consistent evaluation across all Brand Agents  
-- deterministic outcomes for identical inputs  
-- complete verifiability via signed artifacts  
-- unified attribution through the `serve_token`  
-- scalable real-time performance  
+- **Timing compliance**: Bids received after the computed window are rejected
+- **Deterministic settlement**: Event ladder (CPA > CPC > CPX) ensures one charge per `serve_token`
+- **Complete verifiability**: All messages are signed and timestamped
+- **Unified attribution**: `serve_token` links all events to the original auction
+- **Operator autonomy**: Operators define their own auction and scoring logic within protocol constraints
 
 ## Summary
 
-AIP auctions transform user intent into ranked recommendations through a structured, deterministic evaluation system. The protocol harmonizes how Platforms monetize intent, how Brand Agents compete, and how Operators deliver transparent, reproducible outcomes.
+AIP defines protocol-level constraints for auctions—timing, inputs, and outcome guarantees—while operators implement their own auction mechanics and scoring algorithms. The protocol harmonizes how Platforms monetize intent, how Brand Agents compete, and how Operators deliver transparent, reproducible outcomes within their own implementation choices.

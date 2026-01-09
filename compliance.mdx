@@ -1,131 +1,104 @@
 ---
 title: Compliance
-description: Learn how AIP ensures privacy, data integrity, and regulatory compliance across all participants.
+description: Understand AIP's protocol-level compliance invariants for privacy, data integrity, and verifiability.
 ---
 
-AIP is built for compliance from the ground up.  
-It ensures that every action — from data capture to payout — adheres to privacy laws, financial regulations, and audit standards.
+AIP defines protocol-level compliance invariants that ensure privacy, transparency, and verifiability. **AIP does not define retention policies, audit procedures, incident response, or regulatory frameworks.** Compliance is enforced through protocol constraints, not operator policies.
 
 ---
 
 ## 1. TL;DR
 
-> Compliance in AIP means privacy, transparency, and trust — enforced by code, not policy.
+> AIP guarantees compliance through protocol-level invariants: data minimization, deterministic message flow, and cryptographic verifiability. The protocol does not define how operators, platforms, or brand agents implement compliance procedures.
 
 ---
 
-## 2. Why it matters
+## 2. Compliance Philosophy
 
-Digital advertising historically struggled with opaque tracking and unverified reporting.  
-AIP fixes this with a **privacy-first and audit-ready** design.  
-Every piece of data has a clear purpose, owner, and retention policy.
+AIP enforces compliance through protocol constraints, not policy or trust:
 
-This ensures alignment with major standards like:
-- GDPR (Europe)  
-- CCPA / CPRA (California)  
-- SOC 2 Type II  
-- ISO 27001  
-- PCI DSS (for wallet and payout systems)
+- **Data minimization**: The protocol never requires personal identifiers or raw user data
+- **Deterministic message flow**: All billable actions are cryptographically verifiable and traceable
+- **Cryptographic verifiability**: Every settlement outcome can be independently verified
+
+Compliance is a property of the protocol's design, not a checklist of operator behaviors.
 
 ---
 
-## 3. Data Principles
+## 3. Protocol-Level Compliance Invariants
 
-| Principle | Description |
-|------------|-------------|
-| **Minimalism** | Only intent context and event metadata are captured — never personal data. |
-| **Purpose Limitation** | Data is processed solely for verification, settlement, and performance analysis. |
-| **User Consent** | Platforms integrating AIP must surface clear consent for personalized or monetized responses. |
-| **Right to Erasure** | All event records are anonymized and can be purged under valid user requests. |
-| **Data Residency** | Regional data segregation ensures compliance with local jurisdictional laws. |
+The protocol guarantees the following compliance invariants:
 
----
+| Invariant | Description |
+|----------|-------------|
+| **No raw personal data required** | The protocol never mandates personal identifiers, user names, email addresses, or other personally identifiable information |
+| **Cryptographically verifiable actions** | All billable actions (exposures, clicks, conversions) are cryptographically verifiable and cannot be unilaterally fabricated |
+| **Single serve_token settlement** | Every settlement is traceable to a single `serve_token` from the original auction |
+| **No unilateral value fabrication** | No participant can unilaterally create billable events or settlement outcomes |
+| **Intent-only context** | Brand Agents receive only anonymized intent context, never raw user queries or personal data |
+| **Deterministic outcomes** | Settlement outcomes are deterministic and reproducible from verifiable event sequences |
 
-## 4. Data Flow and Ownership
-
-```mermaid
-flowchart LR
-  User[User Intent] --> Platform
-  Platform --> AdNetwork
-  AdNetwork --> BrandAgent
-  BrandAgent --> Ledger[(Audit Ledger)]
-  Ledger --> Settlement[(Wallet & Payout)]
-```
-
-- **Platform** owns consent and user context.  
-- **Ad Network** intermediates verification and settlement.  
-- **Brand Agent** sees only anonymized, intent-level data.  
-- **Ledger** ensures all transactions are immutable and traceable.
+Operators implement their own compliance procedures, retention policies, and audit systems. The protocol only constrains what data flows and how it is structured.
 
 ---
 
-## 5. Data Retention
+## 4. Data Scope and Ownership (Invariants Only)
 
-| Data Type | Retention Period | Owner | Notes |
-|------------|------------------|--------|-------|
-| **Event Logs** | 90 days | Platform | Auto-purged post-verification |
-| **Ledger Entries** | 5 years | Ad Network | Required for audit and tax compliance |
-| **Wallet Records** | 7 years | Ad Network | Retained under financial reporting laws |
-| **Aggregated Metrics** | Unlimited | All participants | Stored in anonymized form only |
+The protocol defines data ownership and scope through invariants:
 
----
+- **Platforms control user consent and identity**: Platforms are responsible for user consent, identity management, and data collection. The protocol does not define consent mechanisms.
+- **Operators verify events and enforce invariants**: Operators verify events and enforce protocol-level invariants. The protocol does not define verification procedures.
+- **Brand Agents receive only anonymized intent context**: Brand Agents receive `ContextRequest` objects that contain intent signals, not raw user data. The protocol guarantees this separation.
+- **The protocol never requires personal identifiers**: No AIP message schema requires personal identifiers, user names, or other PII.
 
-## 6. Consent and Transparency
-
-Each AI platform integrating AIP must clearly communicate when an ad is shown.  
-Typical disclosure formats include:
-- `[Ad]` or `[Sponsored]` label next to recommendations  
-- "Why this ad?" explanation tooltip  
-- Opt-out controls for sponsored responses
-
-AIP enforces these disclosures through SDK requirements — not optional guidelines.
+The protocol enforces data minimization by design, not through policy.
 
 ---
 
-## 7. Financial and Audit Compliance
+## 5. Regulatory Neutrality
 
-AIP’s ledger and wallet layers comply with standard financial audit frameworks.
+AIP does not encode jurisdiction-specific rules or regulatory frameworks. The protocol is designed to be compatible with privacy and financial regulations without embedding them.
 
-| Area | Standard | Enforcement |
-|-------|-----------|-------------|
-| **Ledger Integrity** | SOC 2 Type II | Immutable event trails |
-| **Payout Systems** | PCI DSS | Secure financial transactions |
-| **Data Security** | ISO 27001 | End-to-end encryption |
-| **Auditability** | GAAP-aligned | Exportable, time-stamped ledgers |
+- The protocol does not mandate GDPR, CCPA, PCI DSS, SOC 2, ISO 27001, or any other specific regulatory compliance
+- The protocol does not define retention durations, audit procedures, or incident response protocols
+- The protocol does not prescribe tax handling, financial reporting, or regulatory filing requirements
 
----
-
-## 8. Independent Verification
-
-All ledgers and logs can be externally verified through:
-- Independent audit firms  
-- Public hash verification endpoints  
-- Encrypted proofs (Merkle-style) for transparency without exposure
-
-This lets regulators and auditors confirm data integrity without seeing private records.
+Operators, platforms, and brand agents implement their own regulatory compliance according to applicable laws and standards in their jurisdictions.
 
 ---
 
-## 9. Breach and Incident Response
+## 6. What AIP Does NOT Define
 
-If a participant’s system is compromised:
-1. Immediate ledger lock and key rotation occur.  
-2. All pending transactions are quarantined for re-verification.  
-3. Impact reports are distributed to affected participants.  
-4. Recovery follows SOC 2 and ISO 27001 incident management protocols.
+The protocol explicitly does not define:
+
+- **Retention durations**: How long data, events, or records must be stored
+- **Ledger schemas**: Specific ledger structures, database models, or storage formats
+- **Wallet architecture**: Wallet implementations, balance storage, or transaction models
+- **Tax handling**: Tax calculation, reporting, or withholding procedures
+- **Audit processes**: Audit procedures, audit firm requirements, or audit trail formats
+- **Incident response**: Breach procedures, key rotation policies, or recovery protocols
+- **Disclosure formats**: Ad labeling requirements, consent UI, or transparency mechanisms
+- **Regulatory frameworks**: Specific compliance with GDPR, CCPA, PCI DSS, SOC 2, ISO 27001, or other standards
+
+These are implementation concerns that operators, platforms, and brand agents address according to their own requirements.
 
 ---
 
-## 10. Guarantees
+## 7. Guarantees
 
-- Zero personal data exposure  
-- Cryptographic audit trails for every transaction  
-- Real-time compliance with GDPR/CCPA standards  
-- Auditable financial ledgers and payouts  
+The protocol guarantees:
+
+- **Privacy preservation**: The protocol never requires personal identifiers or raw user data. Brand Agents receive only anonymized intent context.
+- **Non-repudiation**: All billable actions are cryptographically verifiable. Participants cannot deny authenticated messages they sent.
+- **Auditability via cryptographic linkage**: Every settlement outcome is traceable to a single `serve_token` and can be independently verified through cryptographic linkage.
+- **Deterministic settlement outcomes**: Settlement outcomes are deterministic and reproducible from verifiable event sequences. No participant can unilaterally fabricate value.
+
+The protocol does not guarantee specific regulatory compliance, retention policies, or audit procedures. Operators implement their own compliance systems to enforce these protocol-level guarantees within applicable regulatory frameworks.
 
 ---
 
 ## Summary
 
-> AIP doesn’t treat compliance as a checkbox — it’s baked into the protocol itself.
-It creates an ecosystem where every actor can prove compliance, not just claim it.
+> AIP defines protocol-level compliance invariants that ensure privacy, verifiability, and deterministic outcomes through cryptographic constraints. The protocol does not define how operators implement compliance procedures, retention policies, or regulatory frameworks.
+
+Next: [Glossary](/glossary)

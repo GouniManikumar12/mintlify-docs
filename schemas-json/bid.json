@@ -9,9 +9,9 @@
     "context_id",
     "wallet_id",
     "pricing",
-    "offer",
+    "recommendation",
     "timestamp",
-    "auth"
+    "relevance"
   ],
   "properties": {
     "bid_id": {
@@ -36,98 +36,94 @@
     },
     "pricing": {
       "type": "object",
-      "description": "Pricing vector for different billing events (CPX required, CPC/CPA optional)",
-      "required": ["cpx"],
+      "description": "Pricing vector for different billing events. Uses micros (authoritative), cents (brand-friendly), and dollars (display).",
+      "required": ["currency", "display_currency"],
       "properties": {
-        "cpx": {
-          "type": "string",
-          "description": "Price per exposure (USD)",
-          "pattern": "^\\d+\\.\\d{2,}$",
-          "example": "0.05"
-        },
-        "cpc": {
-          "type": "string",
-          "description": "Price per click (USD)",
-          "pattern": "^\\d+\\.\\d{2,}$",
-          "example": "0.45"
-        },
-        "cpa": {
-          "type": "string",
-          "description": "Price per conversion (USD)",
-          "pattern": "^\\d+\\.\\d{2,}$",
-          "example": "10.00"
-        },
         "currency": {
           "type": "string",
           "description": "Currency code (ISO 4217)",
           "pattern": "^[A-Z]{3}$",
           "default": "USD",
           "example": "USD"
+        },
+        "display_currency": {
+          "type": "string",
+          "description": "Display currency code (ISO 4217)",
+          "pattern": "^[A-Z]{3}$",
+          "default": "USD",
+          "example": "USD"
+        },
+        "cpx_micros": {
+          "type": "integer",
+          "description": "Price per exposure in USD micros (1 USD = 1,000,000 micros). Authoritative value.",
+          "minimum": 0,
+          "example": 50000
+        },
+        "cpx_cents": {
+          "type": "integer",
+          "description": "Price per exposure in cents (for brand-friendly display). Derived from cpx_micros.",
+          "minimum": 0,
+          "example": 5
+        },
+        "cpx_dollars": {
+          "type": "number",
+          "description": "Price per exposure in dollars (for UI display). Derived from cpx_micros.",
+          "minimum": 0,
+          "example": 0.05
+        },
+        "cpc_micros": {
+          "type": "integer",
+          "description": "Price per click in USD micros (1 USD = 1,000,000 micros). Authoritative value.",
+          "minimum": 0,
+          "example": 450000
+        },
+        "cpc_cents": {
+          "type": "integer",
+          "description": "Price per click in cents (for brand-friendly display). Derived from cpc_micros.",
+          "minimum": 0,
+          "example": 45
+        },
+        "cpc_dollars": {
+          "type": "number",
+          "description": "Price per click in dollars (for UI display). Derived from cpc_micros.",
+          "minimum": 0,
+          "example": 0.45
+        },
+        "cpa_micros": {
+          "type": "integer",
+          "description": "Price per conversion in USD micros (1 USD = 1,000,000 micros). Authoritative value.",
+          "minimum": 0,
+          "example": 10000000
+        },
+        "cpa_cents": {
+          "type": "integer",
+          "description": "Price per conversion in cents (for brand-friendly display). Derived from cpa_micros.",
+          "minimum": 0,
+          "example": 1000
+        },
+        "cpa_dollars": {
+          "type": "number",
+          "description": "Price per conversion in dollars (for UI display). Derived from cpa_micros.",
+          "minimum": 0,
+          "example": 10.0
+        },
+        "preferred_pricing_model": {
+          "type": "string",
+          "description": "Preferred pricing model: 'CPX', 'CPC', or 'CPA'",
+          "enum": ["CPX", "CPC", "CPA"],
+          "example": "CPA"
         }
       },
       "additionalProperties": false
     },
-    "offer": {
+    "recommendation": {
       "type": "object",
-      "description": "Offer metadata that will be rendered to the user if the bid wins",
+      "description": "Recommendation metadata that will be rendered to the user if the bid wins",
       "required": ["creative_input"],
       "properties": {
         "creative_input": {
-          "type": "object",
-          "required": [
-            "brand_name",
-            "product_name",
-            "descriptions",
-            "value_props",
-            "resource_urls",
-            "image_urls"
-          ],
-          "properties": {
-            "brand_name": {
-              "type": "string",
-              "description": "Brand or advertiser name",
-              "example": "Nimbus CRM"
-            },
-            "product_name": {
-              "type": "string",
-              "description": "Product or offer name",
-              "example": "Nimbus CRM Pro"
-            },
-            "descriptions": {
-              "type": "array",
-              "description": "Long-form descriptions or copy blocks",
-              "items": { "type": "string" },
-              "minItems": 1,
-              "example": [
-                "CRM built for growing teams, with AI-assisted workflows."
-              ]
-            },
-            "value_props": {
-              "type": "array",
-              "description": "Short value propositions or bullets",
-              "items": { "type": "string" },
-              "minItems": 1,
-              "example": [
-                "Automated pipeline insights",
-                "Collaborative forecasting"
-              ]
-            },
-            "resource_urls": {
-              "type": "array",
-              "description": "Destination or tracking URLs",
-              "items": { "type": "string", "format": "uri" },
-              "minItems": 1,
-              "example": ["https://nimbus.example/signup"]
-            },
-            "image_urls": {
-              "type": "array",
-              "description": "Creative image URLs",
-              "items": { "type": "string", "format": "uri" },
-              "minItems": 1,
-              "example": ["https://cdn.example.com/nimbus/crm.png"]
-            }
-          },
-          "additionalProperties": false
+          "$ref": "./creative-input.json",
+          "description": "Unified creative input structure (see CreativeInput schema)"
         }
       },
       "additionalProperties": false
@@ -138,27 +134,18 @@
       "description": "ISO 8601 timestamp when the bid was generated",
       "example": "2025-11-11T18:00:01Z"
     },
-    "auth": {
-      "type": "object",
-      "description": "Authentication envelope used for replay protection",
-      "required": ["nonce", "signature"],
-      "properties": {
-        "nonce": {
-          "type": "string",
-          "description": "One-time nonce for replay protection",
-          "example": "nonce_456"
-        },
-        "signature": {
-          "type": "string",
-          "description": "Signature over the canonical bid payload",
-          "example": "sig_789"
-        }
-      },
-      "additionalProperties": false
+    "relevance": {
+      "type": "number",
+      "description": "Relevance score for this bid (0.0-1.0). Required field used by operator for bid ranking.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "example": 0.87
     },
-    "metadata": {
-      "$ref": "./common.json#/definitions/extensionNamespace",
-      "description": "Optional vendor-namespaced metadata"
+    "preferred_format": {
+      "type": "string",
+      "description": "Preferred creative format for this bid",
+      "enum": ["weave", "tail", "product_card", "bridge"],
+      "example": "weave"
     },
     "processing_latency_ms": {
       "type": "integer",
@@ -174,26 +161,42 @@
       "context_id": "ctx_92f",
       "wallet_id": "wallet_890",
       "pricing": {
-        "cpx": "0.05",
-        "cpc": "0.45",
-        "cpa": "10.00",
-        "currency": "USD"
+        "currency": "USD",
+        "display_currency": "USD",
+        "cpx_micros": 50000,
+        "cpx_cents": 5,
+        "cpx_dollars": 0.05,
+        "cpc_micros": 450000,
+        "cpc_cents": 45,
+        "cpc_dollars": 0.45,
+        "cpa_micros": 10000000,
+        "cpa_cents": 1000,
+        "cpa_dollars": 10.0,
+        "preferred_pricing_model": "CPA"
       },
-      "offer": {
+      "recommendation": {
         "creative_input": {
           "brand_name": "Nimbus",
           "product_name": "Nimbus CRM Pro",
-          "descriptions": ["AI CRM for 5-50 person teams."],
-          "value_props": ["Automated follow-ups", "Embedded copilots"],
-          "resource_urls": ["https://nimbus.example/signup"],
-          "image_urls": ["https://cdn.example.com/nimbus/crm.png"]
+          "short_description": "CRM built for growing teams, with AI-assisted workflows.",
+          "long_description": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management.",
+          "value_props": [
+            "Automated pipeline insights",
+            "Collaborative forecasting"
+          ],
+          "context_snippet": "For startups needing higher limits and automated expense workflows.",
+          "cta_label": "Start Free Trial",
+          "cta_url": "https://nimbus.example.com/signup",
+          "assets": {
+            "logo_url": "https://cdn.example.com/nimbus/logo.png",
+            "image_urls": ["https://cdn.example.com/nimbus/crm.png"],
+            "resource_urls": ["https://nimbus.example.com/signup"]
+          }
         }
       },
       "timestamp": "2025-11-11T18:00:01Z",
-      "auth": {
-        "nonce": "nonce_456",
-        "signature": "sig_789"
-      },
+      "relevance": 0.87,
+      "preferred_format": "weave",
       "processing_latency_ms": 42
     }
   ],

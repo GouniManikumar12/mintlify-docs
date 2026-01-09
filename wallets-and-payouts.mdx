@@ -1,68 +1,69 @@
 ---
 title: Wallets and Payouts
-description: Learn how AIP automates billing, settlements, and payouts across platforms, ad networks, and brand agents.
+description: Understand AIP's protocol-level settlement invariants for event-based billing.
 ---
-AIP includes a transparent, automated billing system that converts verified events into wallet balances and monthly payouts.  
-Each participant — Platform, Ad Network, and Brand Agent — has their own wallet and ledger entries.
+
+AIP defines protocol-level constraints for settlement and operator-defined accounting records. **AIP does not define wallet implementations, revenue sharing models, payout timing, or payment rails.** All wallet and payout mechanics are operator-defined.
 
 ---
 
 ## 1. TL;DR
 
-> Wallets record verified value. Payouts distribute that value fairly, automatically, and on schedule.
+> AIP guarantees that each verified event is attributable to operator-defined settlement records, each `serve_token` resolves to at most one terminal charge, and all settlement records are immutable and auditable. Operators implement their own wallet systems and payout logic.
 
 ---
 
 ## 2. Why it matters
 
-Legacy ad systems rely on delayed invoicing, reconciliation spreadsheets, and manual payouts.  
-AIP replaces that with **real-time, cryptographically verifiable ledgers**.  
+AIP provides settlement invariants that ensure:
+- No double billing
+- One terminal settlement per `serve_token`
+- Immutable settlement records
+- Full auditability
 
-This ensures:
-- No payment disputes  
-- Real-time visibility into balances  
-- Deterministic reconciliation for all parties  
-
----
-
-## 3. Participants and Wallets
-
-| Participant | Purpose | Example Entries |
-|--------------|----------|-----------------|
-| **AI Platform Wallet** | Receives revenue share for verified CPX/CPC events | Exposure fees, click revenue |
-| **Ad Network Wallet** | Holds temporary balances and manages ledger settlements | Pending payouts, operator fees |
-| **Brand Agent Wallet** | Tracks advertiser spend and CPA confirmations | Bids placed, conversions billed |
-
-Every transaction in AIP is linked to a **`ledger_entry_id`** and **`serve_token`**, ensuring perfect traceability.
+Operators implement their own wallet systems, revenue sharing models, payout schedules, and payment mechanisms as long as these protocol guarantees are met.
 
 ---
 
-## 4. Payout Flow
+## 3. Settlement invariants
 
-```mermaid
-sequenceDiagram
-  participant Platform
-  participant AdNetwork
-  participant BrandAgent
-  participant Ledger
+The protocol guarantees the following invariants:
 
-  Platform->>AdNetwork: cpx_exposure event
-  AdNetwork->>Ledger: Record CPX charge
-  Platform->>AdNetwork: cpc_click event
-  AdNetwork->>Ledger: Update to CPC charge
-  BrandAgent->>AdNetwork: cpa_conversion event
-  AdNetwork->>Ledger: Update to CPA charge
-  Ledger->>BrandAgent: Debit final_charge
-  Ledger->>Platform: Credit platform_share
-  Ledger->>AdNetwork: Credit network_share
-  AdNetwork->>All: Monthly reconciliation & payout
-```
+### Settlement records
 
-The flow runs continuously, with monthly finalization for confirmed balances.
+Operators maintain operator-defined settlement records that link verified events to settlement outcomes. Each settlement record:
+- Links to a `serve_token` from the original auction
+- Records the terminal event type (CPX, CPC, or CPA)
+- Contains immutable timestamps and state information
+
+### Event-to-settlement linkage
+
+Every verified event (`cpx_exposure`, `cpc_click`, `cpa_conversion`) must be attributable to an operator-defined settlement outcome linked to the `serve_token`. Events must be linkable to:
+- The original `serve_token` from the auction
+- An operator-defined settlement record that reflects the final settlement state
+- The terminal billing unit (highest verified event in the ladder)
+
+### One terminal charge per serve_token
+
+Each `serve_token` resolves to **at most one terminal charge**. The protocol guarantees:
+- If a CPA conversion is verified, CPX and CPC are not billed
+- If a CPC click is verified (and no CPA), CPX is not billed
+- If only CPX is verified, CPX is billed
+
+This follows the event ladder: CPA > CPC > CPX.
+
+### Settlement immutability and auditability
+
+Once a settlement record reaches a finalized state, it is immutable. All settlement records:
+- Are tamper-evident and auditable
+- Can be independently verified by any participant
+- Provide full auditability of all settlement decisions
 
 ---
 
-## 5. Example Ledger Entry
+## 4. Example settlement record (non-normative)
+
+The following example illustrates a settlement record structure. **This is non-normative** — field names, structure, and granularity are illustrative only. The example does not imply required fields or storage models. Operators define their own settlement record schemas and fields.
 
 ```json
 {
@@ -81,63 +82,27 @@ The flow runs continuously, with monthly finalization for confirmed balances.
     "click": "2025-11-11T18:02:00Z",
     "conversion": "2025-11-11T18:30:00Z",
     "finalized": "2025-11-11T19:00:00Z"
-  },
-  "charges": {
-    "cpx": "0.034",
-    "cpc": "0.45",
-    "cpa": "10.00"
-  },
-  "revenue_share": {
-    "platform_share": "3.00",
-    "network_share": "7.00"
   }
 }
 ```
 
-Each entry maps one verified event to monetary movement across wallets.
-
-For complete ledger schema, see: [Ledger Record Schema](/schemas/ledger-record)
-
 ---
 
-## 6. Payout Scheduling
+## 5. Guarantees
 
-| Cycle | Description | Responsible |
-|--------|--------------|--------------|
-| **Real-Time** | Balances update instantly on verified events | Ledger API |
-| **Daily** | Ledger snapshots for reporting and reconciliation | Ad Network |
-| **Monthly** | Payouts triggered for finalized balances | Ad Network + Settlement Service |
+The protocol guarantees:
 
-Payouts can be processed via:
-- Direct bank transfer  
-- Stripe Connect  
-- Crypto-compatible ledgers (optional extension)
+- **No double billing**: Each `serve_token` resolves to at most one terminal charge
+- **One terminal settlement per serve_token**: The event ladder (CPA > CPC > CPX) ensures only the highest verified event is billed
+- **Immutable settlement records**: Finalized settlement records cannot be modified
+- **Full auditability**: All settlement records are tamper-evident and auditable and can be independently verified
 
----
-
-## 7. Handling disputes or reversals
-
-AIP minimizes disputes by making all transactions **verifiable and signed**.  
-But if discrepancies occur:
-1. A dispute is logged with supporting evidence.  
-2. Ad Network validates via the event ledger.  
-3. If confirmed invalid, funds revert to originating wallets.  
-
-All adjustments are recorded transparently under a new `revision_id`.
-
----
-
-## 8. Guarantees
-
-- No manual invoicing — all payouts are event-driven.  
-- Balances and ledgers are cryptographically signed.  
-- Each participant can verify their own ledger independently.  
-- Settlement delays or fraud are mathematically impossible under AIP rules.
+Operators implement their own wallet systems, revenue sharing, payout schedules, dispute resolution, and payment mechanisms. The protocol only constrains the linkage between events, `serve_token`, and settlement records.
 
 ---
 
 ## Summary
 
-> AIP wallets turn verified intent into money — instantly, transparently, and without reconciliation headaches.
+> AIP defines protocol-level settlement invariants that ensure each `serve_token` resolves to at most one terminal charge, with immutable and auditable settlement records. Operators implement their own wallet and payout systems to enforce these constraints.
 
 Next: [Security](/security)
