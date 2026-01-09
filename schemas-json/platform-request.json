@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "PlatformRequest",
-  "description": "AI platform request sent to an AIP operator to initiate an ad auction. Uses UCP (Universal Context Protocol) format.",
+  "description": "AI platform request sent to an AIP operator to initiate an ad auction. Uses UCP (User Context Protocol) format.",
   "type": "object",
   "required": [
     "spec_version",
