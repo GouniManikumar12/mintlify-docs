@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "CreativeInput",
-  "description": "Unified creative input structure containing all fields needed for any ad format (weave, tail, product_card). Brand agents generate this structure, and operators transform it into format-specific creatives.",
+  "description": "Unified creative input structure containing all fields needed for any ad format (weave, tail, product_card, bridge, followup). Brand agents generate this structure, and operators transform it into format-specific creatives.",
   "type": "object",
   "required": [
     "brand_name",
@@ -112,6 +112,11 @@
         "enum": ["weave", "tail", "product_card"]
       },
       "example": ["tail", "product_card"]
+    },
+    "followup_query": {
+      "type": "string",
+      "description": "Optional sponsored follow-up query string to execute when user selects the follow-up. Used in headless follow-up ad format for AI platforms with existing follow-up suggestion UI. Generated automatically by brand-agents based on product and context.",
+      "example": "Compare Nimbus CRM Pro vs Salesforce pricing and features"
     }
   },
   "additionalProperties": false,
