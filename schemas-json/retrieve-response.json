@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-response.schema.json",
+  "title": "Agentic Intent Protocol – RetrieveResponse (v0.1)",
+  "description": "Publisher response to a RetrieveRequest under the Agentic Intent Protocol.",
+  "type": "object",
+
+  "required": [
+    "aip_version",
+    "request_id",
+    "timestamp",
+    "status"
+  ],
+
+  "additionalProperties": false,
+
+  "properties": {
+    "aip_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+
+    "request_id": {
+      "type": "string",
+      "description": "Echoes the request_id from the corresponding RetrieveRequest."
+    },
+
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the response was generated."
+    },
+
+    "status": {
+      "type": "string",
+      "enum": ["ok", "denied", "error"],
+      "description": "Overall result of the retrieval attempt."
+    },
+
+    "content": {
+      "type": "object",
+      "description": "Returned content, present only when status is 'ok'.",
+      "required": ["chunks"],
+      "additionalProperties": false,
+      "properties": {
+        "chunks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/chunk"
+          }
+        }
+      }
+    },
+
+    "citations": {
+      "type": "array",
+      "description": "Citation metadata corresponding to returned content.",
+      "items": {
+        "$ref": "#/$defs/citation"
+      }
+    },
+
+    "limits_applied": {
+      "type": "object",
+      "description": "Publisher-enforced limits applied to this response.",
+      "additionalProperties": false,
+      "properties": {
+        "max_chunks": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+
+    "denial": {
+      "type": "object",
+      "description": "Denial details, present only when status is 'denied'.",
+      "required": ["reason"],
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "out_of_scope",
+            "access_disabled",
+            "policy_violation",
+            "rate_limited",
+            "unsupported"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "Optional human-readable explanation."
+        }
+      }
+    },
+
+    "error": {
+      "type": "object",
+      "description": "Error details, present only when status is 'error'.",
+      "required": ["code"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Publisher-defined error code."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error description."
+        }
+      }
+    },
+
+    "extensions": {
+      "type": "object",
+      "description": "Namespaced extensions for future use.",
+      "additionalProperties": true
+    }
+  },
+
+  "$defs": {
+    "chunk": {
+      "type": "object",
+      "required": ["id", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Publisher-defined chunk identifier."
+        },
+        "text": {
+          "type": "string",
+          "description": "Content text for this chunk."
+        },
+        "token_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional token count for this chunk."
+        }
+      }
+    },
+
+    "citation": {
+      "type": "object",
+      "required": ["source_url"],
+      "additionalProperties": false,
+      "properties": {
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Canonical URL of the cited source."
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional source title."
+        },
+        "publisher": {
+          "type": "string",
+          "description": "Publisher name."
+        },
+        "chunk_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs of chunks this citation applies to."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,320 @@
+---
+title: AIP Authentication & Signing (v0.1)
+description: Normative spec for message authentication and signing for RetrieveRequest and RetrieveResponse.
+---
+
+# AIP Authentication & Signing (v0.1)
+
+## Scope
+
+This section defines how AIP messages are authenticated and signed to ensure:
+
+- sender authenticity  
+- message integrity  
+- replay protection  
+- auditability  
+
+This applies to:
+
+- `RetrieveRequest`
+- `RetrieveResponse`
+- (optionally) AIP Events in v0.1
+
+This spec does **not** define transport-level security (TLS is assumed).
+
+---
+
+## Design principles (non-negotiable)
+
+1. **Message-level signing, not session auth**
+2. **Stateless verification**
+3. **No user identity exposure**
+4. **No ad-tech coupling**
+5. **Simple enough for publishers to implement**
+
+If a scheme violates any of these, it is non-compliant.
+
+---
+
+## Authentication model
+
+### Trust anchors
+
+- Platforms and publishers are registered with an **AIP Registry** (operator-neutral).
+- Each party is issued one or more **API keys**.
+- Each API key has an associated **shared secret** (v0.1).
+
+> Public-key signing (JWT / JWS) is explicitly deferred to v0.2+.
+
+---
+
+## Required HTTP headers
+
+Every signed AIP request or response **MUST** include the following headers.
+
+### `X-AIP-Version`
+
+**Required**
+
+```
+X-AIP-Version: 0.1
+```
+
+Used for protocol routing and version enforcement.
+
+---
+
+### `X-AIP-Key-Id`
+
+**Required**
+
+```
+X-AIP-Key-Id: plat_live_92xk
+```
+
+Identifies the API key used to sign the message.
+
+- Issued by the AIP Registry  
+- Maps to a shared secret  
+- Does not identify the end user  
+
+---
+
+### `X-AIP-Timestamp`
+
+**Required**
+
+```
+X-AIP-Timestamp: 2025-11-14T18:22:00Z
+```
+
+ISO 8601 / RFC 3339 timestamp. Used for replay protection.
+
+---
+
+### `X-AIP-Nonce`
+
+**Required**
+
+```
+X-AIP-Nonce: b3f7c1e2a9
+```
+
+Random, single-use value.
+
+- Minimum 16 bytes of entropy  
+- **MUST NOT** be reused within the replay window  
+
+---
+
+### `X-AIP-Signature`
+
+**Required**
+
+```
+X-AIP-Signature: v1=Y7fQ9wXH3A1n...
+```
+
+HMAC signature of the request.
+
+---
+
+## Signature construction (canonical)
+
+### Step 1: Canonical string
+
+The signature **MUST** be computed over the following components, in order:
+
+```
+HTTP_METHOD
+\n
+REQUEST_PATH
+\n
+SHA256(REQUEST_BODY)
+\n
+X-AIP-Timestamp
+\n
+X-AIP-Nonce
+```
+
+Example:
+
+```
+POST
+/pag/retrieve
+3a7bd3e2360a3d80c9b52a1f...
+2025-11-14T18:22:00Z
+b3f7c1e2a9
+```
+
+Notes:
+
+- `REQUEST_PATH` excludes scheme and host  
+- Body hash is hex-encoded SHA-256  
+- Empty body → hash of empty string  
+
+---
+
+### Step 2: HMAC computation
+
+```
+signature = HMAC-SHA256(secret, canonical_string)
+```
+
+The result is base64-encoded.
+
+---
+
+### Step 3: Header format
+
+```
+X-AIP-Signature: v1=<base64_signature>
+```
+
+`v1` identifies the signing algorithm version.
+
+---
+
+## Verification rules (publisher side)
+
+Upon receiving a `RetrieveRequest`, a publisher **MUST**:
+
+1. Verify `X-AIP-Version` is supported  
+2. Look up secret using `X-AIP-Key-Id`  
+3. Recompute signature and compare (constant-time)  
+4. Validate timestamp freshness (see below)  
+5. Validate nonce uniqueness within replay window  
+6. Reject on any failure  
+
+---
+
+## Replay protection
+
+### Time window
+
+- Default window: **±300 seconds**  
+- Requests outside this window **MUST** be rejected  
+
+### Nonce handling
+
+- Publishers **SHOULD** store `(key_id, nonce)` pairs for the replay window  
+- Reuse → reject as replay  
+
+This is intentionally lightweight.
+
+---
+
+## Signing the RetrieveResponse
+
+Publishers **SHOULD** sign responses using the **same mechanism**.
+
+Differences:
+
+- `HTTP_METHOD` is the response method (e.g., `200`)  
+- `REQUEST_PATH` is the same as the request  
+- `REQUEST_BODY` is the response body  
+
+Platforms **MUST** verify response signatures if present.
+
+---
+
+## Error handling (authentication failures)
+
+On auth failure, publishers **MUST** return:
+
+- HTTP `401 Unauthorized` or `403 Forbidden`  
+- A minimal error body (no debug info)  
+
+Example:
+
+```json
+{
+  "aip_version": "0.1",
+  "request_id": "req_92fA1",
+  "status": "error",
+  "error": {
+    "code": "auth_failed",
+    "message": "Invalid signature"
+  }
+}
+```
+
+---
+
+## What is explicitly out of scope (v0.1)
+
+- OAuth  
+- JWT / JWS  
+- mTLS  
+- User authentication  
+- Key rotation protocols  
+- Delegated access  
+
+These are intentionally deferred to keep adoption easy.
+
+---
+
+## Security properties achieved
+
+✔ Sender authentication  
+✔ Message integrity  
+✔ Replay protection  
+✔ Minimal implementation burden  
+✔ Clear audit trail  
+
+No unnecessary complexity.
+
+---
+
+## Normative MUST / MUST NOT summary
+
+- Platforms **MUST** sign all RetrieveRequests  
+- Publishers **MUST** verify signatures  
+- Auction or pricing metadata **MUST NOT** be signed or transmitted here  
+- Secrets **MUST NOT** be reused across parties  
+- Unsigned requests **MUST** be rejected  
+
+---
+
+## Forward compatibility (v0.2+)
+
+This header model cleanly upgrades to:
+
+- asymmetric keys  
+- JWS payloads  
+- key rotation  
+- delegated operators (AdMesh-signed on behalf of platforms)  
+
+Without breaking v0.1 clients.
+
+---
+
+## Final verdict
+
+This signing scheme is:
+
+- simple  
+- secure enough  
+- legally defensible  
+- operationally realistic  
+
+Exactly what v0.1 needs.
+
+---
+
+### Next things you may want (in order)
+
+1. **Access / Citation Event schema**
+2. **Registry API for key issuance**
+3. **Operator-signed retrieve flow**
+4. **v0.2 public-key upgrade path**
+
+Say which one you want next.
+
+---
+
+## See also
+
+- [RetrieveRequest](/schemas/retrieve-request) — Request that carries these headers  
+- [RetrieveResponse](/schemas/retrieve-response) — Response that publishers SHOULD sign  
+- [Security](/security) — Protocol-level security invariants  

@@ -1,0 +1,192 @@
+---
+title: Access & Citation Events
+description: Publisher → platform / operator telemetry for post-retrieval accountability (no ads, no pricing, no user identity).
+---
+
+## Purpose (normative)
+
+Access and Citation Events provide **post-retrieval accountability** under the Agentic Intent Protocol.
+
+They allow publishers to:
+
+- record when content was accessed,
+- verify how it was used,
+- audit citations shown to users.
+
+They allow platforms/operators to:
+
+- prove compliant usage,
+- reconcile settlement (outside this spec),
+- support disputes.
+
+Events are **append-only facts**, not signals. No ads. No pricing. No user identity leakage.
+
+---
+
+## Event types
+
+v0.1 defines **two canonical event types**:
+
+1. **`access`**
+2. **`citation`**
+
+Both share a common envelope.
+
+---
+
+## Canonical schema location
+
+```
+https://schemas.agenticintentprotocol.com/aip/0.1/event.schema.json
+```
+
+---
+
+## Schema summary
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `aip_version` | string | Yes | Must be `"0.1"`. |
+| `event_id` | string | Yes | Unique identifier for this event. |
+| `event_type` | string | Yes | `access` or `citation`. |
+| `timestamp` | string (date-time) | Yes | ISO 8601 when the event occurred. |
+| `request_id` | string | Yes | `request_id` from the associated RetrieveRequest. |
+| `publisher` | object | Yes | `id`, `domain` (hostname). |
+| `platform` | object | Yes | `id` (platform that initiated the request). |
+| `access` | object | When `event_type` is `access` | `chunks_returned`, `token_count`, `retrieval_mode` (`chunks`). |
+| `citation` | object | When `event_type` is `citation` | `source_url`, `chunk_ids`, `display_surface`. |
+| `extensions` | object | No | Namespaced extensions. |
+
+---
+
+## Semantics
+
+### `access` event
+
+Emitted **when content is successfully returned** in a `RetrieveResponse`.
+
+It answers:
+
+- was access granted?
+- how much content was returned?
+- under what retrieval mode?
+
+It does **not** answer:
+
+- how the content was ranked
+- whether it was monetized
+- whether the user clicked anything
+
+### `citation` event
+
+Emitted **when the publisher's content is surfaced to the user** as a citation.
+
+It answers:
+
+- which URL was cited
+- which chunks were referenced
+- where it was displayed
+
+It does **not** imply endorsement, licensing, or commercial use.
+
+---
+
+## Required emission rules
+
+- Publishers **MUST** emit an `access` event for every successful retrieval.
+- Platforms **SHOULD** emit `citation` events when citations are shown.
+- If `endpoints.event.required = true` in `aip.json`, platforms **MUST** emit citation events.
+
+---
+
+## Example: Access event
+
+```json
+{
+  "aip_version": "0.1",
+  "event_id": "evt_access_001",
+  "event_type": "access",
+  "timestamp": "2025-11-14T18:22:01Z",
+  "request_id": "req_92fA1",
+  "publisher": {
+    "id": "forbes",
+    "domain": "forbes.com"
+  },
+  "platform": {
+    "id": "openai_chat"
+  },
+  "access": {
+    "chunks_returned": 1,
+    "token_count": 18,
+    "retrieval_mode": "chunks"
+  }
+}
+```
+
+---
+
+## Example: Citation event
+
+```json
+{
+  "aip_version": "0.1",
+  "event_id": "evt_citation_002",
+  "event_type": "citation",
+  "timestamp": "2025-11-14T18:22:05Z",
+  "request_id": "req_92fA1",
+  "publisher": {
+    "id": "forbes",
+    "domain": "forbes.com"
+  },
+  "platform": {
+    "id": "openai_chat"
+  },
+  "citation": {
+    "source_url": "https://forbes.com/crm-guide",
+    "chunk_ids": ["c1"],
+    "display_surface": "answer"
+  }
+}
+```
+
+---
+
+## What this schema intentionally avoids
+
+- impressions  
+- clicks  
+- dwell time  
+- CPM / CPX  
+- advertiser data  
+- user identifiers  
+- engagement scoring  
+
+Those belong to **separate systems**, not AIP v0.1.
+
+---
+
+## Why this design is correct
+
+- Events are **facts**, not optimization signals.  
+- Publishers gain verifiable usage records.  
+- Platforms gain compliance proof.  
+- Operators can build settlement without contaminating the protocol.  
+- Regulators can audit end-to-end.  
+
+---
+
+## Takeaway
+
+If `RetrieveRequest` is **permission**, and `RetrieveResponse` is **content**, then **Events are the receipt**. You now have a complete, closed loop.
+
+---
+
+## Schema file
+
+Full JSON Schema (Draft 2020-12): [access-citation-event.json](/schemas-json/access-citation-event.json)
+
+## See also
+
+- [RetrieveRequest](/schemas/retrieve-request) — Request that triggers retrieval and events  
+- [RetrieveResponse](/schemas/retrieve-response) — Response that leads to access events  
+- [aip.json](/schemas/aip) — `endpoints.event` and `required` for citation emission  

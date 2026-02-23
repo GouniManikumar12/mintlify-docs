@@ -27,61 +27,89 @@
   },
   "navigation": {
     "groups": [
-    {
-      "group": "Welcome",
-      "pages": [
-        "index",
-        "overview"
-      ]
-    },
-    {
-      "group": "Get started",
-      "pages": [
-        "platforms",
-        "operators",
-        "brand-agents"
-      ]
-    },
-    {
-      "group": "Protocol",
-      "pages": [
-        "protocol",
-        "auction",
-        "events",
-        "state-machine",
-        "wallets-and-payouts",
-        "security",
-        "compliance",
-        "glossary",
-        "end-to-end-flow"
-      ]
-    },
-    {
-      "group": "Advanced Topics",
-      "pages": [
-        "agentic-advertising",
-        "cpm-vs-cpx"
-      ]
-    },
-    {
-      "group": "Schemas",
-      "pages": [
-        "schemas/platform-request",
-        "schemas/context-request",
-        "schemas/bid",
-        "schemas/auction-result"
-      ]
-    },
-    {
-      "group": "FAQ",
-      "pages": [
-        "faq/platforms",
-        "faq/adnetworks",
-        "faq/brand-agents",
-        "faq/compliance-and-audit"
-      ]
-    }
+      {
+        "group": "Welcome",
+        "pages": [
+          "index",
+          "overview"
+        ]
+      },
+      {
+        "group": "Get started",
+        "pages": [
+          "platforms",
+          "operators",
+          "brand-agents"
+        ]
+      },
+      {
+        "group": "Protocol",
+        "pages": [
+          {
+            "group": "Advertising",
+            "pages": [
+              "protocol",
+              "auction",
+              "events",
+              "state-machine",
+              "wallets-and-payouts",
+              "security",
+              "compliance",
+              "glossary",
+              "end-to-end-flow"
+            ],
+            "expanded": true
+          },
+          {
+            "group": "PAG",
+            "pages": [
+              "authentication-signing"
+            ],
+            "expanded": true
+          }
+        ]
+      },
+      {
+        "group": "Advanced Topics",
+        "pages": [
+          "agentic-advertising",
+          "cpm-vs-cpx"
+        ]
+      },
+      {
+        "group": "Schemas",
+        "pages": [
+          {
+            "group": "Advertising",
+            "pages": [
+              "schemas/platform-request",
+              "schemas/context-request",
+              "schemas/bid",
+              "schemas/auction-result"
+            ],
+            "expanded": true
+          },
+          {
+            "group": "PAG",
+            "pages": [
+              "schemas/aip",
+              "schemas/retrieve-request",
+              "schemas/retrieve-response",
+              "schemas/access-citation-event"
+            ],
+            "expanded": true
+          }
+        ]
+      },
+      {
+        "group": "FAQ",
+        "pages": [
+          "faq/platforms",
+          "faq/adnetworks",
+          "faq/brand-agents",
+          "faq/compliance-and-audit"
+        ]
+      }
     ]
   }
-  
 }

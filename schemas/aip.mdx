@@ -1,0 +1,202 @@
+---
+title: aip.json
+description: Field-by-field documentation for /.well-known/aip.json (Agentic Intent Protocol v0.1)
+---
+
+## Purpose
+
+`aip.json` is a **machine-readable declaration** published by a content publisher that defines:
+
+- whether AI platforms may access content,
+- under what conditions,
+- within what editorial scope,
+- and with what technical constraints.
+
+It is **declarative only**. It does **not** define pricing, ads, ranking, or enforcement logic.
+
+---
+
+## Top-level fields
+
+### `$schema`
+
+**Type:** string (URI)  
+**Required:** No (recommended)
+
+Points to the JSON Schema used to validate this document. Used by tooling and validators. Does **not** affect runtime behavior.
+
+---
+
+### `aip_version`
+
+**Type:** string  
+**Required:** Yes  
+**Value:** `"0.1"`
+
+Declares the AIP protocol version this document conforms to. This is the **authoritative protocol version**, independent of the JSON Schema draft.
+
+---
+
+## `publisher`
+
+Declares the identity of the publisher making this declaration.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `publisher.id` | string | Yes | Publisher-chosen identifier, unique **within the publisher's domain**. Must not be assumed globally unique. Registries may namespace this later. |
+| `publisher.name` | string | Yes | Human-readable publisher name. Used for display, logging, and audit purposes only. |
+| `publisher.domain` | string (hostname) | Yes | Primary domain under which this declaration applies. Used for trust checks, registry verification, and scope association. |
+
+---
+
+## `intent_access`
+
+Defines **legal and consent constraints** for AI access. This is the **core permission block**.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `intent_access.enabled` | boolean | Yes | Master switch for AI access. `true` → AI access may be permitted subject to other constraints. `false` → No AI access is permitted under any circumstance. |
+| `intent_access.state` | string | No | Operational state: `active` (normal operation), `paused` (temporarily suspended without removing the file), `disabled` (explicit permanent denial). Allows revocation **without deleting the file**. |
+| `intent_access.mode` | string | Yes | Value: `live_only`. Access is permitted **only** in response to a contemporaneous user request. No background crawling, batch access, or offline indexing. |
+| `intent_access.training_use` | boolean | Yes | Whether retrieved content may be used for model training, fine-tuning, or weight updates. `false` explicitly prohibits all training use. |
+| `intent_access.storage_rights` | string | Yes | Value: `none`. No long-term storage rights are granted. Ephemeral, in-memory handling for a single request is allowed. |
+| `intent_access.cache_policy` | string | No | Value: `no_store`. Prohibits caching of retrieved content beyond the request lifecycle. Mirrors HTTP `Cache-Control: no-store` semantics. |
+
+---
+
+## `editorial_domains`
+
+Defines the **editorial scope boundary** for which AI access is permitted. This field is about **consent boundaries**, not categorization.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `editorial_domains` | array of strings | Yes | Each value is an **editorial coverage area** where the publisher asserts authority and grants AI access. Examples: `business`, `finance.markets`, `technology.ai`, `news.economy`. Hierarchical via dot notation. Used only for **pre-access scope matching**. Must not be used for ad targeting, ranking, or personalization. If an AI platform's declared intent does not fall within these domains, it must not access content. |
+
+---
+
+## `endpoints`
+
+Declares optional technical endpoints for AIP interactions. Endpoints describe **how access happens**, not **whether it is allowed**.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `endpoints.capabilities` | object | No | Public endpoint that describes **static capabilities and limits**. May be publicly accessible. Must not return content inventory. Must not vary per caller. Used for discovery and integration planning. |
+| `endpoints.retrieve` | object | No | Endpoint for **live content retrieval**. Presence does **not** imply permission; all requests must still satisfy consent rules. Optional `capabilities_ref` indicates which capability block governs this endpoint (typically `"retrieval"`). |
+| `endpoints.event` | object | No | Endpoint for receiving access, citation, or accounting events. If `required` is `false`, platforms may omit events. If `true`, event emission is mandatory. |
+
+---
+
+## `retrieval`
+
+Declares **what kind of content access is technically supported**, independent of permission.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `retrieval.supports` | object | Yes | Supported retrieval modes: `chunks` (partial content), `citations` (citation metadata), `full_article` (full article retrieval allowed or not). |
+| `retrieval.max_chunks` | integer | No | Maximum number of chunks that may be returned per request. Hard upper bound. |
+| `retrieval.max_tokens` | integer | No | Maximum token budget per request. Used to prevent bulk extraction. |
+
+---
+
+## `compliance`
+
+Defines revocation and lifecycle metadata.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `compliance.revocable` | boolean | Yes | Whether access may be revoked after declaration. |
+| `compliance.notice_required` | boolean | Yes | Whether notice is required before revocation. |
+| `compliance.revocation_reason` | string | No | Allowed values: `legal`, `policy`, `technical`. Informational reason for revocation. Used for audit and dispute resolution. |
+| `compliance.sunset` | date or null | No | Optional automatic expiration date for this declaration. |
+| `compliance.last_updated` | date | Yes | Date this declaration was last modified. |
+
+---
+
+## `extensions`
+
+Reserved namespace for future or vendor-specific extensions. Must be namespaced (e.g. `admesh.*`). Must not alter core consent semantics.
+
+---
+
+## Example
+
+Complete, well-formed `aip.json` example (publish at `/.well-known/aip.json`):
+
+```json
+{
+  "$schema": "https://agenticintentprotocol.com/schemas/aip-0.1.json",
+  "aip_version": "0.1",
+  "publisher": {
+    "id": "pub-001",
+    "name": "Example News Inc.",
+    "domain": "example.com"
+  },
+  "intent_access": {
+    "enabled": true,
+    "state": "active",
+    "mode": "live_only",
+    "training_use": false,
+    "storage_rights": "none",
+    "cache_policy": "no_store"
+  },
+  "editorial_domains": [
+    "business",
+    "finance.markets",
+    "technology.ai",
+    "news.economy"
+  ],
+  "endpoints": {
+    "capabilities": {
+      "url": "https://example.com/.well-known/aip/capabilities",
+      "method": "GET"
+    },
+    "retrieve": {
+      "url": "https://api.example.com/aip/retrieve",
+      "method": "POST",
+      "capabilities_ref": "retrieval"
+    },
+    "event": {
+      "url": "https://api.example.com/aip/events",
+      "method": "POST",
+      "required": true
+    }
+  },
+  "retrieval": {
+    "supports": {
+      "chunks": true,
+      "citations": true,
+      "full_article": false
+    },
+    "max_chunks": 10,
+    "max_tokens": 4096
+  },
+  "compliance": {
+    "revocable": true,
+    "notice_required": true,
+    "revocation_reason": null,
+    "sunset": null,
+    "last_updated": "2025-01-15"
+  }
+}
+```
+
+---
+
+## Key guarantees
+
+- Consent is **explicit and bounded**
+- Scope is **publisher-declared**
+- Platforms must declare intent elsewhere to match scope
+- No monetization or ad semantics
+- No registry dependency
+- No runtime enforcement logic
+
+---
+
+## Summary
+
+`aip.json` allows a publisher to declare whether, when, and within what editorial scope AI platforms may access content under the Agentic Intent Protocol.
+
+## Schema file
+
+Full JSON Schema (Draft 2020-12): [aip.json](/schemas-json/aip.json)

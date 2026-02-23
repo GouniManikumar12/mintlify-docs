@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agenticintentprotocol.com/aip/0.1/event.schema.json",
+  "title": "Agentic Intent Protocol – Access & Citation Event (v0.1)",
+  "description": "Publisher-generated access and citation events under the Agentic Intent Protocol.",
+  "type": "object",
+
+  "required": [
+    "aip_version",
+    "event_id",
+    "event_type",
+    "timestamp",
+    "request_id",
+    "publisher",
+    "platform"
+  ],
+
+  "additionalProperties": false,
+
+  "properties": {
+    "aip_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+
+    "event_id": {
+      "type": "string",
+      "description": "Unique identifier for this event."
+    },
+
+    "event_type": {
+      "type": "string",
+      "enum": ["access", "citation"]
+    },
+
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred."
+    },
+
+    "request_id": {
+      "type": "string",
+      "description": "request_id from the associated RetrieveRequest."
+    },
+
+    "publisher": {
+      "type": "object",
+      "required": ["id", "domain"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Publisher identifier."
+        },
+        "domain": {
+          "type": "string",
+          "format": "hostname"
+        }
+      }
+    },
+
+    "platform": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Platform identifier that initiated the request."
+        }
+      }
+    },
+
+    "access": {
+      "type": "object",
+      "description": "Present only when event_type is 'access'.",
+      "additionalProperties": false,
+      "properties": {
+        "chunks_returned": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "token_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retrieval_mode": {
+          "type": "string",
+          "enum": ["chunks"]
+        }
+      }
+    },
+
+    "citation": {
+      "type": "object",
+      "description": "Present only when event_type is 'citation'.",
+      "additionalProperties": false,
+      "properties": {
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "chunk_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "display_surface": {
+          "type": "string",
+          "description": "Where the citation was shown (e.g. answer, footnote, hover)."
+        }
+      }
+    },
+
+    "extensions": {
+      "type": "object",
+      "description": "Namespaced extensions for future use.",
+      "additionalProperties": true
+    }
+  }
+}

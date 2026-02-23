@@ -1,0 +1,184 @@
+---
+title: RetrieveResponse
+description: Publisher → platform response to a RetrieveRequest (chunks, citations, or explicit denial).
+---
+
+## Purpose (normative)
+
+`RetrieveResponse` is returned by a publisher's AIP retrieve endpoint in response to a valid `RetrieveRequest`.
+
+It may return:
+
+- permitted content fragments (chunks),
+- citation metadata,
+- or an explicit denial.
+
+It **MUST NOT** return:
+
+- full articles when disallowed,
+- content outside declared limits,
+- any advertising or pricing metadata.
+
+It is deliberately minimal, rights-preserving, and auditable.
+
+---
+
+## Canonical schema location
+
+```
+https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-response.schema.json
+```
+
+---
+
+## Schema summary
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `aip_version` | string | Yes | Must be `"0.1"`. |
+| `request_id` | string | Yes | Echoes the `request_id` from the corresponding RetrieveRequest. |
+| `timestamp` | string (date-time) | Yes | ISO 8601 timestamp when the response was generated. |
+| `status` | string | Yes | `ok`, `denied`, or `error`. |
+| `content` | object | When status is `ok` | Contains `chunks` (array of chunk objects). |
+| `citations` | array | No | Citation metadata for returned content. |
+| `limits_applied` | object | No | Publisher-enforced limits (max_chunks, max_tokens). |
+| `denial` | object | When status is `denied` | Reason and optional message. |
+| `error` | object | When status is `error` | Code and optional message (technical failure). |
+| `extensions` | object | No | Namespaced extensions. |
+
+### Chunk (`content.chunks[]`)
+
+- **id** — Publisher-defined chunk identifier. Required.
+- **text** — Content text. Required.
+- **token_count** — Optional token count.
+
+### Citation
+
+- **source_url** — Canonical URL of the cited source. Required.
+- **title** — Optional source title.
+- **publisher** — Publisher name.
+- **chunk_ids** — IDs of chunks this citation applies to.
+
+### Denial reasons (canonical)
+
+| Reason | Meaning |
+|--------|---------|
+| `out_of_scope` | Intent not in `editorial_domains`. |
+| `access_disabled` | `intent_access.enabled = false` or state not active. |
+| `policy_violation` | Request violated declared constraints. |
+| `rate_limited` | Publisher throttling. |
+| `unsupported` | Publisher does not support requested access. |
+
+---
+
+## Semantics (important, not optional)
+
+### Status handling
+
+- **`ok`** → Content returned in `content.chunks`. Citations optional.
+- **`denied`** → No content returned; `denial.reason` (and optional `message`) provided.
+- **`error`** → Technical failure, not a consent decision; `error.code` (and optional `message`).
+
+A response **MUST NOT** include both `content` and `denial`.
+
+### Content rules
+
+- Only **chunks** may be returned.
+- Full articles **MUST NOT** be returned when `full_article: false` (per `aip.json`).
+- Returned chunks **MUST** respect `max_chunks` and `max_tokens` from publisher policy.
+
+### Citation rules
+
+- Citations **MUST** reference returned chunks.
+- Citations **MUST** be truthful and canonical.
+- Citations **MUST NOT** imply licensing or ownership transfer.
+
+---
+
+## Example: Successful response
+
+```json
+{
+  "aip_version": "0.1",
+  "request_id": "req_92fA1",
+  "timestamp": "2025-11-14T18:22:01Z",
+  "status": "ok",
+  "content": {
+    "chunks": [
+      {
+        "id": "c1",
+        "text": "CRM tools help small teams manage customer relationships effectively.",
+        "token_count": 18
+      }
+    ]
+  },
+  "citations": [
+    {
+      "source_url": "https://forbes.com/crm-guide",
+      "title": "Best CRM Tools for Small Teams",
+      "publisher": "Forbes",
+      "chunk_ids": ["c1"]
+    }
+  ],
+  "limits_applied": {
+    "max_chunks": 5,
+    "max_tokens": 800
+  }
+}
+```
+
+---
+
+## Example: Denied response
+
+```json
+{
+  "aip_version": "0.1",
+  "request_id": "req_92fA1",
+  "timestamp": "2025-11-14T18:22:01Z",
+  "status": "denied",
+  "denial": {
+    "reason": "out_of_scope",
+    "message": "Requested intent is outside declared editorial domains."
+  }
+}
+```
+
+---
+
+## Example: Error response
+
+```json
+{
+  "aip_version": "0.1",
+  "request_id": "req_92fA1",
+  "timestamp": "2025-11-14T18:22:01Z",
+  "status": "error",
+  "error": {
+    "code": "internal_error",
+    "message": "Temporary failure; retry later."
+  }
+}
+```
+
+---
+
+## Why this schema fits
+
+- Directly corresponds to `RetrieveRequest`.
+- Fully enforceable against `aip.json`.
+- No ad-tech contamination.
+- Explicit denial semantics.
+- Audit-friendly.
+- Future-safe via extensions.
+
+---
+
+## Schema file
+
+Full JSON Schema (Draft 2020-12): [retrieve-response.json](/schemas-json/retrieve-response.json)
+
+## See also
+
+- [RetrieveRequest](/schemas/retrieve-request) — Platform → publisher request that triggers this response.
+- [aip.json — Publisher Declaration](/schemas/aip) — Declared retrieval limits and editorial_domains.

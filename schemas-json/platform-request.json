@@ -1,17 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aip.org/schemas/platform-request.json",
   "title": "PlatformRequest",
-  "description": "AI platform request sent to an AIP operator to initiate an ad auction. Uses UCP (User Context Protocol) format.",
+  "description": "Platform → Operator. User context + platform-declared intent + constraints. Platform-asserted; operator validates and transforms to ContextRequest.",
   "type": "object",
-  "required": [
-    "spec_version",
-    "message_id",
-    "timestamp",
-    "producer",
-    "context",
-    "identity",
-    "extensions"
-  ],
+  "required": ["spec_version", "message_id", "timestamp", "producer", "context", "identity", "extensions"],
   "properties": {
     "spec_version": {
       "type": "string",
@@ -26,13 +19,14 @@
     "timestamp": {
       "type": "string",
       "format": "date-time",
-      "description": "ISO timestamp of the event",
+      "description": "ISO timestamp when the platform generated the request",
       "example": "2025-11-14T18:22:00Z"
     },
     "producer": {
       "type": "object",
-      "description": "Producer information (platform/agent that created the request)",
+      "description": "Producer of the request (the AI platform/host). Not the content publisher.",
       "required": ["agent_id", "agent_role", "software", "software_version"],
+      "additionalProperties": false,
       "properties": {
         "agent_id": {
           "type": "string",
@@ -41,26 +35,27 @@
         },
         "agent_role": {
           "type": "string",
-          "description": "Role of the agent, typically 'publisher'",
-          "example": "publisher"
+          "enum": ["platform"],
+          "description": "Role of the request producer. Must be 'platform' (AI host). Reserve 'publisher' for content owners only.",
+          "example": "platform"
         },
         "software": {
           "type": "string",
-          "description": "Software name (e.g., 'chatgpt')",
+          "description": "Software name (e.g. chatgpt)",
           "example": "chatgpt"
         },
         "software_version": {
           "type": "string",
-          "description": "Software version or model identifier (e.g., '4.3-mini')",
+          "description": "Software version or model identifier",
           "example": "4.3-mini"
         }
-      },
-      "additionalProperties": false
+      }
     },
     "context": {
       "type": "object",
       "description": "Context information (language, publisher, placement, device, geography)",
       "required": ["language", "publisher", "placement", "device", "geography"],
+      "additionalProperties": false,
       "properties": {
         "language": {
           "type": "string",
@@ -70,50 +65,39 @@
         },
         "publisher": {
           "type": "string",
-          "description": "Publisher identifier (same as producer.agent_id)",
+          "description": "Publisher identifier (same as producer.agent_id in this context)",
           "example": "openai_chat"
         },
         "placement": {
           "type": "object",
-          "description": "Placement information",
           "required": ["ad_unit"],
+          "additionalProperties": false,
           "properties": {
             "ad_unit": {
               "type": "string",
-              "description": "Platform surface type: 'conversation', 'chat', 'voice', etc.",
+              "description": "Platform surface type: conversation, chat, voice, etc.",
               "example": "conversation"
             }
-          },
-          "additionalProperties": false
+          }
         },
         "device": {
           "type": "object",
-          "description": "Device information",
           "required": ["platform", "form_factor"],
+          "additionalProperties": false,
           "properties": {
-            "platform": {
-              "type": "string",
-              "description": "Device platform: 'web', 'mobile', etc.",
-              "example": "web"
-            },
+            "platform": { "type": "string", "description": "Device platform: web, mobile, etc.", "example": "web" },
             "form_factor": {
               "type": "string",
-              "description": "Device form factor: 'mobile', 'desktop', 'tablet'",
               "enum": ["mobile", "desktop", "tablet"],
               "example": "desktop"
             },
-            "ua_hash": {
-              "type": "string",
-              "description": "Optional user agent hash",
-              "example": "ua_hash_xyz"
-            }
-          },
-          "additionalProperties": false
+            "ua_hash": { "type": "string", "description": "Optional user agent hash", "example": "ua_hash_xyz" }
+          }
         },
         "geography": {
           "type": "object",
-          "description": "Geographic information",
           "required": ["country"],
+          "additionalProperties": false,
           "properties": {
             "country": {
               "type": "string",
@@ -121,154 +105,121 @@
               "description": "User country code (ISO 3166-1 alpha-2)",
               "example": "US"
             }
-          },
-          "additionalProperties": false
+          }
         }
-      },
-      "additionalProperties": false
+      }
     },
     "identity": {
       "type": "object",
       "description": "Identity information",
       "required": ["namespace", "value_hash", "confidence"],
+      "additionalProperties": false,
       "properties": {
-        "namespace": {
-          "type": "string",
-          "description": "Identity namespace (e.g., 'platform_user')",
-          "example": "platform_user"
-        },
-        "value_hash": {
-          "type": "string",
-          "description": "Anonymous hashed user ID",
-          "example": "user_hash_abc123"
-        },
+        "namespace": { "type": "string", "example": "platform_user" },
+        "value_hash": { "type": "string", "description": "Anonymous hashed user ID", "example": "user_hash_abc123" },
         "confidence": {
           "type": "number",
-          "minimum": 0.0,
-          "maximum": 1.0,
+          "minimum": 0,
+          "maximum": 1,
           "description": "Confidence level for identity (0.0 to 1.0)",
-          "example": 1.0
+          "example": 1
         }
-      },
-      "additionalProperties": false
+      }
     },
     "extensions": {
       "type": "object",
-      "description": "Extensions containing AIP-specific and other vendor data",
+      "description": "Vendor-namespaced data. AIP uses extensions.aip with intent, runtime, and auction sub-blocks. Consent logic must not touch auction logic.",
       "required": ["aip"],
       "properties": {
         "aip": {
           "type": "object",
-          "description": "AIP extension containing session and query information",
-          "required": ["session_id", "turn_index", "query_text"],
+          "description": "AIP extension: intent (consent matching), runtime (session/query), auction (monetization). Sub-blocks are separated so consent and auction do not mix.",
+          "required": ["intent", "runtime"],
+          "additionalProperties": false,
           "properties": {
-            "session_id": {
-              "type": "string",
-              "description": "Conversation or interaction session ID",
-              "example": "sess_001"
-            },
-            "turn_index": {
-              "type": "integer",
-              "description": "Turn index in the conversation",
-              "minimum": 0,
-              "example": 3
-            },
-            "query_text": {
-              "type": "string",
-              "description": "User's raw query text",
-              "example": "best CRM for small teams"
-            },
-            "messages": {
-              "type": "array",
-              "description": "Optional short conversation history (last N turns)",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "role": {
-                    "type": "string",
-                    "enum": ["user", "assistant", "system"],
-                    "example": "user"
-                  },
-                  "content": {
-                    "type": "string",
-                    "example": "best CRM tools?"
-                  },
-                  "id": {
-                    "type": "string",
-                    "description": "Optional message ID",
-                    "example": "msg_123"
-                  }
+            "intent": {
+              "type": "object",
+              "description": "Platform-declared intent for publisher consent gating. Must be explicit and structured so operator can match against publisher editorial_domains (e.g. aip.json).",
+              "required": ["domain", "subdomain", "confidence"],
+              "additionalProperties": false,
+              "properties": {
+                "domain": {
+                  "type": "string",
+                  "description": "Editorial domain (e.g. business, technology). Matched against publisher aip.json editorial_domains.",
+                  "example": "business"
+                },
+                "subdomain": {
+                  "type": "string",
+                  "description": "Finer-grained subdomain (e.g. crm, ai)",
+                  "example": "crm"
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Confidence in this intent classification",
+                  "example": 0.91
                 }
-              },
-              "example": [
-                { "role": "user", "content": "best CRM tools?" },
-                { "role": "assistant", "content": "HubSpot, Zoho, Salesforce…" }
-              ]
+              }
             },
-            "latency_budget_ms": {
-              "type": "integer",
-              "description": "Optional latency budget from platform in milliseconds",
-              "minimum": 0,
-              "example": 500
+            "runtime": {
+              "type": "object",
+              "description": "Session and query context. Used for operator enrichment and ContextRequest generation.",
+              "required": ["session_id", "turn_index", "query_text"],
+              "additionalProperties": false,
+              "properties": {
+                "session_id": { "type": "string", "description": "Conversation or interaction session ID", "example": "sess_001" },
+                "turn_index": { "type": "integer", "minimum": 0, "description": "Turn index in the conversation", "example": 3 },
+                "query_text": { "type": "string", "description": "User's raw query text", "example": "best CRM for small teams" },
+                "messages": {
+                  "type": "array",
+                  "description": "Optional short conversation history (last N turns)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "role": { "type": "string", "enum": ["user", "assistant", "system"], "example": "user" },
+                      "content": { "type": "string", "example": "best CRM tools?" },
+                      "id": { "type": "string", "description": "Optional message ID" }
+                    }
+                  }
+                },
+                "latency_budget_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Optional latency budget from platform (milliseconds)",
+                  "example": 500
+                }
+              }
             },
-            "cpx_floor": {
-              "type": "number",
-              "description": "Minimum CPX (USD) required by the platform for this auction request",
-              "minimum": 0.0,
-              "example": 0.05
+            "auction": {
+              "type": "object",
+              "description": "Monetization parameters. Kept separate from intent so consent logic never touches auction logic.",
+              "additionalProperties": false,
+              "properties": {
+                "pricing_model": {
+                  "type": "string",
+                  "enum": ["CPX", "CPC", "CPA"],
+                  "description": "Preferred pricing model for this request",
+                  "example": "CPX"
+                },
+                "cpx_floor": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Minimum CPX (USD) required by the platform for this auction",
+                  "example": 0.05
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Currency for pricing (ISO 4217)",
+                  "example": "USD"
+                }
+              }
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": true
     }
   },
-  "examples": [
-    {
-      "spec_version": "1.0.0",
-      "message_id": "req_92fA1",
-      "timestamp": "2025-11-14T18:22:00Z",
-      "producer": {
-        "agent_id": "openai_chat",
-        "agent_role": "publisher",
-        "software": "chatgpt",
-        "software_version": "4.3-mini"
-      },
-      "context": {
-        "language": "en-US",
-        "publisher": "openai_chat",
-        "placement": {
-          "ad_unit": "conversation"
-        },
-        "device": {
-          "platform": "web",
-          "form_factor": "desktop",
-          "ua_hash": "ua_hash_xyz"
-        },
-        "geography": {
-          "country": "US"
-        }
-      },
-      "identity": {
-        "namespace": "platform_user",
-        "value_hash": "user_hash_abc123",
-        "confidence": 1.0
-      },
-      "extensions": {
-        "aip": {
-          "session_id": "sess_001",
-          "turn_index": 3,
-          "query_text": "best CRM for small teams",
-          "messages": [
-            { "role": "user", "content": "best CRM tools?" },
-            { "role": "assistant", "content": "HubSpot, Zoho, Salesforce…" }
-          ],
-          "latency_budget_ms": 500,
-          "cpx_floor": 0.05
-        }
-      }
-    }
-  ],
-  "$id": "https://aip.org/schemas/platform-request.json"
+  "additionalProperties": false
 }

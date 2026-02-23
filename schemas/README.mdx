@@ -10,15 +10,29 @@ Each file defines required fields, validation rules, and example payloads.
 
 ## Available Schemas
 
+Schemas are organized into **Advertising** (platform → operator → brand agents → auction) and **PAG** (Permissioned Access / Publisher: platform ↔ publisher retrieval, no ads).
+
+### Advertising
+
 | Schema | Description |
-|---------|--------------|
-| [context-request.json](context-request.json) | Operator → Brand Agent request containing normalized intent |
-| [bid.json](bid.json) | Advertiser agent bid payload |
-| [auction-result.json](auction-result.json) | Auction winner response |
+|--------|--------------|
+| [Platform Request](/schemas/platform-request) | Platform → Operator: user context, intent, runtime, auction params |
+| [Context Request](/schemas/context-request) | Operator → Brand Agents: enriched auction context |
+| [Bid](/schemas/bid) | Brand Agent bid payload (pricing, recommendation) |
+| [Auction Result](/schemas/auction-result) | Operator → Platform: winning response |
 | [event-cpx.json](event-cpx.json) | Exposure event |
 | [event-cpc.json](event-cpc.json) | Click event |
 | [event-cpa.json](event-cpa.json) | Conversion event |
 | [ledger-record.json](ledger-record.json) | Final ledger record summary |
+
+### PAG (Publisher / Permissioned Access)
+
+| Schema | Description |
+|--------|--------------|
+| [aip.json — Publisher Declaration](/schemas/aip) | `/.well-known/aip.json` (AIP v0.1): consent, editorial_domains, retrieval limits |
+| [RetrieveRequest](/schemas/retrieve-request) | Platform → publisher: permissioned content retrieval (no ads, no bidding) |
+| [RetrieveResponse](/schemas/retrieve-response) | Publisher → platform: chunks, citations, or denial |
+| [Access & Citation Events](/schemas/access-citation-event) | Post-retrieval accountability: access and citation events (no ads, no pricing, no user identity) |
 
 ## Usage
 

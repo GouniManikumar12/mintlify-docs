@@ -61,6 +61,8 @@ X-AIP-Version: 0.1
 
 Operators define their own signature algorithms, timestamp formats, and verification logic. The protocol only requires that messages are authenticated and integrity-protected.
 
+For **RetrieveRequest** and **RetrieveResponse** (platform ↔ publisher, no ads), the normative signing scheme is defined in [AIP Authentication & Signing (v0.1)](/authentication-signing): required headers, canonical string, HMAC-SHA256, replay window, and verification rules.
+
 ---
 
 ## 5. Key Management

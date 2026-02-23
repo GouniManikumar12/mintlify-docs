@@ -1,9 +1,16 @@
 # Context Request Schema
 
 ## Overview
-Normalized request that an Operator sends to subscribed Brand Agents when opening an auction. Uses UCP-like format with enriched context, intent classification, and operator-generated metadata. It includes the enriched intent, allowed creative formats, and timing information.
 
-## UCP-like Structure
+**ContextRequest** is sent **AdMesh (Operator) → Brand Agents**. It is **not** a PlatformRequest.
+
+- **Not UCP** — UCP-inspired only. It is operator-enriched, operator-trusted, and (eventually) operator-signed.
+- **Role:** “Given a valid, consented platform request, here is the enriched auction context you may bid on.” Permission has already been decided; this message is for bidding only.
+- **Intent here ≠ intent in PlatformRequest.** PlatformRequest intent is platform-asserted and used for **publisher consent gating** (e.g. match against `aip.json` editorial_domains). ContextRequest intent is **operator-generated** and used for **brand bidding decisions**. They can differ; that is expected.
+
+Normalized request that an Operator sends to subscribed Brand Agents when opening an auction. Uses a UCP-like format with enriched context, intent classification, and operator-generated metadata. Includes enriched intent, allowed creative formats, and timing information.
+
+## Structure
 
 The ContextRequest follows a UCP-like structure with the following top-level fields:
 
@@ -33,10 +40,12 @@ The ContextRequest follows a UCP-like structure with the following top-level fie
 
 ## Producer Object
 
+Forwarded from PlatformRequest. The producer is the **platform** (AI host), not the content publisher.
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `agent_id` | string | Identifier of the AI platform |
-| `agent_role` | string | Role of the agent, typically "publisher" |
+| `agent_role` | string | **Must be `"platform"`** when forwarded from PlatformRequest. Reserve "publisher" for content owners. |
 | `software` | string | Software name |
 | `software_version` | string | Software version or model identifier |
 

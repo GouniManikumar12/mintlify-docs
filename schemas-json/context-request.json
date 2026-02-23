@@ -49,8 +49,8 @@
         },
         "agent_role": {
           "type": "string",
-          "description": "Role of the agent, typically 'publisher'",
-          "example": "publisher"
+          "description": "Role of the request producer. Use 'platform' when forwarded from PlatformRequest. Reserve 'publisher' for content owners.",
+          "example": "platform"
         },
         "software": {
           "type": "string",
@@ -292,7 +292,7 @@
       "timestamp": "2025-11-14T18:22:00Z",
       "producer": {
         "agent_id": "openai_chat",
-        "agent_role": "publisher",
+        "agent_role": "platform",
         "software": "chatgpt",
         "software_version": "4.3-mini"
       },

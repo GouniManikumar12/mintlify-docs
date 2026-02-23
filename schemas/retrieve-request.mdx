@@ -1,0 +1,143 @@
+---
+title: RetrieveRequest
+description: Platform-to-publisher permissioned content retrieval request (no ads, no bidding, no operator semantics).
+---
+
+## Purpose (normative)
+
+`RetrieveRequest` is a **platform-declared, permissioned request** sent by an AI platform to a publisher's AIP retrieve endpoint to access content in response to a live user query.
+
+It is **intentionally separate** from PlatformRequest and ContextRequest. No ads. No bidding. No operator semantics. Only permissioned retrieval.
+
+It is evaluated against:
+
+- `aip.json`
+- `editorial_domains`
+- publisher policy
+
+---
+
+## Canonical schema location
+
+```
+https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-request.schema.json
+```
+
+---
+
+## Schema summary
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `aip_version` | string | Yes | Must be `"0.1"`. |
+| `request_id` | string | Yes | Unique identifier for this retrieval request. May be derived from a PlatformRequest. |
+| `timestamp` | string (date-time) | Yes | ISO 8601 timestamp when the request was generated. |
+| `platform` | object | Yes | Identity of the AI platform. `id` required; `software`, `software_version` optional. |
+| `intent` | object | Yes | Platform-declared intent for editorial scope matching. `domain` required; `subdomain`, `confidence` optional. |
+| `context` | object | Yes | Minimal context. `language` required; `geography`, `placement` optional. |
+| `runtime` | object | Yes | Live interaction. `session_id`, `turn_index` required; `query_text`, `latency_budget_ms` optional. |
+| `extensions` | object | No | Namespaced extensions for future use. |
+
+### intent
+
+- **domain** — Primary intent domain (must align with publisher `editorial_domains`). Pattern: `^[a-z0-9]+(\.[a-z0-9-]+)*$`
+- **subdomain** — Optional. Same pattern.
+- **confidence** — Optional. 0.0–1.0.
+
+### context
+
+- **language** — BCP 47 (e.g. `en-US`). Required.
+- **geography.country** — ISO 3166-1 alpha-2. Optional.
+- **placement** — Surface (e.g. conversation, chat, voice). Optional.
+
+### runtime
+
+- **session_id**, **turn_index** — Required.
+- **query_text**, **latency_budget_ms** — Optional.
+
+---
+
+## Example
+
+Well-formed `RetrieveRequest` body (e.g. POST to publisher's retrieve endpoint):
+
+```json
+{
+  "aip_version": "0.1",
+  "request_id": "req_92fA1",
+  "timestamp": "2025-01-15T14:30:00Z",
+  "platform": {
+    "id": "platform-acme-001",
+    "software": "Acme Assistant",
+    "software_version": "2.1.0"
+  },
+  "intent": {
+    "domain": "business",
+    "subdomain": "finance.markets",
+    "confidence": 0.92
+  },
+  "context": {
+    "language": "en-US",
+    "geography": {
+      "country": "US"
+    },
+    "placement": "conversation"
+  },
+  "runtime": {
+    "session_id": "sess_abc123",
+    "turn_index": 2,
+    "query_text": "What are the best CRM tools for small teams?",
+    "latency_budget_ms": 500
+  }
+}
+```
+
+---
+
+## What this schema deliberately excludes
+
+This is intentional and important.
+
+- No auction data  
+- No CPX / CPM / pricing  
+- No brand or creative metadata  
+- No embeddings  
+- No operator scoring  
+- No user identity beyond session context  
+
+If any of those appear in a RetrieveRequest, the request is **non-compliant**.
+
+---
+
+## How publishers evaluate a RetrieveRequest
+
+A publisher MUST evaluate, in this order:
+
+1. Verify authentication / signature (out of scope of this schema)
+2. Check `intent_access.enabled` and `state` (from `aip.json`)
+3. Match `intent.domain` (and optionally `intent.subdomain`) against `editorial_domains`
+4. Enforce `retrieval` limits (from `aip.json`)
+5. Respond or deny
+
+This schema gives publishers everything they need — and nothing they don't.
+
+---
+
+## Why this schema will survive scrutiny
+
+- Clean separation from advertising  
+- Explicit platform-declared intent  
+- Deterministic consent matching  
+- Minimal personal data surface  
+- Future-safe via `extensions`  
+
+---
+
+## Schema file
+
+Full JSON Schema (Draft 2020-12): [retrieve-request.json](/schemas-json/retrieve-request.json)
+
+## See also
+
+- [aip.json — Publisher Declaration](/schemas/aip) — Publisher consent and capability declaration (`editorial_domains`, `retrieval`, `intent_access`)
+- [PlatformRequest](/schemas/platform-request) — Platform → Operator (ads/auction flow; separate from retrieval)

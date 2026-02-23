@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agenticintentprotocol.com/aip/0.1/schema.json",
+  "title": "Agentic Intent Protocol – Publisher Declaration (v0.1)",
+  "description": "Declarative publisher consent and capability declaration for permissioned AI access under the Agentic Intent Protocol.",
+  "type": "object",
+
+  "required": [
+    "aip_version",
+    "publisher",
+    "intent_access",
+    "editorial_domains",
+    "retrieval",
+    "compliance"
+  ],
+
+  "additionalProperties": false,
+
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+
+    "aip_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+
+    "publisher": {
+      "type": "object",
+      "description": "Publisher identity information.",
+      "required": ["id", "name", "domain"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]{2,64}$",
+          "description": "Publisher identifier. Unique within the publisher domain."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "domain": {
+          "type": "string",
+          "format": "hostname"
+        }
+      }
+    },
+
+    "intent_access": {
+      "type": "object",
+      "description": "Legal and consent constraints for AI access.",
+      "required": [
+        "enabled",
+        "mode",
+        "training_use",
+        "storage_rights"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether any AI access is permitted."
+        },
+        "state": {
+          "type": "string",
+          "enum": ["active", "paused", "disabled"],
+          "description": "Operational state of access. Optional in v0.1."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["live_only"],
+          "description": "Access is permitted only in response to a contemporaneous user request."
+        },
+        "training_use": {
+          "type": "boolean",
+          "description": "Whether retrieved content may be used for model training or fine-tuning."
+        },
+        "storage_rights": {
+          "type": "string",
+          "enum": ["none"],
+          "description": "Long-term storage rights granted for publisher content."
+        },
+        "cache_policy": {
+          "type": "string",
+          "enum": ["no_store"],
+          "description": "Caching policy for retrieved content."
+        }
+      }
+    },
+
+    "editorial_domains": {
+      "type": "array",
+      "description": "Publisher-declared editorial coverage scopes for which AIP access is permitted.",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)*$"
+      }
+    },
+
+    "endpoints": {
+      "type": "object",
+      "description": "Optional transport endpoints for AIP interactions.",
+      "additionalProperties": false,
+      "properties": {
+        "capabilities": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "retrieve": {
+          "type": "object",
+          "required": ["method", "url"],
+          "additionalProperties": false,
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": ["POST"]
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "capabilities_ref": {
+              "type": "string",
+              "description": "Reference to the capability block governing this endpoint."
+            }
+          }
+        },
+        "event": {
+          "type": "object",
+          "required": ["method", "url", "required"],
+          "additionalProperties": false,
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": ["POST"]
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "required": {
+              "type": "boolean",
+              "description": "Whether platforms are required to emit events."
+            }
+          }
+        }
+      }
+    },
+
+    "retrieval": {
+      "type": "object",
+      "description": "Declared content retrieval capabilities and limits.",
+      "required": ["supports"],
+      "additionalProperties": false,
+      "properties": {
+        "supports": {
+          "type": "object",
+          "required": ["chunks", "citations", "full_article"],
+          "additionalProperties": false,
+          "properties": {
+            "chunks": { "type": "boolean" },
+            "citations": { "type": "boolean" },
+            "full_article": { "type": "boolean" }
+          }
+        },
+        "max_chunks": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+
+    "compliance": {
+      "type": "object",
+      "description": "Revocation and lifecycle metadata.",
+      "required": ["revocable", "notice_required", "last_updated"],
+      "additionalProperties": false,
+      "properties": {
+        "revocable": {
+          "type": "boolean"
+        },
+        "notice_required": {
+          "type": "boolean"
+        },
+        "revocation_reason": {
+          "type": "string",
+          "enum": ["legal", "policy", "technical"]
+        },
+        "sunset": {
+          "type": ["string", "null"],
+          "format": "date"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+
+    "extensions": {
+      "type": "object",
+      "description": "Namespaced extensions for future use.",
+      "additionalProperties": true
+    }
+  },
+
+  "$defs": {
+    "endpoint": {
+      "type": "object",
+      "required": ["method", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST"]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    }
+  }
+}

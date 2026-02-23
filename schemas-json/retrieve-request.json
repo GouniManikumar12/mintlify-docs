@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-request.schema.json",
+  "title": "Agentic Intent Protocol – RetrieveRequest (v0.1)",
+  "description": "Platform-to-publisher request for permissioned, live content retrieval under AIP.",
+  "type": "object",
+
+  "required": [
+    "aip_version",
+    "request_id",
+    "timestamp",
+    "platform",
+    "intent",
+    "context",
+    "runtime"
+  ],
+
+  "additionalProperties": false,
+
+  "properties": {
+    "aip_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+
+    "request_id": {
+      "type": "string",
+      "description": "Unique identifier for this retrieval request. May be derived from a PlatformRequest."
+    },
+
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the request was generated."
+    },
+
+    "platform": {
+      "type": "object",
+      "description": "Identity of the AI platform making the request.",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Registered platform identifier."
+        },
+        "software": {
+          "type": "string",
+          "description": "Platform software name (optional)."
+        },
+        "software_version": {
+          "type": "string",
+          "description": "Platform software or model version (optional)."
+        }
+      }
+    },
+
+    "intent": {
+      "type": "object",
+      "description": "Platform-declared user intent used for editorial scope matching.",
+      "required": ["domain"],
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)*$",
+          "description": "Primary intent domain (must align with editorial_domains)."
+        },
+        "subdomain": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)*$",
+          "description": "Optional intent subdomain."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Platform confidence in intent classification."
+        }
+      }
+    },
+
+    "context": {
+      "type": "object",
+      "description": "Minimal contextual metadata for retrieval.",
+      "required": ["language"],
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2}-[A-Z]{2}$",
+          "description": "User locale (BCP 47)."
+        },
+        "geography": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "country": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$",
+              "description": "ISO 3166-1 alpha-2 country code."
+            }
+          }
+        },
+        "placement": {
+          "type": "string",
+          "description": "Surface where the response will be rendered (e.g. conversation, chat, voice)."
+        }
+      }
+    },
+
+    "runtime": {
+      "type": "object",
+      "description": "Runtime information about the live interaction.",
+      "required": ["session_id", "turn_index"],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "Conversation or interaction session identifier."
+        },
+        "turn_index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Turn index within the session."
+        },
+        "query_text": {
+          "type": "string",
+          "description": "Raw user query text (optional, bounded)."
+        },
+        "latency_budget_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional latency budget in milliseconds."
+        }
+      }
+    },
+
+    "extensions": {
+      "type": "object",
+      "description": "Namespaced extensions for future use.",
+      "additionalProperties": true
+    }
+  }
+}

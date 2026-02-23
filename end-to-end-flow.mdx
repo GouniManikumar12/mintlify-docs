@@ -17,7 +17,7 @@ sequenceDiagram
 
     User->>Platform: User query/intent
     Platform->>Operator: PlatformRequest<br/>(UCP format)
-    Note over Platform,Operator: Contains: query_text,<br/>messages, latency_budget_ms,<br/>cpx_floor
+    Note over Platform,Operator: Contains: intent (domain/subdomain),<br/>runtime (query, session), auction (cpx_floor)
     
     Operator->>Operator: Derive ContextRequest<br/>(UCP-like format)
     Note over Operator: Removes raw user data,<br/>enriches with intent
@@ -60,16 +60,18 @@ sequenceDiagram
 
 **Schema:** [`platform-request.json`](/schemas/platform-request)
 
-The AI platform initiates an ad auction by sending a `PlatformRequest` to the operator.
+The AI platform initiates an ad auction by sending a `PlatformRequest` to the operator. The operator validates the request (signature, publisher `aip.json`, and match of `editorial_domains` vs `extensions.aip.intent`); if allowed, it derives a **ContextRequest** and sends it to brand agents.
 
 ### Key Fields:
-- `spec_version`: UCP specification version (e.g., "1.0.0")
+- `spec_version`: UCP specification version (e.g. "1.0.0")
 - `message_id`: Unique identifier for this auction request
 - `timestamp`: ISO 8601 timestamp
-- `producer`: Producer information (agent_id, agent_role, software, software_version)
-- `context`: Context information (language, publisher, placement, device, geography)
-- `identity`: Identity information (namespace, value_hash, confidence)
-- `extensions.aip`: AIP extension containing session_id, turn_index, query_text, messages, latency_budget_ms, cpx_floor
+- `producer`: Producer information; **`agent_role` must be `"platform"`** (AI host; reserve "publisher" for content owners)
+- `context`: Context (language, publisher, placement, device, geography)
+- `identity`: Identity (namespace, value_hash, confidence)
+- `extensions.aip.intent`: **Required.** Platform-declared intent (domain, subdomain, confidence) for publisher consent gating; operator matches against `aip.json` editorial_domains
+- `extensions.aip.runtime`: **Required.** session_id, turn_index, query_text, optional messages, latency_budget_ms
+- `extensions.aip.auction`: Optional. pricing_model, cpx_floor, currency (consent logic must not touch auction logic)
 
 ### Example:
 ```json
@@ -79,23 +81,16 @@ The AI platform initiates an ad auction by sending a `PlatformRequest` to the op
   "timestamp": "2025-11-14T18:22:00Z",
   "producer": {
     "agent_id": "openai_chat",
-    "agent_role": "publisher",
+    "agent_role": "platform",
     "software": "chatgpt",
     "software_version": "4.3-mini"
   },
   "context": {
     "language": "en-US",
     "publisher": "openai_chat",
-    "placement": {
-      "ad_unit": "conversation"
-    },
-    "device": {
-      "platform": "web",
-      "form_factor": "desktop"
-    },
-    "geography": {
-      "country": "US"
-    }
+    "placement": { "ad_unit": "conversation" },
+    "device": { "platform": "web", "form_factor": "desktop", "ua_hash": "ua_hash_xyz" },
+    "geography": { "country": "US" }
   },
   "identity": {
     "namespace": "platform_user",
@@ -104,15 +99,18 @@ The AI platform initiates an ad auction by sending a `PlatformRequest` to the op
   },
   "extensions": {
     "aip": {
-      "session_id": "sess_001",
-      "turn_index": 3,
-      "query_text": "best CRM for small teams",
-      "messages": [
-        { "role": "user", "content": "best CRM tools?" },
-        { "role": "assistant", "content": "HubSpot, Zoho, Salesforce…" }
-      ],
-      "latency_budget_ms": 500,
-      "cpx_floor": 0.05
+      "intent": { "domain": "business", "subdomain": "crm", "confidence": 0.91 },
+      "runtime": {
+        "session_id": "sess_001",
+        "turn_index": 3,
+        "query_text": "best CRM for small teams",
+        "messages": [
+          { "role": "user", "content": "best CRM tools?" },
+          { "role": "assistant", "content": "HubSpot, Zoho, Salesforce…" }
+        ],
+        "latency_budget_ms": 500
+      },
+      "auction": { "pricing_model": "CPX", "cpx_floor": 0.05, "currency": "USD" }
     }
   }
 }
