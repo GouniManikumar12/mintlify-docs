@@ -13,6 +13,7 @@ Each file defines required fields, validation rules, and example payloads.
 | Schema | Description |
 |---------|--------------|
 | [context-request.json](context-request.json) | AI platform request that starts an auction |
+| [agentic-intent-taxonomy.schema.json](agentic-intent-taxonomy.schema.json) | Operator-neutral decision envelope for conversational intent classification |
 | [bid.json](bid.json) | Advertiser agent bid payload |
 | [auction-result.json](auction-result.json) | Auction winner response |
 | [event-cpx.json](event-cpx.json) | Exposure event |
@@ -73,4 +74,3 @@ npx json-schema-to-typescript schemas/context-request.json > types/ContextReques
 - [Auction Mechanics](/auction) - How bidding and clearing works
 - [Events](/events) - Event tracking and ledger finalization
 - [API Reference](/api/openapi) - OpenAPI specification
-

@@ -84,6 +84,7 @@
             "pages": [
               "schemas/platform-request",
               "schemas/context-request",
+              "schemas/agentic-intent-taxonomy",
               "schemas/bid",
               "schemas/auction-result"
             ],

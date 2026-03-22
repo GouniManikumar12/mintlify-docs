@@ -1,0 +1,158 @@
+---
+title: Agentic Intent Taxonomy
+description: Field-level documentation for the Agentic Intent Taxonomy decision envelope
+---
+
+# Agentic Intent Taxonomy
+
+## Purpose
+
+The **Agentic Intent Taxonomy** defines a normalized decision envelope for representing conversational intent in an operator-neutral way.
+
+It is designed to:
+
+- align content classification with IAB Content Taxonomy
+- separate model prediction from system decision
+- support monetization gating, policy enforcement, and auditing
+- remain usable across operators, platforms, exchanges, and advertisers
+
+Canonical IAB reference:
+
+- [IAB Content Taxonomy 3.1 TSV](https://github.com/InteractiveAdvertisingBureau/Taxonomies/blob/develop/Content%20Taxonomies/Content%20Taxonomy%203.1.tsv)
+
+## Top-Level Structure
+
+The schema is divided into two top-level objects:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `model_output` | object | Yes | Model-produced classification, including IAB mapping, intent, context, and optional fallback metadata |
+| `system_decision` | object | Yes | System-produced policy, opportunity, and optional trajectory output |
+
+## `model_output`
+
+`model_output` contains predictive output. It should reflect what the model inferred, not the final monetization decision.
+
+### `model_output.classification`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `iab_content` | object | No | IAB-aligned content mapping using either compact tiers or explicit level objects |
+| `intent` | object | Yes | Primary intent classification block |
+| `context` | object | No | Sparse decision-relevant entities and constraints |
+
+`iab_content` should map against the canonical IAB Content Taxonomy 3.1 TSV:
+[https://github.com/InteractiveAdvertisingBureau/Taxonomies/blob/develop/Content%20Taxonomies/Content%20Taxonomy%203.1.tsv](https://github.com/InteractiveAdvertisingBureau/Taxonomies/blob/develop/Content%20Taxonomies/Content%20Taxonomy%203.1.tsv)
+
+### `model_output.classification.intent`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | High-level intent type such as `informational`, `commercial`, `transactional`, or `ambiguous` |
+| `subtype` | string | No | Interaction pattern such as `comparison`, `product_discovery`, or `signup` |
+| `decision_phase` | string | Yes | Funnel stage such as `awareness`, `consideration`, `decision`, or `action` |
+| `confidence` | number | No | Model certainty from `0.0` to `1.0` |
+| `commercial_score` | number | No | Commercial relevance score from `0.0` to `1.0` |
+| `summary` | string | No | Optional non-normative human-readable explanation; systems must not depend on it for decisioning |
+
+### `model_output.fallback`
+
+Optional fallback guidance for low-confidence or ambiguous cases.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `applied` | boolean | Yes | Whether fallback logic was invoked |
+| `fallback_intent_type` | string | Yes | Safe fallback intent type |
+| `fallback_monetization_eligibility` | string | Yes | Safe fallback monetization posture |
+| `reason` | string | Yes | Why fallback was used, such as `confidence_below_threshold` or `insufficient_context` |
+
+## `system_decision`
+
+`system_decision` contains the auditable operator decision produced after applying thresholds, policy logic, and runtime controls.
+
+### `system_decision.policy`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `monetization_eligibility` | string | Yes | Final eligibility state: `allowed`, `allowed_with_caution`, `restricted`, or `not_allowed` |
+| `eligibility_reason` | string | No | Human-readable explanation of the decision boundary that was applied |
+| `decision_basis` | string | No | Decision path such as `score_threshold`, `policy_override`, or a fallback path |
+| `applied_thresholds` | object | No | Concrete numeric thresholds used by the system |
+| `sensitivity` | string | No | Safety sensitivity classification |
+| `regulated_vertical` | boolean | No | Indicates whether regulated-vertical controls apply |
+
+### `system_decision.opportunity`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | Opportunity type such as `none`, `soft_recommendation`, `comparison_slot`, or `transaction_trigger` |
+| `strength` | string | Yes | Monetization-moment strength: `low`, `medium`, or `high` |
+
+### `system_decision.intent_trajectory`
+
+Optional ordered list of decision phases across turns, such as:
+
+```json
+["research", "consideration", "decision"]
+```
+
+## Example
+
+```json
+{
+  "model_output": {
+    "classification": {
+      "iab_content": {
+        "taxonomy_version": "3.0",
+        "tier1": "Business",
+        "tier2": "Software",
+        "tier3": "CRM"
+      },
+      "intent": {
+        "type": "commercial",
+        "subtype": "comparison",
+        "decision_phase": "decision",
+        "confidence": 0.87,
+        "commercial_score": 0.92,
+        "summary": "User is evaluating CRM tools for a small team."
+      },
+      "context": {
+        "entities": ["HubSpot", "Zoho"],
+        "constraints": {
+          "company_size": "small_team"
+        }
+      }
+    }
+  },
+  "system_decision": {
+    "policy": {
+      "monetization_eligibility": "allowed",
+      "eligibility_reason": "commercial_score_above_threshold",
+      "decision_basis": "score_threshold",
+      "applied_thresholds": {
+        "commercial_score_min": 0.7,
+        "confidence_min": 0.6
+      },
+      "sensitivity": "low",
+      "regulated_vertical": false
+    },
+    "opportunity": {
+      "type": "comparison_slot",
+      "strength": "high"
+    },
+    "intent_trajectory": ["research", "consideration", "decision"]
+  }
+}
+```
+
+## Notes
+
+- `summary` is optional and non-normative
+- systems should not use `summary` for ranking, matching, policy, or monetization logic
+- model inference and system decision are intentionally separated for auditability
+- the public schema identifier is `https://agenticintentprotocol.com/schemas/agentic-intent-taxonomy.schema.json`
+- the canonical IAB mapping reference is the IAB Content Taxonomy 3.1 TSV: [https://github.com/InteractiveAdvertisingBureau/Taxonomies/blob/develop/Content%20Taxonomies/Content%20Taxonomy%203.1.tsv](https://github.com/InteractiveAdvertisingBureau/Taxonomies/blob/develop/Content%20Taxonomies/Content%20Taxonomy%203.1.tsv)
+
+## Schema file
+
+Full JSON Schema (Draft 2020-12): [agentic-intent-taxonomy.schema.json](/schemas-json/agentic-intent-taxonomy.schema.json)
