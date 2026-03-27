@@ -17,8 +17,8 @@ A Brand Agent can be rule-based, ML-driven, or fully autonomous. AIP does not pr
 2. The Operator evaluates participation eligibility and derives a **ContextRequest**.
 3. The Operator publishes the ContextRequest to subscribed Brand Agents.
 4. Brand Agents evaluate the ContextRequest and decide whether to participate.
-5. Brand Agents submit a **response** to the Operator within the selection window.
-6. The Operator selects a winning response and determines the interaction mode.
+5. Brand Agents submit a **bid** to the Operator within the auction window.
+6. The Operator evaluates the auction outcome and determines the interaction mode.
 7. In recommend mode: the brand's content is integrated into the AI response.
 8. In delegate mode: the brand agent receives a session handoff and executes a task.
 9. Verified events are reported and settled via the Operator.
@@ -37,14 +37,14 @@ Brand Agents can make effective participation decisions without access to raw us
 
 ---
 
-## Selection window and timing
+## Auction window and timing
 
-AIP uses a time-bounded selection window to ensure low latency and predictable outcomes.
+AIP uses a time-bounded auction window to ensure low latency and predictable outcomes.
 
-* The selection window is determined by the platform's `latency_budget_ms`
+* The auction window is determined by the platform's `latency_budget_ms`
 * The Operator computes the available response window by subtracting operator overhead
 * Brand Agents must submit responses before the window expires
-* Late responses are ignored and do not participate in selection or settlement
+* Late responses are ignored and do not participate in the auction or settlement
 
 ---
 
@@ -56,7 +56,7 @@ A Brand Agent:
 - Evaluates anonymized user intent
 - Decides whether to participate
 - Returns a structured response
-- Participates in real-time selection
+- Participates in real-time auctions
 - Supports recommend mode (content contribution) and/or delegate mode (task execution)
 - Receives verified lifecycle event callbacks
 - Optimizes spend based on Operator settlement records
@@ -80,7 +80,7 @@ AIP imposes no limit on who can operate a Brand Agent.
 ### Brand Agents MUST
 
 - Expose a stable HTTP endpoint or supported transport
-- Respond to ContextRequests within the Operator selection window
+- Respond to ContextRequests within the Operator auction window
 - Return one valid `Bid` per ContextRequest
 - Include at least one valid pricing field in `pricing` (`cpx_micros`, `cpc_micros`, or `cpa_micros`)
 - Provide a valid `recommendation.creative_input` payload
@@ -131,18 +131,18 @@ A ContextRequest may include:
 * Vertical or category signals
 * Geographic or market region (coarse-grained)
 * Operator-defined metadata and policy constraints
-* Timing and selection parameters
+* Timing and auction parameters
 
 ---
 
 ## 4. Brand agent bid
 
-Brand Agents submit `Bid` payloads to the Operator within the selection window.
+Brand Agents submit `Bid` payloads to the Operator within the auction window.
 
 Each bid:
 
-* Must be submitted within the active selection window
-* Is evaluated only if received before the window closes
+* Must be submitted within the active auction window
+* Is evaluated only if received before the auction window closes
 * Is associated with a single ContextRequest
 
 | Field | Required | Description |
@@ -343,14 +343,14 @@ Brand Agents are commercial agents that:
 - Receive intent context
 - Evaluate relevance
 - Submit `Bid` payloads
-- Participate in real-time selection
+- Participate in real-time auctions
 - Support recommend mode, delegate mode, or both
 - Receive lifecycle event callbacks
 - Manage budgets and performance
 
 AIP ensures:
 
-- Fair selection behavior
+- Fair auction behavior
 - Transparent outcome settlement
 - Consistent interaction across Operators
 - Interoperability between commercial agents

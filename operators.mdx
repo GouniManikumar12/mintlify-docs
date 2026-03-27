@@ -25,8 +25,8 @@ This page explains how operators work, what they must implement, and how others 
 3. The Operator derives a **ContextRequest**, removing raw user data and enforcing privacy rules.
 4. The Operator filters brand agents that match the context and governance constraints.
 5. The Operator distributes (broadcasts) the `ContextRequest` to **all matching** Brand Agents.
-6. Brand Agents evaluate the ContextRequest and submit signed responses within the selection window.
-7. The Operator runs **selection** and determines the **interaction mode** (recommend or delegate).
+6. Brand Agents evaluate the ContextRequest and submit bids within the auction window.
+7. The Operator runs the **auction** and determines the **interaction mode** (recommend or delegate).
 8. The Operator returns the PlatformResponse (or `no_match`) to the Platform.
 9. Verified events are recorded and settled via the Operator's settlement system.
 
@@ -48,7 +48,7 @@ PlatformRequest uses the AIP canonical request format. A PlatformRequest may inc
 * Conversation state
 * Platform session identifiers
 * Platform-specific metadata
-* `latency_budget_ms`  -  the platform's latency budget for selection
+* `latency_budget_ms`  -  the platform's latency budget for the auction
 
 ### ContextRequest (brand agent-facing)
 
@@ -90,16 +90,16 @@ For delegated sessions, operators should rely on verified session-activity event
 
 Operators expose public protocol endpoints to interact with Brand Agents.
 
-### Deliver selection requests to brand agents
+### Deliver auction requests to brand agents
 
-**POST /brand_agents/brand_agent_id/selection**
+**POST /brand_agents/brand_agent_id/auction**
 
-Used by the Operator to deliver a ContextRequest to a Brand Agent.
+Used by the Operator to deliver a ContextRequest to a Brand Agent for auction participation.
 
 * Payload: ContextRequest schema
 * Delivery: asynchronous
 * Operators MAY apply rate limiting
-* Operators MUST respect the selection window
+* Operators MUST respect the auction window
 
 ### Receive responses
 
@@ -108,24 +108,24 @@ Used by the Operator to deliver a ContextRequest to a Brand Agent.
 Used by Brand Agents to submit bid responses.
 
 * Payload: Bid schema
-* Responses received after the selection window are ignored
+* Responses received after the auction window are ignored
 * Each response maps to a single ContextRequest
 
 ### Optional result notification
 
-**POST /brand_agents/brand_agent_id/selection_result**
+**POST /brand_agents/brand_agent_id/auction_result**
 
 Operators MAY notify Brand Agents of win or loss outcomes for transparency or optimization.
 
 ---
 
-## Selection window and timing
+## Auction window and timing
 
-AIP uses a time-bounded selection window to ensure low latency and predictable outcomes.
+AIP uses a time-bounded auction window to ensure low latency and predictable outcomes.
 
-* The selection window is determined by the platform's `latency_budget_ms`
+* The auction window is determined by the platform's `latency_budget_ms`
 * The Operator computes the available response window by subtracting operator overhead
-* The window begins when the Operator distributes the ContextRequest to matching Brand Agents
+* The auction window begins when the Operator distributes the ContextRequest to matching Brand Agents
 * Brand Agents must submit responses before the window expires
 * If no `latency_budget_ms` is provided, the Operator uses a default fallback
 
@@ -157,24 +157,24 @@ Brand Agents MUST NOT receive:
 Every operator must implement five core functions:
 
 ## 1. Receive intent context from platforms
-Operators accept anonymized user intent and create a selection context.
+Operators accept anonymized user intent and create an auction context.
 
 They must:
 
 - validate payload
 - generate a serve_token
-- start the selection process
+- start the auction process
 - notify eligible brand agents
 
 ## 2. Govern participation eligibility
-Before selection begins, operators evaluate whether commercial participation is appropriate for the given intent:
+Before the auction begins, operators evaluate whether commercial participation is appropriate for the given intent:
 
 - Check intent type and governance rules
 - Apply operator policy constraints to the declared participation intent
 - Enforce participation policies
 
-## 3. Run selection
-Operators run selection using their chosen mechanism (auction, rules, or hybrid):
+## 3. Run the auction
+Operators run the auction using their chosen mechanism (auction, rules, or hybrid):
 
 - Evaluate brand agent responses
 - Apply scoring logic (value, relevance, quality)
@@ -182,7 +182,7 @@ Operators run selection using their chosen mechanism (auction, rules, or hybrid)
 - Selection must complete within the timing window
 
 ## 4. Determine interaction mode
-After selection, operators decide whether the participation takes the form of:
+After the auction, operators decide whether the participation takes the form of:
 
 - **Recommend**  -  brand content is integrated into the AI response
 - **Delegate**  -  session is handed off to the brand agent
@@ -216,7 +216,7 @@ All events must resolve to **one** billable unit per serve_token.
 |---------------|----------|-------------|
 | Context ingestion | Yes | Handle PlatformRequests from platforms |
 | Participation governance | Yes | Evaluate eligibility based on intent and rules |
-| Selection engine | Yes | Implement selection logic (auction, rules, or hybrid) |
+| Auction engine | Yes | Implement auction logic (auction, rules, or hybrid) |
 | Interaction mode determination | Yes | Decide recommend vs delegate |
 | Event pipeline | Yes | Participation, interaction, delegation, and outcome verification |
 | Serve token system | Yes | Generate and sign immutable tokens |
@@ -234,9 +234,9 @@ All events must resolve to **one** billable unit per serve_token.
 To operate an AIP-compatible operator, an implementation **MUST support the following**:
 
 * **PlatformRequest handling**  -  Accept and validate platform-submitted intent
-* **Participation governance**  -  Evaluate eligibility before selection
+* **Participation governance**  -  Evaluate eligibility before the auction
 * **Selection execution**  -  Evaluate responses within timing constraints
-* **Interaction mode determination**  -  Decide recommend vs delegate for each selection
+* **Interaction mode determination**  -  Decide recommend vs delegate for each auction outcome
 * **Delegation management**  -  Initiate sessions, scope context, manage consent flow
 * **Event verification**  -  Verify lifecycle events using AIP event schemas
 * **Settlement accounting**  -  Track balances, spend, and settlement using deterministic ledger records
@@ -289,6 +289,6 @@ Brand Agents must:
 
 1. Register with operator
 2. Create offers
-3. Respond to selection requests
+3. Respond to auction requests
 4. Support delegation if applicable
 5. Track spend and outcomes

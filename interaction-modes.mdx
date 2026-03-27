@@ -3,7 +3,7 @@ title: Interaction Modes
 description: How AIP defines the two modes of commercial participation  -  recommend and delegate.
 ---
 
-After selection determines which brand agent participates, the Operator determines the **interaction mode**  -  how that participation manifests in the user's experience.
+After the auction determines which brand agent participates, the Operator determines the **interaction mode**  -  how that participation manifests in the user's experience.
 
 AIP defines two interaction modes. This is the core abstraction that separates AIP from traditional advertising protocols.
 
@@ -19,7 +19,7 @@ In recommend mode, the brand agent contributes to the AI's response without any 
 - When the user is exploring options, not ready to act
 
 **What happens:**
-1. Operator selects a brand agent via selection
+1. Operator selects a brand agent via auction
 2. Brand agent's content is integrated into the AI response
 3. User sees the recommendation alongside organic results
 4. No session is created  -  no handoff occurs
@@ -48,7 +48,7 @@ In delegate mode, the AI offers to hand off the session to a brand agent. The us
 - When the user is ready to sign up, purchase, or complete a workflow
 
 **What happens:**
-1. Operator selects a brand agent via selection
+1. Operator selects a brand agent via auction
 2. Operator determines that delegation is the appropriate interaction mode
 3. AI asks the user for confirmation before handoff
 4. If the user consents, a delegation session is initiated
@@ -69,7 +69,7 @@ In delegate mode, the AI offers to hand off the session to a brand agent. The us
 
 ---
 
-## Mode selection logic
+## Mode determination logic
 
 The Operator determines the interaction mode based on intent signals from the PlatformRequest:
 
@@ -81,9 +81,9 @@ The Operator determines the interaction mode based on intent signals from the Pl
 | Transactional | Decision | Delegate |
 | Transactional | Action | Delegate |
 
-Operators may define their own mode selection logic. The protocol requires that:
+Operators may define their own mode determination logic. The protocol requires that:
 
-- The mode is determined **after** selection, not before
+- The mode is determined **after** the auction, not before
 - Delegate mode **always** requires user consent
 - The mode is recorded in the `PlatformResponse` for downstream tracking
 
