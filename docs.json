@@ -52,6 +52,7 @@
               "protocol",
               "interaction-modes",
               "delegation",
+              "commerce-ucp",
               "selection",
               "events",
               "state-machine",
