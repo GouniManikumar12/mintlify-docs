@@ -188,10 +188,12 @@ In delegate mode, the brand agent receives a session handoff and executes a task
 ### Brand agents that support delegation MUST:
 
 - Accept session initiation from the Operator
-- Respect context scope boundaries  -  only use data provided in the scoped context
+- Respect context scope boundaries at handoff  -  only use operator-provided scoped context for session initiation and task execution
 - Provide a functional experience that completes the intended task
 - Declare delegation capability in the optional `delegation` block of the bid when applicable
+- Emit delegated-session activity signals while the delegated session remains active
 - Fire `task_completed` when the outcome is verified
+- Treat new user-provided session data as session-bound by default
 - Handle session timeouts and errors gracefully
 
 ### What the brand agent receives at session initiation:
@@ -207,6 +209,8 @@ In delegate mode, the brand agent receives a session handoff and executes a task
 - User identifiers
 - Other agents' participation data
 
+Additional information may still be collected directly from the user during the delegated session when needed to complete the task. In v1.0, that in-session data is session-bound by default and is not automatic authorization for training, profiling, or future outreach.
+
 ---
 
 ## 7. Event callbacks
@@ -220,6 +224,8 @@ Once a Brand Agent is selected, the Operator sends event notifications tied to t
 | `exposure_shown` | Commercial response was surfaced to the user |
 | `interaction_started` | User engaged with the recommendation |
 | `delegation_started` | Operator recorded delegated session start (delegate mode) |
+| `delegation_activity` | Platform or Brand Agent proved the delegated session was still active |
+| `delegation_expired` | Operator recorded delegated session expiry before completion |
 | `task_completed` | User completed the target action |
 
 Brand Agents MUST:

@@ -79,7 +79,50 @@ Operators define which scopes are available. The protocol guarantees that raw us
 
 ---
 
-## 5. Session initiation
+## 5. In-Session Information Flow
+
+Delegation in AIP v1.0 uses a hybrid session model:
+
+- The initial handoff is always operator-mediated
+- After session start, live task turns may flow directly between the Platform and the Brand Agent
+- The Operator remains the governance, scoping, audit, and settlement layer for the session
+- The Operator does not inspect full delegated turn content by default
+
+This means `context_scope` governs the operator-mediated handoff payload, not unlimited future access to upstream conversation data.
+
+### What the Operator forwards at handoff
+
+At session start, the Operator may forward only the scoped session-init payload declared in `context_scope`.
+
+This payload may include:
+
+- `intent`
+- `constraints`
+- `selection_context`
+- `conversation_summary`
+
+This payload MUST NOT include:
+
+- Raw upstream user queries
+- Raw conversation transcripts
+- User identifiers
+- Platform session history beyond the scoped summary or constraints
+
+### What may happen after session start
+
+After `delegation_started`, the user may continue the delegated task in a multi-turn session. In v1.0:
+
+- The Platform may host or relay the live delegated session
+- The Brand Agent may ask the user for additional information needed to complete the task
+- The Platform and Brand Agent should emit delegated-session activity events so the Operator can track liveness
+- New information provided during the delegated session is not automatically added to the original operator handoff scope
+- New information is session-bound by default and may be used only to complete the active delegated task unless separately consented
+
+No implicit scope expansion occurs mid-session in v1.0. Future scope expansion requires separate consent and explicit operator mediation in a later protocol revision.
+
+---
+
+## 6. Session initiation
 
 Delegation follows a strict sequence:
 
@@ -97,9 +140,12 @@ sequenceDiagram
   Operator->>BrandAgent: Check availability + initiate session (scoped context)
   BrandAgent->>Operator: Session accepted
   Operator->>Operator: delegation_started recorded
-  Note over Platform,BrandAgent: Operator mediates the delegated session between Platform and BrandAgent
-  BrandAgent->>User: Delegation session begins (multi-turn)
-  Note over User,BrandAgent: User completes task within brand agent
+  BrandAgent->>Platform: Delegated session ready
+  Note over Platform,BrandAgent: After operator-mediated start, live task turns may flow directly
+  User->>Platform: Follow-up questions within delegated task
+  Platform->>BrandAgent: Delegated session turns
+  BrandAgent->>Platform: Delegated task responses
+  Note over User,BrandAgent: New task data is collected in-session and is session-bound by default
   BrandAgent->>Operator: task_completed event
   Operator->>Operator: Verify outcome, settle
 ```
@@ -108,14 +154,17 @@ sequenceDiagram
 
 1. **Consent first.** The platform MUST present the delegation offer to the user and receive explicit confirmation before any session is created.
 2. **One session per selection.** Each delegation creates exactly one session. If the user declines, no session is created and the serve token resolves as a recommend-mode participation.
-3. **Scoped context only.** The brand agent receives only the context defined in `context_scope`. No additional data may be shared.
+3. **Scoped upstream handoff only.** At session initiation, the brand agent receives only the operator-forwarded context defined in `context_scope`. No additional upstream platform data may be shared.
 4. **Operator-mediated initiation.** After the platform sends user consent, the Operator confirms brand-agent availability, initiates the session, and emits `delegation_started`.
 5. **Session tracking.** The `session_id` in the delegation object links all events back to the original selection and serve token.
-6. **Multi-turn session.** Once the session is initiated, the user may ask multiple questions. The Brand Agent responds within the delegated session on behalf of the AI platform while representing its brand.
+6. **Hybrid live session.** Once the session is initiated, live delegated turns may flow directly between the Platform and Brand Agent. The Operator still governs session identity, scope, auditability, and settlement.
+7. **No implicit scope expansion.** Information shared after session start is not automatically added to `context_scope` and does not authorize unrestricted replay of upstream conversation data.
+8. **Inactivity expiry.** `session_timeout_seconds` defines the delegated-session inactivity window. Each verified `delegation_activity` resets the timer. If the timer elapses, the Operator expires the session and records `delegation_expired`.
+9. **Session-bound data.** New information the user provides during the delegated session may be used only to complete the active task unless separately consented.
 
 ---
 
-## 6. Consent requirement
+## 7. Consent requirement
 
 In AIP v1.0, `user_consent_required` is always `true` for delegation.
 
@@ -124,6 +173,7 @@ The platform is responsible for:
 - Presenting the delegation offer clearly
 - Identifying the brand agent by name
 - Explaining what will happen if the user consents
+- Making clear that the user is entering a brand-agent-managed task flow
 - Recording the consent decision
 
 The protocol does not prescribe the UI or wording. Platforms implement consent according to their own design standards.
@@ -136,7 +186,7 @@ If the user declines:
 
 ---
 
-## 7. Event tracking through delegation
+## 8. Event tracking through delegation
 
 Delegation introduces additional lifecycle events beyond the standard recommend flow:
 
@@ -144,36 +194,50 @@ Delegation introduces additional lifecycle events beyond the standard recommend 
 |-------|-----------|-------------|
 | `exposure_shown` | Selection result delivered to platform | Platform |
 | `delegation_started` | User consent is confirmed, brand-agent availability is confirmed, and the delegated session is initiated | Operator |
+| `delegation_activity` | Delegated session remains active through user turns, agent turns, or keepalive signals | Platform or Brand Agent |
+| `delegation_expired` | Delegated session expires before task completion | Operator |
 | `task_completed` | User completes the target action | Brand Agent (via Operator) |
+
+`delegation_started` proves that the delegated session was authorized and initiated. It does **not** imply that the Operator transports or inspects every subsequent turn in the live delegated session.
 
 ### Settlement rules for delegation
 
 - If the user consents and completes the task: `task_completed` (CPA) is billed
+- If the session remains active, the Platform and Brand Agent continue emitting `delegation_activity`
+- If the inactivity timer elapses before completion: the Operator records `delegation_expired`
 - If the user consents but does not complete: `delegation_started` may be billed (operator-defined)
 - If the user declines delegation: `exposure_shown` (CPX) may be billed
 - Only the highest-value event is billed per serve token
 
 ---
 
-## 8. Brand agent responsibilities in delegation
+## 9. Brand agent responsibilities in delegation
 
 Brand agents that support delegate mode MUST:
 
 - Accept session initiation from the Operator
-- Respect context scope boundaries  -  do not request additional user data
+- Use the scoped handoff data only for session initiation and task execution
+- Respect context scope boundaries and not treat `context_scope` as blanket access to upstream conversation history
 - Provide a functional experience that completes the intended task
+- Emit `delegation_activity` while the delegated session remains active
 - Fire `task_completed` when the outcome is verified
+- Treat new user-provided information as session-bound by default
 - Handle session timeouts and errors gracefully
 
 Brand agents MAY:
 
 - Support both recommend and delegate modes
 - Implement their own UI and workflow within the session
-- Request additional information directly from the user during the session (with consent)
+- Request additional information directly from the user during the session when needed to complete the task
+
+Brand agents MUST NOT:
+
+- Reuse delegated-session data for training, profiling, or future outreach without separate consent
+- Treat data collected in-session as authorization to expand the original handoff scope
 
 ---
 
-## 9. Example: Full delegation flow
+## 10. Example: Full delegation flow
 
 **User:** "Sign me up for QuickBooks"
 
@@ -186,19 +250,27 @@ Brand agents MAY:
 7. Platform sends consent to the Operator
 8. Operator checks QuickBooks agent availability and initiates the delegated session with scoped context: `["intent", "constraints"]`
 9. Operator records `delegation_started`
-10. QuickBooks agent initiates signup flow
-11. User completes signup
-12. QuickBooks agent fires `task_completed` with conversion details
-13. Operator verifies the outcome against the serve token
-14. Settlement: CPA is charged and recorded
+10. Platform enters the delegated session and routes the live task flow to the QuickBooks agent
+11. Platform and QuickBooks emit `delegation_activity` while the session remains active
+12. User provides any additional signup details inside the delegated session
+13. QuickBooks agent uses that new information only to complete the active signup flow
+14. User completes signup
+15. QuickBooks agent fires `task_completed` with conversion details
+16. Operator verifies the outcome against the serve token
+17. Settlement: CPA is charged and recorded
 
 ---
 
-## 10. Guarantees
+## 11. Guarantees
 
 - Delegation always requires user consent
 - Context shared with brand agents is scoped and never includes raw user data
 - Each delegation session is linked to exactly one serve token
+- Live delegated turns may be direct after operator-mediated session start
+- The Operator remains the governance and audit layer even when live turns are direct
+- Delegated sessions expire on inactivity according to `session_timeout_seconds`
+- Session liveness is proven through delegated-session activity events from Platforms and Brand Agents
+- Data collected during the delegated session is session-bound by default
 - Outcomes are independently verifiable
 - Settlement follows the same event ladder as recommend mode (highest event wins)
 

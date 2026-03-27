@@ -136,6 +136,45 @@ components:
               items: { type: string }
         ts: { type: string, format: date-time }
 
+    EventDelegationActivity:
+      type: object
+      required: [event_type, serve_token, session_id, platform_id, agent_id, delegation_session_id, actor_role, activity_type, ts]
+      properties:
+        event_type: { type: string, const: "delegation_activity" }
+        serve_token: { type: string }
+        session_id: { type: string }
+        platform_id: { type: string }
+        agent_id: { type: string }
+        delegation_session_id: { type: string }
+        actor_role:
+          type: string
+          enum: [platform, brand_agent]
+        activity_type:
+          type: string
+          enum: [user_turn, agent_turn, keepalive]
+        activity_metadata:
+          type: object
+          properties:
+            turn_index:
+              type: integer
+              minimum: 0
+        ts: { type: string, format: date-time }
+
+    EventDelegationExpired:
+      type: object
+      required: [event_type, serve_token, session_id, platform_id, agent_id, delegation_session_id, reason, ts]
+      properties:
+        event_type: { type: string, const: "delegation_expired" }
+        serve_token: { type: string }
+        session_id: { type: string }
+        platform_id: { type: string }
+        agent_id: { type: string }
+        delegation_session_id: { type: string }
+        reason:
+          type: string
+          enum: [inactivity_timeout, max_turns_reached, operator_terminated]
+        ts: { type: string, format: date-time }
+
     EventTaskCompleted:
       type: object
       required: [event_type, serve_token, session_id, platform_id, agent_id, outcome_type, settlement, ts]
@@ -228,7 +267,7 @@ paths:
       tags: [Events]
       description: >
         Platforms, operators, and brand agents post lifecycle events representing exposures,
-        interactions, operator-recorded delegation starts, or completed outcomes.
+        interactions, delegated-session liveness, operator-recorded delegation starts/expirations, or completed outcomes.
         Each serve_token can settle only one final billable path.
         In v1.0, settlement order is flow-specific billing semantics, not a ranking rule:
         external click-out uses CPX -> CPC -> CPA, and delegated sessions use CPX -> CPE -> CPA.
@@ -241,6 +280,8 @@ paths:
                 - $ref: "#/components/schemas/EventExposureShown"
                 - $ref: "#/components/schemas/EventInteractionStarted"
                 - $ref: "#/components/schemas/EventDelegationStarted"
+                - $ref: "#/components/schemas/EventDelegationActivity"
+                - $ref: "#/components/schemas/EventDelegationExpired"
                 - $ref: "#/components/schemas/EventTaskCompleted"
       responses:
         "202":

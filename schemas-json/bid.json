@@ -387,7 +387,7 @@
             "session_timeout_seconds": {
               "type": "integer",
               "minimum": 1,
-              "description": "Maximum session lifetime in seconds."
+              "description": "Inactivity timeout in seconds after delegation_started. Each verified delegation_activity resets the timer; if the timer elapses, the operator expires the delegated session."
             },
             "max_turns": {
               "type": "integer",

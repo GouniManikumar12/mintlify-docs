@@ -108,7 +108,14 @@ sequenceDiagram
     Note over Operator,BrandAgent: Only intent + constraints<br/>shared per context_scope
 
     Operator->>Operator: delegation_started recorded
-    BrandAgent->>User: Signup flow begins
+    BrandAgent->>Platform: Delegated session ready
+    Note over Platform,BrandAgent: After session start, live task turns may flow directly
+    User->>Platform: Follow-up questions in delegated session
+    Platform->>BrandAgent: Delegated task turns
+    BrandAgent->>Platform: Delegated task responses
+    Platform->>Operator: delegation_activity events
+    BrandAgent->>Operator: delegation_activity events
+    Note over Platform,BrandAgent: New task data is collected in-session and is session-bound by default
 
     User->>BrandAgent: Completes signup
     BrandAgent->>Operator: task_completed event
@@ -129,9 +136,13 @@ sequenceDiagram
 8. Platform asks user for consent
 9. User consents and the Platform sends that consent to the Operator
 10. Operator confirms brand-agent availability, initiates the delegated session, and records `delegation_started`
-11. Brand agent executes the task
-12. `task_completed` event fired and verified
-13. Operator settles CPA
+11. Platform and Brand Agent continue the live delegated task flow after the operator-mediated start
+12. Both Platform and Brand Agent emit `delegation_activity` while the session remains active
+13. Any new information the user provides in-session is session-bound by default and not part of the original handoff scope
+14. If no activity arrives before `session_timeout_seconds`, the Operator records `delegation_expired`
+15. Brand agent executes the task
+16. `task_completed` event fired and verified
+17. Operator settles CPA
 
 ---
 
@@ -491,6 +502,8 @@ Sent when the user engages with the recommendation.
 
 Sent by the Operator after the Platform has collected consent and the Operator has confirmed brand-agent availability and initiated the delegated session (delegate mode only).
 
+This event proves session initiation and authorization. It does not imply that every subsequent delegated turn is transported through the Operator.
+
 ```json
 {
   "event_type": "delegation_started",
@@ -503,7 +516,45 @@ Sent by the Operator after the Platform has collected consent and the Operator h
 }
 ```
 
-### 5.4 Task completed
+### 5.4 Delegation activity
+
+Sent by the Platform or Brand Agent while the delegated session is still active. Each verified `delegation_activity` resets the inactivity timer for the session.
+
+```json
+{
+  "event_type": "delegation_activity",
+  "serve_token": "stk_abcxyz123",
+  "session_id": "sess_001",
+  "platform_id": "openai_chat",
+  "agent_id": "ba_451",
+  "delegation_session_id": "del_sess_001",
+  "actor_role": "platform",
+  "activity_type": "user_turn",
+  "activity_metadata": {
+    "turn_index": 2
+  },
+  "ts": "2025-11-14T18:25:00Z"
+}
+```
+
+### 5.5 Delegation expired
+
+Sent by the Operator when the delegated session expires before completion, typically because the inactivity timeout elapsed.
+
+```json
+{
+  "event_type": "delegation_expired",
+  "serve_token": "stk_abcxyz123",
+  "session_id": "sess_001",
+  "platform_id": "openai_chat",
+  "agent_id": "ba_451",
+  "delegation_session_id": "del_sess_001",
+  "reason": "inactivity_timeout",
+  "ts": "2025-11-14T18:40:00Z"
+}
+```
+
+### 5.6 Task completed
 
 Sent when the user completes the target action.
 

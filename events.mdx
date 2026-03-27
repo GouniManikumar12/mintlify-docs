@@ -37,6 +37,8 @@ Only **the highest-value event** in a lifecycle is billable per `serve_token`.
 | **Exposure shown** | `exposure_shown` | Commercial response surfaced to user | CPX | Both |
 | **Interaction started** | `interaction_started` | User engaged with recommendation | CPE or CPC | Both |
 | **Delegation started** | `delegation_started` | Session handoff initiated |  -  | Delegate only |
+| **Delegation activity** | `delegation_activity` | Platform or Brand Agent proves the delegated session is still active |  -  | Delegate only |
+| **Delegation expired** | `delegation_expired` | Operator marks the delegated session inactive or closed before completion |  -  | Delegate only |
 | **Task completed** | `task_completed` | User completed a signup, purchase, or action | CPA | Both |
 
 Once a higher event (like `task_completed`) is verified, lower-tier events are not billed again.
@@ -68,7 +70,12 @@ stateDiagram-v2
 stateDiagram-v2
     [*] --> ParticipationShown
     ParticipationShown --> DelegationStarted: User consents to handoff
+    DelegationStarted --> DelegationActive: Platform/Brand Agent activity
+    DelegationActive --> DelegationActive: More activity
+    DelegationActive --> DelegationExpired: Inactivity timeout
     DelegationStarted --> TaskCompleted: User completes task
+    DelegationActive --> TaskCompleted: User completes task
+    DelegationExpired --> [*]
     TaskCompleted --> [*]
 ```
 
@@ -85,7 +92,7 @@ All events share common required fields that link them back to the selection and
 
 | Field | Type | Description |
 |--------|------|-------------|
-| `event_type` | string | Event type identifier (`exposure_shown`, `interaction_started`, `delegation_started`, or `task_completed`) |
+| `event_type` | string | Event type identifier (`exposure_shown`, `interaction_started`, `delegation_started`, `delegation_activity`, `delegation_expired`, or `task_completed`) |
 | `serve_token` | string | Serve token from the `PlatformResponse`  -  links event to original selection |
 | `ts` | string | ISO 8601 timestamp of when the event occurred |
 
@@ -139,6 +146,8 @@ At the protocol level, events require `event_type`, `serve_token`, and `ts`. Eac
 
 This event is emitted by the Operator after the Platform has collected user consent and the Operator has confirmed that the selected Brand Agent can accept the delegated session.
 
+It proves that the delegated session was authorized and initiated. It does **not** mean the Operator transports or inspects every subsequent turn in the live delegated session.
+
 ```json
 {
   "event_type": "delegation_started",
@@ -148,6 +157,44 @@ This event is emitted by the Operator after the Platform has collected user cons
   "agent_id": "ag_123",
   "delegation_session_id": "del_sess_001",
   "ts": "2025-11-11T18:01:00Z"
+}
+```
+
+### Example: Delegation activity event
+
+This non-billable event is emitted by either the Platform or the Brand Agent while the delegated session remains active. Each verified `delegation_activity` resets the inactivity timer for the delegated session.
+
+```json
+{
+  "event_type": "delegation_activity",
+  "serve_token": "stk_abcxyz123",
+  "session_id": "sess_789",
+  "platform_id": "pf_chatapp",
+  "agent_id": "ag_123",
+  "delegation_session_id": "del_sess_001",
+  "actor_role": "platform",
+  "activity_type": "user_turn",
+  "activity_metadata": {
+    "turn_index": 2
+  },
+  "ts": "2025-11-11T18:05:00Z"
+}
+```
+
+### Example: Delegation expired event
+
+This non-billable event is recorded by the Operator when the delegated session expires before task completion, usually because the inactivity timeout elapsed.
+
+```json
+{
+  "event_type": "delegation_expired",
+  "serve_token": "stk_abcxyz123",
+  "session_id": "sess_789",
+  "platform_id": "pf_chatapp",
+  "agent_id": "ag_123",
+  "delegation_session_id": "del_sess_001",
+  "reason": "inactivity_timeout",
+  "ts": "2025-11-11T18:20:00Z"
 }
 ```
 
@@ -185,9 +232,13 @@ Operators define their own verification logic for each event type. Acceptable si
 | **Exposure shown** | Platform display logs, visibility events, viewability metrics |
 | **Interaction started** | Platform interaction logs, user engagement events, timestamp validation |
 | **Delegation started** | Operator session records, brand agent session confirmation |
+| **Delegation activity** | Platform session activity, brand agent turn logs, liveness heartbeats |
+| **Delegation expired** | Operator inactivity timer, max-turn enforcement, operator session controls |
 | **Task completed** | Brand agent callbacks, server-side API confirmations, outcome tracking |
 
 Every event is digitally signed and validated against the original `serve_token`. Operators implement their own verification and reconciliation logic to ensure event integrity.
+
+In delegated flows, operators verify session start, track liveness from activity events sent by both the Platform and Brand Agent, and record expiry or outcomes even when the live task turns after session initiation are direct between the Platform and Brand Agent.
 
 ---
 
@@ -202,8 +253,10 @@ Every event is digitally signed and validated against the original `serve_token`
 ### Delegate mode
 1. Platform shows delegation offer → **exposure_shown logged**
 2. User consents, the Operator confirms brand-agent availability and initiates the delegated session → **delegation_started verified**
-3. User completes signup through brand agent → **task_completed confirmed**
-4. Only task_completed (CPA) is billed
+3. Platform and Brand Agent emit `delegation_activity` while the session remains active
+4. If the inactivity timeout elapses, the Operator records `delegation_expired`
+5. If the user completes signup through the brand agent before expiry → **task_completed confirmed**
+6. Only task_completed (CPA) is billed
 
 ---
 
@@ -216,9 +269,11 @@ Operators determine settlement based on verified events according to the event l
 | Highest verified event | What is billed |
 |----------------------|----------------|
 | `task_completed` | CPA |
-| `interaction_started` | CPC |
+| `interaction_started` | CPE or CPC |
 | `delegation_started` | Operator-defined |
 | `exposure_shown` | CPX |
+
+`delegation_activity` and `delegation_expired` are non-billable lifecycle control events.
 
 Settlement terms, revenue sharing, and payout schedules are defined by each operator's policies and agreements with platforms and brand agents.
 

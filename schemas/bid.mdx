@@ -140,12 +140,14 @@ Optional block for Brand Agents that can take over task execution after explicit
 | `supported` | boolean | Yes | Whether delegation is supported |
 | `consent_required` | boolean | Yes, when supported | Whether explicit user consent is required |
 | `supported_for_intents` | object | Yes, when supported | Intent types and decision phases where delegation is allowed |
-| `required_scopes` | array | Yes, when supported | Context scopes required before session start |
+| `required_scopes` | array | Yes, when supported | Context scopes required for the operator-mediated session-init payload before session start |
 | `protocol` | object | Yes, when supported | Delegation protocol descriptor |
 | `mcp` | object | Yes, when supported | MCP session bootstrap details |
 | `session_constraints` | object | Yes, when supported | Session timeout and turn limits |
 
 ### `delegation.required_scopes`
+
+These scopes apply to the operator-mediated handoff payload used to start the delegated session. They do **not** grant unlimited access to upstream conversation history or automatically extend to new information the user provides later during the delegated session.
 
 Allowed values:
 
@@ -153,6 +155,8 @@ Allowed values:
 - `constraints`
 - `selection_context`
 - `conversation_summary`
+
+In v1.0, new information collected from the user during the live delegated session is session-bound by default unless separately consented.
 
 ### `delegation.protocol`
 
@@ -171,8 +175,10 @@ In v1.0, the standardized protocol type is `mcp`.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `multi_turn` | boolean | Yes | Whether the session supports multiple turns |
-| `session_timeout_seconds` | integer | Yes | Session timeout in seconds |
+| `session_timeout_seconds` | integer | Yes | Inactivity timeout in seconds after `delegation_started`; the Operator expires the delegated session if no verified session activity arrives before this window elapses |
 | `max_turns` | integer | Yes | Maximum turn count allowed |
+
+In v1.0, delegated session liveness is tracked from verified `delegation_activity` events sent by the Platform or Brand Agent. Each verified activity event resets the inactivity timer. If the timer elapses with no activity, the Operator marks the delegated session expired and records `delegation_expired`.
 
 ---
 

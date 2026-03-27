@@ -62,6 +62,7 @@ If a system can detect a user request and deliver a participation outcome, it ca
 - Ensure accurate event propagation
 - Provide `latency_budget_ms` in PlatformRequest to specify the selection timing window
 - Present delegation offers clearly and collect explicit user consent before handoff
+- Make clear when the user is entering a brand-agent-managed delegated task flow
 
 ### AI Platforms MAY
 
@@ -102,8 +103,15 @@ When the Operator returns a PlatformResponse with delegate mode:
 1. **Present the offer (exposure)**  -  Show the user which Brand Agent is available and what it will do. Fire `exposure_shown` when the offer is displayed.
 2. **Collect consent**  -  The user must explicitly agree before any session is initiated.
 3. **Confirm consent to the Operator**  -  Send the user's consent to the Operator. The Operator checks brand-agent availability, initiates the delegation session, and records `delegation_started`.
-4. **Run the delegated session (multi-turn)**  -  During the session, the user can ask multiple questions and the Brand Agent responds within that session while representing its brand, with the Operator mediating the handoff.
-5. **Track outcomes and expiration**  -  The Platform fires `exposure_shown` and any applicable `interaction_started` events. The Operator records `delegation_started`, and the Brand Agent submits `task_completed` when the task completes. If the session expires without completion, the Operator handles expiration according to operator-defined rules and settlement policy.
+4. **Run the delegated session (multi-turn)**  -  After the operator-mediated session start, the live task flow may continue directly between the Platform and Brand Agent. The Platform may host or relay that session, while the Operator remains the governance, audit, and settlement layer.
+5. **Track outcomes and expiration**  -  The Platform fires `exposure_shown`, any applicable `interaction_started`, and delegated-session `delegation_activity` events while the session remains active. The Operator records `delegation_started`, resets inactivity state from verified activity, and records `delegation_expired` if the timeout elapses before the Brand Agent submits `task_completed`.
+
+During the delegated session:
+
+- The Platform should make clear that the user is interacting with the selected Brand Agent
+- Additional task information may be collected inside the delegated session itself
+- The Platform should emit delegated-session activity or keepalive events while the user is still active in the session
+- That new information is session-bound by default and is not automatically part of the original operator handoff scope
 
 If the user declines:
 - No session is initiated

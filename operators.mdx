@@ -64,6 +64,28 @@ Operators MUST ensure that Brand Agents receive **only** ContextRequests.
 
 ---
 
+## Operator role in delegated sessions
+
+In delegated sessions, the Operator remains the governance and audit layer even when live task turns are not fully operator-mediated.
+
+In AIP v1.0, the Operator MUST:
+
+- authorize delegated session creation only after explicit platform-confirmed user consent
+- enforce the declared handoff scope at session initiation
+- ensure the handoff payload excludes raw upstream queries, transcripts, and user identifiers
+- maintain session identity and linkage across `serve_token`, session IDs, and settlement records
+- verify `delegation_started` and `task_completed`
+- track delegated-session liveness from Platform and Brand Agent activity events
+- expire delegated sessions when the inactivity timeout elapses
+
+In AIP v1.0, the Operator is **not** required to inspect every subsequent delegated turn by default. After the operator-mediated start, live task turns may flow directly between the Platform and the Brand Agent while the Operator continues to govern scope, auditability, and settlement.
+
+New information provided by the user during the delegated session is session-bound by default. Operators should treat reuse, profiling, training, or future outreach as outside the default delegated-session permission unless separately consented.
+
+For delegated sessions, operators should rely on verified session-activity events from both Platforms and Brand Agents to determine whether the session is still active. In v1.0, `session_timeout_seconds` is the inactivity timeout, not just a wall-clock limit from session start.
+
+---
+
 ## Public Operator ↔ Brand Agent interfaces
 
 Operators expose public protocol endpoints to interact with Brand Agents.
@@ -167,12 +189,21 @@ After selection, operators decide whether the participation takes the form of:
 
 The mode is included in the PlatformResponse.
 
+When the chosen mode is **Delegate**, operators must distinguish:
+
+- the scoped operator-mediated handoff that creates the delegated session
+- the live delegated task flow that may continue directly between the Platform and Brand Agent afterward
+
+The Operator remains responsible for governance and settlement across both phases.
+
 ## 5. Verify outcomes and settle
 Operators must verify:
 
 - **Exposure shown**: platform confirmed the response was surfaced
 - **Interaction started**: user engaged with the recommendation
 - **Delegation started**: operator-mediated delegated session was initiated after platform consent and brand-agent availability confirmation
+- **Delegation activity**: platform or brand-agent signal proves the delegated session is still active
+- **Delegation expired**: operator inactivity timeout or session control ends the delegated session before completion
 - **Task completed**: user completed the target action
 
 All events must resolve to **one** billable unit per serve_token.
@@ -192,7 +223,7 @@ All events must resolve to **one** billable unit per serve_token.
 | Settlement accounting | Yes | Maintain participant balances |
 | Settlement and payouts | Yes | Periodic platform payments |
 | Platform SDK | Optional | Provide an integration SDK or client library for platforms |
-| Delegation management | Yes | Manage session initiation and context scoping |
+| Delegation management | Yes | Authorize session initiation, enforce scope, maintain auditability, and verify delegated outcomes |
 | Weave SDK | Optional | Provide backend inline-weave SDK |
 | Reporting dashboard | Optional | For brands and platforms |
 
