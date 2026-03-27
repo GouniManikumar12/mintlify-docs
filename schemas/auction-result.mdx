@@ -20,7 +20,7 @@ It communicates:
 All monetary values in `PlatformResponse` MUST use micros as the only canonical unit.
 
 If `status` is `"filled"`, `winner` and `render` MUST be present.
-If `status` is `"no_fill"`, `winner` and `render` MUST be omitted.
+If `status` is `"no_match"`, `winner` and `render` MUST be omitted.
 If `status` is `"error"`, an `error` object MUST be present.
 
 Creative payloads MUST separate:
@@ -41,7 +41,7 @@ Creative payloads MUST separate:
 | `auction_id` | string | Yes | Auction identifier |
 | `serve_token` | string | Yes | Token used to stitch downstream events |
 | `timestamp` | string | Yes | RFC 3339 timestamp when the response was produced |
-| `status` | string | Yes | Auction outcome: `filled`, `no_fill`, or `error` |
+| `status` | string | Yes | Auction outcome: `filled`, `no_match`, or `error` |
 | `ttl_ms` | integer | Yes | Response time-to-live in milliseconds |
 | `winner` | object | Conditionally | Winning bid state. Required when `status="filled"` |
 | `render` | object | Conditionally | Render payload. Required when `status="filled"` |
@@ -226,7 +226,7 @@ Present when `status = "error"`.
 - All monetary values MUST use micros
 - `ttl_ms` MUST be between `1000` and `300000`
 - If `status = "filled"`, `winner` and `render` MUST be present
-- If `status = "no_fill"`, `winner` and `render` MUST be omitted
+- If `status = "no_match"`, `winner` and `render` MUST be omitted
 - If `status = "error"`, `error` MUST be present
 - `render.creative` MUST separate advertiser identity, ad assets, destination URL, and click tracking URL
 

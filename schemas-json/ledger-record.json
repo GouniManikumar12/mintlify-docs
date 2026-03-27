@@ -52,7 +52,7 @@
     },
     "reserved_unit": {
       "type": "string",
-      "enum": ["CPX", "CPC", "CPA"],
+      "enum": ["CPX", "CPC", "CPE", "CPA"],
       "description": "Pricing unit reserved at auction time",
       "example": "CPA"
     },
@@ -64,7 +64,7 @@
     },
     "final_unit": {
       "type": "string",
-      "enum": ["CPX", "CPC", "CPA"],
+      "enum": ["CPX", "CPC", "CPE", "CPA"],
       "description": "Final pricing unit applied after events",
       "example": "CPC"
     },

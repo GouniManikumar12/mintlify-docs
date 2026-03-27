@@ -52,7 +52,7 @@
       "properties": {
         "unit": {
           "type": "string",
-          "const": "CPC",
+          "enum": ["CPC", "CPE"],
           "description": "Settlement unit for this event.",
           "example": "CPC"
         },

@@ -51,7 +51,7 @@ Defines when the bid should be considered applicable.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `intent_types` | array | Yes | Supported intent types such as `commercial` or `transactional` |
-| `decision_phases` | array | Yes | Supported phases such as `consideration`, `decision`, or `post_purchase` |
+| `decision_phases` | array | Yes | Supported phases from the canonical taxonomy such as `awareness`, `consideration`, `decision`, or `action` |
 | `verticals` | array | No | Normalized topical verticals such as `crm` |
 | `countries` | array | No | ISO 3166-1 alpha-2 country codes |
 | `locales` | array | No | BCP 47 locales such as `en-US` |
@@ -60,7 +60,7 @@ Valid `intent_types`:
 `commercial`, `transactional`, `informational`, `navigational`, `support`, `unsafe`, `unknown`
 
 Valid `decision_phases`:
-`research`, `consideration`, `decision`, `post_purchase`, `unknown`
+`awareness`, `research`, `consideration`, `decision`, `action`, `post_purchase`, `support`
 
 ---
 
@@ -75,10 +75,11 @@ All pricing values use micros of the declared currency.
 | `currency` | string | Yes | ISO 4217 currency code |
 | `cpx_micros` | integer | No | Price per exposure in micros |
 | `cpc_micros` | integer | No | Price per click in micros |
+| `cpe_micros` | integer | No | Price per delegated-session engagement in micros |
 | `cpa_micros` | integer | No | Price per acquisition / verified outcome in micros |
-| `preferred_pricing_model` | string | No | Preferred billing model: `CPX`, `CPC`, or `CPA` |
+| `preferred_pricing_model` | string | No | Preferred billing model: `CPX`, `CPC`, `CPE`, or `CPA` |
 
-At least one of `cpx_micros`, `cpc_micros`, or `cpa_micros` MUST be present.
+At least one of `cpx_micros`, `cpc_micros`, `cpe_micros`, or `cpa_micros` MUST be present.
 
 ---
 
@@ -206,6 +207,7 @@ Rendering hints for operators that support multi-response output.
     "currency": "USD",
     "cpx_micros": 50000,
     "cpc_micros": 450000,
+    "cpe_micros": 700000,
     "cpa_micros": 10000000,
     "preferred_pricing_model": "CPA"
   },

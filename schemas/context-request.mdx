@@ -26,7 +26,7 @@ A ContextRequest **MUST NOT** contain raw interaction text, full message history
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `spec_version` | string | Yes | Spec version. **MUST** be `"1.0"` |
-| `context_request_id` | string | Yes | Unique identifier for this operator-generated ContextRequest |
+| `context_id` | string | Yes | Unique identifier for this operator-generated ContextRequest |
 | `source_request_id` | string | Yes | Reference to the originating `PlatformRequest.request_id` |
 | `timestamp` | string | Yes | RFC 3339 timestamp when the operator generated this ContextRequest |
 | `operator` | object | Yes | The system that generated the ContextRequest |
@@ -47,7 +47,7 @@ A ContextRequest **MUST NOT** contain raw interaction text, full message history
 
 Every ContextRequest **MUST** contain:
 
-- A unique `context_request_id` identifying this specific auction context
+- A unique `context_id` identifying this specific auction context
 - A `source_request_id` referencing the originating [PlatformRequest](/schemas/platform-request)
 
 This dual-ID design avoids conflating the original platform message with the derived auction message. The operator is the author of the ContextRequest; the platform is the source of the upstream interaction.
@@ -124,7 +124,7 @@ The `intent` in a ContextRequest is **operator-generated** and **downstream-safe
 |-------|------|----------|-------------|
 | `type` | string | Yes | `"commercial"`, `"transactional"`, `"informational"`, `"navigational"`, `"support"`, `"unsafe"`, `"unknown"` |
 | `subtype` | string | No | Interaction pattern (e.g. `"comparison"`, `"product_discovery"`) |
-| `decision_phase` | string | Yes | `"research"`, `"consideration"`, `"decision"`, `"post_purchase"`, `"unknown"` |
+| `decision_phase` | string | Yes | `"awareness"`, `"research"`, `"consideration"`, `"decision"`, `"action"`, `"post_purchase"`, `"support"` |
 | `confidence` | number | Yes | Calibrated confidence score (`0.0`–`1.0`) |
 | `summary` | string | Yes | Operator-generated bid-safe summary. **MUST NOT** contain raw user queries or message content |
 | `relevance_score` | number | No | Operator-computed relevance score for auction ranking (`0.0`–`1.0`) |
@@ -206,7 +206,7 @@ Explicit usage restrictions that downstream brand agents **MUST** respect.
 ```json
 {
   "spec_version": "1.0",
-  "context_request_id": "ctxreq_92fA1",
+  "context_id": "ctx_92fA1",
   "source_request_id": "req_92fA1",
   "timestamp": "2026-03-26T18:22:00Z",
 
@@ -280,7 +280,7 @@ Explicit usage restrictions that downstream brand agents **MUST** respect.
 
 | Before | After | Why |
 |--------|-------|-----|
-| `message_id` (reused from PlatformRequest) | `context_request_id` + `source_request_id` | Separate operator-generated ID from upstream reference for clean traceability |
+| Single reused upstream request identifier | `context_id` + `source_request_id` | Separate operator-generated ID from upstream reference for clean traceability |
 | `producer` (mixed platform/operator identity) | `operator` + `platform` (distinct blocks) | The operator generates the ContextRequest; the platform is the upstream source |
 | `publisher`, `placement`, `device`, `geography`, `language`, `platform_type` | `surface` (unified object) | Eliminates fragmentation and redundancy |
 | `classification_reasoning` in intent | Removed | Internal operator reasoning is a leakage risk and should not reach brand agents |

@@ -63,24 +63,22 @@ const validate = ajv.compile(contextRequestSchema);
 
 const payload = {
   context_id: "ctx_92fA1",
-  session_id: "sess_001",
-  operator_id: "admesh_operator",
-  platform_id: "openai_chat",
-  query_text: "best CRM for small teams",
-  locale: "en-US",
-  geo: "US",
+  source_request_id: "req_92fA1",
+  timestamp: new Date().toISOString(),
+  operator: { operator_id: "admesh_operator" },
+  platform: {
+    platform_id: "openai_chat",
+    software: { name: "chatgpt", version: "4.3-mini" }
+  },
+  session: { id: "sess_001", turn_index: 3 },
+  surface: { channel: "conversation", interaction_mode: "text", platform: "web", country: "US", locale: "en-US" },
   intent: {
     type: "commercial",
-    decision_phase: "compare",
-    context_summary: "User evaluating CRM tools",
-    turn_index: 3
+    decision_phase: "consideration",
+    confidence: 0.87,
+    summary: "User evaluating CRM tools"
   },
-  allowed_formats: ["weave", "citation"],
-  timestamp: new Date().toISOString(),
-  auth: {
-    nonce: "nonce_123",
-    sig: "sig_hmac_123abc"
-  }
+  allowed_formats: ["weave", "tail"]
 };
 
 if (validate(payload)) {

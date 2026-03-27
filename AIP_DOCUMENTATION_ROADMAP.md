@@ -20,16 +20,15 @@ to:
 
 - Concept clarity: strong
 - Protocol precision: strong
-- Schema / API consistency: mostly aligned
-- Implementation readiness for external integrators: close, with one canonical naming decision still open
+- Schema / API consistency: aligned
+- Implementation readiness for external integrators: strong
 
 ## Main Problems
 
-This roadmap is now mostly in closure state rather than discovery state.
+This roadmap is now in closure state rather than discovery state.
 
-- Fixed items: 12
-- Remaining unresolved items: 1
-- Remaining unresolved item: canonical empty outcome name (`no_match`, `no_fill`, or `no_bid`)
+- Fixed items: 13
+- Remaining unresolved items: 0
 
 ## Proposed Roadmap
 
@@ -148,21 +147,6 @@ Output:
 - protocol-vs-AdMesh separation
 - expanded examples and onboarding docs
 
-## Remaining Questions For You
-
-Please answer these directly. They are the remaining decisions needed to clean this up properly.
-
-1. What should be the single canonical empty outcome: `no_match`, `no_fill`, or `no_bid`?
-
-## Recommended Defaults If You Want Me To Resolve Them
-
-If you want me to make the remaining cleanup decisions for you, my recommendation is:
-
-- empty outcome: `no_match`
-- decision phases: use only the schema enum in `intent-taxonomy/agentic-intent-taxonomy.schema.json`: `awareness`, `research`, `consideration`, `decision`, `action`, `post_purchase`, `support`
-- settlement paths: `CPX -> CPC -> CPA` for external click-out flows and `CPX -> CPE -> CPA` for delegated-session flows
-- settlement paths are billing semantics only, not ranking rules
-
 ## Fixed
 
 ### Fixed 1. Canonical response naming
@@ -183,10 +167,6 @@ Completed recommended fix:
 
 - Picked one canonical term for the operator-to-platform response: `PlatformResponse`.
 - Marked alternate names as deprecated for cleanup across docs, schemas, examples, and API descriptions.
-
-Still open for this area:
-
-- The canonical empty outcome name is not fixed yet. It still needs a decision between `no_match`, `no_fill`, and `no_bid`.
 
 ### Fixed 2. Canonical decision-phase taxonomy
 
@@ -280,19 +260,20 @@ Problem:
 
 Fix applied to roadmap:
 
-- The canonical v1.0 identifier family is:
+- v1.0 keeps the previous public wire identifiers rather than renaming them.
+- The retained public identifiers are:
   - `request_id`
-  - `context_request_id`
+  - `context_id`
   - `bid_id`
-  - `selection_id`
+  - `response_id`
+  - `auction_id`
   - `serve_token`
-- These identifiers map cleanly to the request, downstream context request, brand response, operator selection, and event/outcome tracking lifecycle.
-- Alternate names such as `message_id`, `context_id`, `auction_id`, and `response_id` should be treated as deprecated during cleanup unless they are needed as internal aliases only.
+- Cleanup should focus on documenting how these fields relate, not replacing them with a new naming family.
 
 Completed recommended fix:
 
-- Replaced the open identifier decision with one canonical v1.0 naming family.
-- Locked the primary traceability chain around `request_id -> context_request_id -> bid_id -> selection_id -> serve_token`.
+- Replaced the open identifier decision with an explicit compatibility choice.
+- Kept the previous public ID names in place for v1.0.
 
 ### Fixed 7. Selection logic is separate from settlement semantics
 
@@ -314,7 +295,24 @@ Completed recommended fix:
 - Removed the ranking-vs-settlement ambiguity from the docs.
 - Locked operator-defined ranking and flow-specific billing semantics as separate concepts.
 
-### Fixed 8. Public operator API request contract
+### Fixed 8. Canonical empty outcome naming
+
+Problem:
+
+- Different docs and contract surfaces used `no_match`, `no_fill`, and `no_bid` for the same empty outcome.
+
+Fix applied to docs:
+
+- The canonical empty outcome name is now `no_match`.
+- Narrative docs, schema docs, JSON schemas, and OpenAPI now use `no_match` consistently.
+- Previous names such as `no_fill` and `no_bid` should be treated as deprecated cleanup artifacts, not canonical wire values.
+
+Completed recommended fix:
+
+- Removed the last unresolved naming decision from the roadmap.
+- Locked `no_match` as the single canonical empty outcome for v1.0.
+
+### Fixed 9. Public operator API request contract
 
 Problem:
 
@@ -334,7 +332,7 @@ Completed recommended fix:
 - The platform-facing request is `PlatformRequest`.
 - `ContextRequest` is treated as an internal/downstream contract.
 
-### Fixed 9. Canonical brand agent payload
+### Fixed 10. Canonical brand agent payload
 
 Problem:
 
@@ -353,7 +351,7 @@ Completed recommended fix:
 - Rewrote the narrative brand-agent documentation to match the actual schema field names.
 - Updated examples to use the canonical bid contract consistently.
 
-### Fixed 10. Downstream raw text prohibition
+### Fixed 11. Downstream raw text prohibition
 
 Problem:
 
@@ -372,7 +370,7 @@ Completed recommended fix:
 - Removed raw user text from downstream-facing contracts and documentation.
 - Fixed the protocol rule as an absolute prohibition for v1.0 rather than an optional downstream permission.
 
-### Fixed 11. Lifecycle-first event vocabulary and micros-only money units
+### Fixed 12. Lifecycle-first event vocabulary and micros-only money units
 
 Problem:
 
@@ -395,7 +393,7 @@ Completed recommended fix:
 - Fixed the wire vocabulary as lifecycle-first in v1.0.
 - Fixed `micros` as the only canonical money unit for event contracts in v1.0.
 
-### Fixed 12. Canonical producer for `delegation_started`
+### Fixed 13. Canonical producer for `delegation_started`
 
 Problem:
 

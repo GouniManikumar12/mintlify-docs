@@ -127,7 +127,7 @@ A ContextRequest **does not include**:
 A ContextRequest may include:
 
 * Intent summary or classification
-* Decision phase (research, comparison, decision, action)
+* Decision phase (awareness, research, consideration, decision, action, post_purchase, support)
 * Vertical or category signals
 * Geographic or market region (coarse-grained)
 * Operator-defined metadata and policy constraints
@@ -163,7 +163,7 @@ Each bid:
 | `timestamp` | Yes | RFC 3339 creation timestamp |
 | `delegation` | No | Delegation capability declaration |
 
-At least one of `pricing.cpx_micros`, `pricing.cpc_micros`, or `pricing.cpa_micros` MUST be included for a valid bid.
+At least one of `pricing.cpx_micros`, `pricing.cpc_micros`, `pricing.cpe_micros`, or `pricing.cpa_micros` MUST be included for a valid bid.
 
 The canonical bid contract is the [`Bid` schema](/schemas/bid). Narrative examples and implementation guidance should follow that schema directly.
 

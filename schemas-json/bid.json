@@ -168,7 +168,7 @@
           "uniqueItems": true,
           "items": {
             "type": "string",
-            "enum": ["research", "consideration", "decision", "post_purchase", "unknown"]
+            "enum": ["awareness", "research", "consideration", "decision", "action", "post_purchase", "support"]
           },
           "description": "Decision phases this bid targets."
         },
@@ -216,6 +216,12 @@
           "description": "Price per click in micros.",
           "example": 450000
         },
+        "cpe_micros": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Price per delegated-session engagement in micros.",
+          "example": 700000
+        },
         "cpa_micros": {
           "type": "integer",
           "minimum": 0,
@@ -225,13 +231,14 @@
         "preferred_pricing_model": {
           "type": "string",
           "description": "Preferred pricing model for operator ranking and settlement preference.",
-          "enum": ["CPX", "CPC", "CPA"],
+          "enum": ["CPX", "CPC", "CPE", "CPA"],
           "example": "CPA"
         }
       },
       "anyOf": [
         { "required": ["cpx_micros"] },
         { "required": ["cpc_micros"] },
+        { "required": ["cpe_micros"] },
         { "required": ["cpa_micros"] }
       ]
     },
@@ -314,7 +321,7 @@
               "uniqueItems": true,
               "items": {
                 "type": "string",
-                "enum": ["research", "consideration", "decision", "post_purchase", "unknown"]
+                "enum": ["awareness", "research", "consideration", "decision", "action", "post_purchase", "support"]
               }
             }
           }
@@ -450,6 +457,7 @@
         "currency": "USD",
         "cpx_micros": 50000,
         "cpc_micros": 450000,
+        "cpe_micros": 700000,
         "cpa_micros": 10000000,
         "preferred_pricing_model": "CPA"
       },

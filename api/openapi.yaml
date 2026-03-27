@@ -19,7 +19,7 @@ tags:
   - name: Bidding
     description: brand agents submit bids
   - name: Events
-    description: Track CPX, CPC, and CPA lifecycle events
+    description: Track CPX, CPC, CPE, and CPA lifecycle events
   - name: Ledger
     description: Inspect final states for serve tokens
   - name: Payouts
@@ -61,139 +61,10 @@ components:
       $ref: "../schemas-json/platform-request.json"
 
     Bid:
-      type: object
-      required: [bid_id, brand_agent_id, context_id, wallet_id, pricing, offer, timestamp, auth]
-      properties:
-        bid_id: { type: string, example: "bid_7823" }
-        brand_agent_id: { type: string, example: "brand_agent_123" }
-        context_id: { type: string, example: "ctx_92f" }
-        wallet_id: { type: string, example: "wallet_890" }
-        pricing:
-          type: object
-          required: [cpx]
-          properties:
-            cpx: { type: string, example: "0.05" }
-            cpc: { type: string, example: "0.45" }
-            cpa: { type: string, example: "10.00" }
-            currency: { type: string, example: "USD" }
-        offer:
-          type: object
-          properties:
-            creative_input:
-              type: object
-              required: [brand_name, product_name, descriptions, value_props, resource_urls, image_urls]
-              properties:
-                brand_name: { type: string, example: "Nimbus" }
-                product_name: { type: string, example: "Nimbus CRM Pro" }
-                descriptions:
-                  type: array
-                  items: { type: string }
-                  example: ["AI-native CRM for 5-50 person teams."]
-                value_props:
-                  type: array
-                  items: { type: string }
-                  example: ["Automated pipeline insights", "Embedded copilots"]
-                resource_urls:
-                  type: array
-                  items: { type: string, format: uri }
-                  example: ["https://nimbus.example/signup"]
-                image_urls:
-                  type: array
-                  items: { type: string, format: uri }
-                  example: ["https://cdn.example.com/nimbus/crm.png"]
-        timestamp:
-          type: string
-          format: date-time
-        auth:
-          type: object
-          required: [nonce, signature]
-          properties:
-            nonce: { type: string, example: "nonce_456" }
-            signature: { type: string, example: "sig_789" }
-        extensions:
-          type: object
-          additionalProperties: true
+      $ref: "../schemas-json/bid.json"
 
     PlatformResponse:
-      type: object
-      required: [spec_version, response_id, auction_id, serve_token, timestamp, status, ttl_ms]
-      properties:
-        spec_version: { type: string, enum: ["1.0"], example: "1.0" }
-        response_id: { type: string, example: "resp_981" }
-        auction_id: { type: string, example: "auc_981" }
-        serve_token: { type: string, example: "stk_abcxyz123" }
-        timestamp: { type: string, format: date-time, example: "2026-03-26T18:00:02Z" }
-        status: { type: string, enum: [filled, no_fill, error], example: "filled" }
-        winner:
-          type: object
-          required: [bid_id, brand_agent_id, pricing, billing]
-          properties:
-            bid_id: { type: string, example: "bid_7823" }
-            brand_agent_id: { type: string, example: "ba_451" }
-            pricing:
-              type: object
-              required: [model, price_micros, currency]
-              properties:
-                model: { type: string, enum: [CPX, CPC, CPA], example: "CPA" }
-                price_micros: { type: integer, minimum: 0, example: 10000000 }
-                currency: { type: string, example: "USD" }
-            billing:
-              type: object
-              required: [reserved_amount_micros, currency]
-              properties:
-                reserved_amount_micros: { type: integer, minimum: 0, example: 500000000 }
-                currency: { type: string, example: "USD" }
-            rank: { type: integer, minimum: 1, example: 1 }
-        render:
-          type: object
-          required: [format, disclosure, creative]
-          properties:
-            format: { type: string, enum: [weave, tail, product_card, bridge], example: "weave" }
-            disclosure: { type: string, example: "[Ad]" }
-            creative:
-              type: object
-              required: [advertiser, ad_assets, landing_page_url, click_url]
-              properties:
-                advertiser:
-                  type: object
-                  required: [brand_name]
-                  properties:
-                    brand_name: { type: string, example: "Nimbus" }
-                    domain: { type: string, example: "nimbus.example.com" }
-                ad_assets:
-                  type: object
-                  required: [headline, description, cta_text]
-                  properties:
-                    headline: { type: string, example: "Scale your CRM" }
-                    description: { type: string, example: "Built for founders." }
-                    cta_text: { type: string, example: "Try for free" }
-                    logo_url: { type: string, format: uri, example: "https://cdn.example.com/nimbus/logo.png" }
-                    image_urls:
-                      type: array
-                      items: { type: string, format: uri }
-                      example: ["https://cdn.example.com/nimbus/crm.png"]
-                landing_page_url: { type: string, format: uri, example: "https://nimbus.example.com/signup" }
-                click_url: { type: string, format: uri, example: "https://admesh.click/stk_abcxyz123" }
-        delegation:
-          type: object
-          properties:
-            available: { type: boolean, example: true }
-            mode: { type: string, enum: [optional, recommended, required], example: "optional" }
-            trigger: { type: string, enum: [user_action, explicit_consent, operator_initiated], example: "user_action" }
-            cta_text: { type: string, example: "Continue with Nimbus" }
-        tracking:
-          type: object
-          properties:
-            impression_url: { type: string, format: uri, example: "https://track.example.com/impression/stk_abcxyz123" }
-            click_url: { type: string, format: uri, example: "https://track.example.com/click/stk_abcxyz123" }
-            conversion_url: { type: string, format: uri, example: "https://track.example.com/conversion/stk_abcxyz123" }
-        ttl_ms: { type: integer, example: 60000 }
-        error:
-          type: object
-          required: [code, message]
-          properties:
-            code: { type: string, example: "auction_timeout" }
-            message: { type: string, example: "Auction evaluation timed out." }
+      $ref: "../schemas-json/auction-result.json"
     EventExposureShown:
       type: object
       required: [event_type, serve_token, session_id, platform_id, agent_id, wallet_id, settlement, ts]
@@ -233,7 +104,7 @@ components:
           type: object
           required: [unit, amount_micros, currency]
           properties:
-            unit: { type: string, const: "CPC" }
+            unit: { type: string, enum: [CPC, CPE] }
             amount_micros: { type: integer, minimum: 0, example: 450000 }
             currency: { type: string, example: "USD" }
         interaction_metadata:
@@ -339,7 +210,7 @@ paths:
       tags: [Bidding]
       description: >
         brand agents use this endpoint to place bids on incoming contexts.
-        The bid includes CPX, CPC, and CPA values, and a preferred unit.
+        The bid includes CPX, CPC, CPE, and CPA values, and a preferred unit.
       parameters:
         - $ref: "#/components/parameters/VersionHeader"
       requestBody:
@@ -358,7 +229,9 @@ paths:
       description: >
         Platforms, operators, and brand agents post lifecycle events representing exposures,
         interactions, operator-recorded delegation starts, or completed outcomes.
-        Each serve_token can settle only one final event (CPA > CPC > CPX).
+        Each serve_token can settle only one final billable path.
+        In v1.0, settlement order is flow-specific billing semantics, not a ranking rule:
+        external click-out uses CPX -> CPC -> CPA, and delegated sessions use CPX -> CPE -> CPA.
       requestBody:
         required: true
         content:

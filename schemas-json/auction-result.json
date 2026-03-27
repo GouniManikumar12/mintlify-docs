@@ -38,7 +38,7 @@
     },
     "status": {
       "type": "string",
-      "enum": ["filled", "no_fill", "error"],
+      "enum": ["filled", "no_match", "error"],
       "description": "Auction outcome status."
     },
     "winner": {
@@ -83,7 +83,7 @@
     {
       "if": {
         "properties": {
-          "status": { "const": "no_fill" }
+          "status": { "const": "no_match" }
         },
         "required": ["status"]
       },
@@ -135,7 +135,7 @@
           "properties": {
             "model": {
               "type": "string",
-              "enum": ["CPX", "CPC", "CPA"],
+              "enum": ["CPX", "CPC", "CPE", "CPA"],
               "description": "Selected billing model."
             },
             "price_micros": {
@@ -389,7 +389,7 @@
       "auction_id": "auc_982",
       "serve_token": "stk_empty",
       "timestamp": "2026-03-26T18:00:02Z",
-      "status": "no_fill",
+      "status": "no_match",
       "ttl_ms": 60000
     }
   ]

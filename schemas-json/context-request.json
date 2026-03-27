@@ -6,7 +6,7 @@
   "type": "object",
   "required": [
     "spec_version",
-    "context_request_id",
+    "context_id",
     "source_request_id",
     "timestamp",
     "operator",
@@ -24,7 +24,7 @@
       "const": "1.0"
     },
 
-    "context_request_id": {
+    "context_id": {
       "type": "string",
       "minLength": 1,
       "description": "Unique identifier for this operator-generated ContextRequest."
@@ -240,7 +240,7 @@
         },
         "decision_phase": {
           "type": "string",
-          "enum": ["research", "consideration", "decision", "post_purchase", "unknown"],
+          "enum": ["awareness", "research", "consideration", "decision", "action", "post_purchase", "support"],
           "description": "Commercial funnel decision phase."
         },
         "confidence": {

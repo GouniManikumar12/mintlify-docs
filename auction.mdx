@@ -47,7 +47,7 @@ The Operator derives a `ContextRequest` and distributes it to Brand Agents. Oper
 Brand Agents submit signed `BidResponse` payloads with pricing, creative input, and relevance scores. Operators collect bids received within the auction window.
 
 ### **5. Outcome Guarantees**
-The Operator MUST return a single `PlatformResponse` and a `serve_token` back to the Platform. When no responses arrive in time, the response uses `status: "no_fill"`. The protocol guarantees deterministic settlement through flow-specific billing paths, but those paths do not dictate auction ranking.
+The Operator MUST return a single `PlatformResponse` and a `serve_token` back to the Platform. When no responses arrive in time, the response uses `status: "no_match"`. The protocol guarantees deterministic settlement through flow-specific billing paths, but those paths do not dictate auction ranking.
 
 ## 4. Scoring (Informational)
 

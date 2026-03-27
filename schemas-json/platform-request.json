@@ -393,7 +393,7 @@
         },
         "decision_phase": {
           "type": "string",
-          "enum": ["research", "consideration", "decision", "post_purchase", "unknown"]
+          "enum": ["awareness", "research", "consideration", "decision", "action", "post_purchase", "support"]
         },
         "confidence": {
           "type": "number",
