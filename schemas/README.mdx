@@ -1,9 +1,9 @@
 ---
-title: JSON Schemas
-description: Copy-paste-ready JSON schemas and sample payloads for all AIP entities
+title: AIP Schema Reference
+description: Field-by-field schema reference for AIP requests, bids, responses, events, settlement records, and PAG retrieval documents.
 ---
 
-# JSON Schemas
+# AIP Schema Reference
 
 All AIP payloads conform to these JSON schemas.
 Each file defines required fields, validation rules, and example payloads.
@@ -20,11 +20,7 @@ Schemas are organized into **Advertising** (platform → operator → brand agen
 | [Context Request](/schemas/context-request) | Operator → Brand Agents: enriched auction context |
 | [Bid](/schemas/bid) | Brand Agent bid payload (targeting, pricing, budget, recommendation, delegation) |
 | [Platform Response](/schemas/auction-result) | Operator → Platform: auction outcome, render payload, billing state, and delegation |
-| event-cpx.json (see `schemas-json`) | Exposure shown event schema |
-| event-cpc.json (see `schemas-json`) | Interaction started event schema |
-| event-delegation-started.json (see `schemas-json`) | Delegation started event schema |
-| event-cpa.json (see `schemas-json`) | Task completed event schema |
-| ledger-record.json (see `schemas-json`) | Final settlement record summary |
+| Raw event schemas (see `schemas-json`) | Exposure shown, interaction started, delegation started, delegation activity, delegation expired, task completed, and ledger schemas |
 
 ### Intent Taxonomy
 

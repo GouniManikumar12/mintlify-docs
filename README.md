@@ -1,6 +1,6 @@
-# Agentic Intent Protocol Docs
+# Agentic Intent Protocol (AIP) Docs
 
-This is the Mintlify documentation for AIP v1.0.
+Mintlify documentation for the Agentic Intent Protocol, covering AI advertising, delegation, event tracking, settlement, and Universal Commerce Protocol handoff.
 
 - Edit pages in `docs/`
 - API reference in `api/openapi.yaml`
