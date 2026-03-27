@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-response.schema.json",
-  "title": "Agentic Intent Protocol – RetrieveResponse (v0.1)",
+  "$id": "https://schemas.agenticintentprotocol.com/aip/1.0/retrieve-response.schema.json",
+  "title": "Agentic Intent Protocol – RetrieveResponse (v1.0)",
   "description": "Publisher response to a RetrieveRequest under the Agentic Intent Protocol.",
   "type": "object",
 
@@ -17,7 +17,7 @@
   "properties": {
     "aip_version": {
       "type": "string",
-      "const": "0.1"
+      "const": "1.0"
     },
 
     "request_id": {

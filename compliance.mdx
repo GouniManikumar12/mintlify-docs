@@ -13,7 +13,7 @@ AIP defines protocol-level compliance invariants that ensure privacy, transparen
 
 ---
 
-## 2. Compliance Philosophy
+## 2. Compliance philosophy
 
 AIP enforces compliance through protocol constraints, not policy or trust:
 
@@ -25,37 +25,38 @@ Compliance is a property of the protocol's design, not a checklist of operator b
 
 ---
 
-## 3. Protocol-Level Compliance Invariants
+## 3. Protocol-level compliance invariants
 
 The protocol guarantees the following compliance invariants:
 
 | Invariant | Description |
 |----------|-------------|
 | **No raw personal data required** | The protocol never mandates personal identifiers, user names, email addresses, or other personally identifiable information |
-| **Cryptographically verifiable actions** | All billable actions (exposures, clicks, conversions) are cryptographically verifiable and cannot be unilaterally fabricated |
-| **Single serve_token settlement** | Every settlement is traceable to a single `serve_token` from the original auction |
+| **Cryptographically verifiable actions** | All billable actions (participation, interaction, delegation, outcomes) are cryptographically verifiable and cannot be unilaterally fabricated |
+| **Single serve_token settlement** | Every settlement is traceable to a single `serve_token` from the original selection |
 | **No unilateral value fabrication** | No participant can unilaterally create billable events or settlement outcomes |
 | **Intent-only context** | Brand Agents receive only anonymized intent context, never raw user queries or personal data |
 | **Deterministic outcomes** | Settlement outcomes are deterministic and reproducible from verifiable event sequences |
+| **Scoped delegation context** | In delegate mode, brand agents receive only the context defined by `context_scope`, never raw user data |
 
 Operators implement their own compliance procedures, retention policies, and audit systems. The protocol only constrains what data flows and how it is structured.
 
 ---
 
-## 4. Data Scope and Ownership (Invariants Only)
+## 4. Data scope and ownership (invariants only)
 
 The protocol defines data ownership and scope through invariants:
 
 - **Platforms control user consent and identity**: Platforms are responsible for user consent, identity management, and data collection. The protocol does not define consent mechanisms.
 - **Operators verify events and enforce invariants**: Operators verify events and enforce protocol-level invariants. The protocol does not define verification procedures.
-- **Brand Agents receive only anonymized intent context**: Brand Agents receive `ContextRequest` objects that contain intent signals, not raw user data. The protocol guarantees this separation.
+- **Brand Agents receive only anonymized intent context**: Brand Agents receive `ContextRequest` objects that contain intent signals, not raw user data. In delegation, context is further scoped by `context_scope`.
 - **The protocol never requires personal identifiers**: No AIP message schema requires personal identifiers, user names, or other PII.
 
 The protocol enforces data minimization by design, not through policy.
 
 ---
 
-## 5. Regulatory Neutrality
+## 5. Regulatory neutrality
 
 AIP does not encode jurisdiction-specific rules or regulatory frameworks. The protocol is designed to be compatible with privacy and financial regulations without embedding them.
 
@@ -67,7 +68,7 @@ Operators, platforms, and brand agents implement their own regulatory compliance
 
 ---
 
-## 6. What AIP Does NOT Define
+## 6. What AIP does NOT define
 
 The protocol explicitly does not define:
 
@@ -77,7 +78,7 @@ The protocol explicitly does not define:
 - **Tax handling**: Tax calculation, reporting, or withholding procedures
 - **Audit processes**: Audit procedures, audit firm requirements, or audit trail formats
 - **Incident response**: Breach procedures, key rotation policies, or recovery protocols
-- **Disclosure formats**: Ad labeling requirements, consent UI, or transparency mechanisms
+- **Disclosure formats**: Participation labeling requirements, consent UI, or transparency mechanisms
 - **Regulatory frameworks**: Specific compliance with GDPR, CCPA, PCI DSS, SOC 2, ISO 27001, or other standards
 
 These are implementation concerns that operators, platforms, and brand agents address according to their own requirements.
@@ -88,7 +89,7 @@ These are implementation concerns that operators, platforms, and brand agents ad
 
 The protocol guarantees:
 
-- **Privacy preservation**: The protocol never requires personal identifiers or raw user data. Brand Agents receive only anonymized intent context.
+- **Privacy preservation**: The protocol never requires personal identifiers or raw user data. Brand Agents receive only anonymized intent context, scoped further during delegation.
 - **Non-repudiation**: All billable actions are cryptographically verifiable. Participants cannot deny authenticated messages they sent.
 - **Auditability via cryptographic linkage**: Every settlement outcome is traceable to a single `serve_token` and can be independently verified through cryptographic linkage.
 - **Deterministic settlement outcomes**: Settlement outcomes are deterministic and reproducible from verifiable event sequences. No participant can unilaterally fabricate value.

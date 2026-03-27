@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Agentic Intent Protocol (AIP)
-  version: "0.1"
+  version: "1.0"
   description: |
     The Agentic Intent Protocol (AIP) defines how AI platforms, brand agents, and ad networks
     communicate to power conversational and agentic advertising.
@@ -40,7 +40,7 @@ components:
       required: true
       schema:
         type: string
-        example: "0.1"
+        example: "1.0"
     NonceHeader:
       name: X-Nonce
       in: header
@@ -162,28 +162,86 @@ components:
           type: object
           additionalProperties: true
 
-    AuctionResult:
+    PlatformResponse:
       type: object
-      required: [auction_id, serve_token, winner, render, ttl_ms]
+      required: [spec_version, response_id, auction_id, serve_token, timestamp, status, ttl_ms]
       properties:
+        spec_version: { type: string, enum: ["1.0"], example: "1.0" }
+        response_id: { type: string, example: "resp_981" }
         auction_id: { type: string, example: "auc_981" }
         serve_token: { type: string, example: "stk_abcxyz123" }
+        timestamp: { type: string, format: date-time, example: "2026-03-26T18:00:02Z" }
+        status: { type: string, enum: [filled, no_fill, error], example: "filled" }
         winner:
           type: object
-          required: [brand_agent_id, preferred_unit, reserved_amount_cents]
+          required: [bid_id, brand_agent_id, pricing, billing]
           properties:
-            brand_agent_id: { type: string, example: "brand_agent_123" }
-            preferred_unit: { type: string, enum: [CPX, CPC, CPA], example: "CPA" }
-            reserved_amount_cents: { type: integer, minimum: 0, example: 500 }
+            bid_id: { type: string, example: "bid_7823" }
+            brand_agent_id: { type: string, example: "ba_451" }
+            pricing:
+              type: object
+              required: [model, price_micros, currency]
+              properties:
+                model: { type: string, enum: [CPX, CPC, CPA], example: "CPA" }
+                price_micros: { type: integer, minimum: 0, example: 10000000 }
+                currency: { type: string, example: "USD" }
+            billing:
+              type: object
+              required: [reserved_amount_micros, currency]
+              properties:
+                reserved_amount_micros: { type: integer, minimum: 0, example: 500000000 }
+                currency: { type: string, example: "USD" }
+            rank: { type: integer, minimum: 1, example: 1 }
         render:
           type: object
+          required: [format, disclosure, creative]
           properties:
-            label: { type: string, enum: ["[Ad]"] }
-            title: { type: string, example: "Scale your CRM" }
-            body: { type: string, example: "Built for founders." }
-            cta: { type: string, example: "Try for free" }
-            url: { type: string, format: uri, example: "https://admesh.click/stk_abcxyz123" }
+            format: { type: string, enum: [weave, tail, product_card, bridge], example: "weave" }
+            disclosure: { type: string, example: "[Ad]" }
+            creative:
+              type: object
+              required: [advertiser, ad_assets, landing_page_url, click_url]
+              properties:
+                advertiser:
+                  type: object
+                  required: [brand_name]
+                  properties:
+                    brand_name: { type: string, example: "Nimbus" }
+                    domain: { type: string, example: "nimbus.example.com" }
+                ad_assets:
+                  type: object
+                  required: [headline, description, cta_text]
+                  properties:
+                    headline: { type: string, example: "Scale your CRM" }
+                    description: { type: string, example: "Built for founders." }
+                    cta_text: { type: string, example: "Try for free" }
+                    logo_url: { type: string, format: uri, example: "https://cdn.example.com/nimbus/logo.png" }
+                    image_urls:
+                      type: array
+                      items: { type: string, format: uri }
+                      example: ["https://cdn.example.com/nimbus/crm.png"]
+                landing_page_url: { type: string, format: uri, example: "https://nimbus.example.com/signup" }
+                click_url: { type: string, format: uri, example: "https://admesh.click/stk_abcxyz123" }
+        delegation:
+          type: object
+          properties:
+            available: { type: boolean, example: true }
+            mode: { type: string, enum: [optional, recommended, required], example: "optional" }
+            trigger: { type: string, enum: [user_action, explicit_consent, operator_initiated], example: "user_action" }
+            cta_text: { type: string, example: "Continue with Nimbus" }
+        tracking:
+          type: object
+          properties:
+            impression_url: { type: string, format: uri, example: "https://track.example.com/impression/stk_abcxyz123" }
+            click_url: { type: string, format: uri, example: "https://track.example.com/click/stk_abcxyz123" }
+            conversion_url: { type: string, format: uri, example: "https://track.example.com/conversion/stk_abcxyz123" }
         ttl_ms: { type: integer, example: 60000 }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: "auction_timeout" }
+            message: { type: string, example: "Auction evaluation timed out." }
     EventCPX:
       type: object
       required: [event_type, serve_token, session_id, platform_id, agent_id, wallet_id, pricing, ts]
@@ -283,7 +341,7 @@ paths:
       summary: Submit a ContextRequest
       description: >
         AI platforms send user intent contexts to AdMesh.
-        AdMesh returns the winning bid (AuctionResult) for rendering.
+        AdMesh returns a PlatformResponse for rendering and downstream event tracking.
       tags: [Context]
       parameters:
         - $ref: "#/components/parameters/VersionHeader"
@@ -296,10 +354,10 @@ paths:
             schema: { $ref: "#/components/schemas/ContextRequest" }
       responses:
         "200":
-          description: Auction result with winning creative
+          description: Platform response with winner state and render payload
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/AuctionResult" }
+              schema: { $ref: "#/components/schemas/PlatformResponse" }
 
   /aip/bid:
     post:
@@ -353,7 +411,7 @@ paths:
           description: Ledger record found
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/AuctionResult" }
+              schema: { $ref: "#/components/schemas/PlatformResponse" }
 
   /platforms/{id}/balance:
     get:

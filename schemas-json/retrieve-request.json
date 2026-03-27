@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-request.schema.json",
-  "title": "Agentic Intent Protocol – RetrieveRequest (v0.1)",
+  "$id": "https://schemas.agenticintentprotocol.com/aip/1.0/retrieve-request.schema.json",
+  "title": "Agentic Intent Protocol – RetrieveRequest (v1.0)",
   "description": "Platform-to-publisher request for permissioned, live content retrieval under AIP.",
   "type": "object",
 
@@ -20,7 +20,7 @@
   "properties": {
     "aip_version": {
       "type": "string",
-      "const": "0.1"
+      "const": "1.0"
     },
 
     "request_id": {

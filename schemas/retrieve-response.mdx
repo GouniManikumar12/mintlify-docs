@@ -26,7 +26,7 @@ It is deliberately minimal, rights-preserving, and auditable.
 ## Canonical schema location
 
 ```
-https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-response.schema.json
+https://schemas.agenticintentprotocol.com/aip/1.0/retrieve-response.schema.json
 ```
 
 ---
@@ -35,7 +35,7 @@ https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-response.schema.json
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `aip_version` | string | Yes | Must be `"0.1"`. |
+| `aip_version` | string | Yes | Must be `"1.0"`. |
 | `request_id` | string | Yes | Echoes the `request_id` from the corresponding RetrieveRequest. |
 | `timestamp` | string (date-time) | Yes | ISO 8601 timestamp when the response was generated. |
 | `status` | string | Yes | `ok`, `denied`, or `error`. |
@@ -48,16 +48,16 @@ https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-response.schema.json
 
 ### Chunk (`content.chunks[]`)
 
-- **id** — Publisher-defined chunk identifier. Required.
-- **text** — Content text. Required.
-- **token_count** — Optional token count.
+- **id**  -  Publisher-defined chunk identifier. Required.
+- **text**  -  Content text. Required.
+- **token_count**  -  Optional token count.
 
 ### Citation
 
-- **source_url** — Canonical URL of the cited source. Required.
-- **title** — Optional source title.
-- **publisher** — Publisher name.
-- **chunk_ids** — IDs of chunks this citation applies to.
+- **source_url**  -  Canonical URL of the cited source. Required.
+- **title**  -  Optional source title.
+- **publisher**  -  Publisher name.
+- **chunk_ids**  -  IDs of chunks this citation applies to.
 
 ### Denial reasons (canonical)
 
@@ -99,7 +99,7 @@ A response **MUST NOT** include both `content` and `denial`.
 
 ```json
 {
-  "aip_version": "0.1",
+  "aip_version": "1.0",
   "request_id": "req_92fA1",
   "timestamp": "2025-11-14T18:22:01Z",
   "status": "ok",
@@ -133,7 +133,7 @@ A response **MUST NOT** include both `content` and `denial`.
 
 ```json
 {
-  "aip_version": "0.1",
+  "aip_version": "1.0",
   "request_id": "req_92fA1",
   "timestamp": "2025-11-14T18:22:01Z",
   "status": "denied",
@@ -150,7 +150,7 @@ A response **MUST NOT** include both `content` and `denial`.
 
 ```json
 {
-  "aip_version": "0.1",
+  "aip_version": "1.0",
   "request_id": "req_92fA1",
   "timestamp": "2025-11-14T18:22:01Z",
   "status": "error",
@@ -180,5 +180,5 @@ Full JSON Schema (Draft 2020-12): [retrieve-response.json](/schemas-json/retriev
 
 ## See also
 
-- [RetrieveRequest](/schemas/retrieve-request) — Platform → publisher request that triggers this response.
-- [aip.json — Publisher Declaration](/schemas/aip) — Declared retrieval limits and editorial_domains.
+- [RetrieveRequest](/schemas/retrieve-request)  -  Platform → publisher request that triggers this response.
+- [aip.json  -  Publisher Declaration](/schemas/aip)  -  Declared retrieval limits and editorial_domains.

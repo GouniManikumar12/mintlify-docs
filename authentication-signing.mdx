@@ -1,9 +1,9 @@
 ---
-title: AIP Authentication & Signing (v0.1)
+title: AIP Authentication & Signing (v1.0)
 description: Normative spec for message authentication and signing for RetrieveRequest and RetrieveResponse.
 ---
 
-# AIP Authentication & Signing (v0.1)
+# AIP Authentication & Signing (v1.0)
 
 ## Scope
 
@@ -18,7 +18,7 @@ This applies to:
 
 - `RetrieveRequest`
 - `RetrieveResponse`
-- (optionally) AIP Events in v0.1
+- (optionally) AIP Events in v1.0
 
 This spec does **not** define transport-level security (TLS is assumed).
 
@@ -42,9 +42,9 @@ If a scheme violates any of these, it is non-compliant.
 
 - Platforms and publishers are registered with an **AIP Registry** (operator-neutral).
 - Each party is issued one or more **API keys**.
-- Each API key has an associated **shared secret** (v0.1).
+- Each API key has an associated **shared secret** (v1.0).
 
-> Public-key signing (JWT / JWS) is explicitly deferred to v0.2+.
+> Public-key signing (JWT / JWS) is explicitly deferred to v1.1+.
 
 ---
 
@@ -57,7 +57,7 @@ Every signed AIP request or response **MUST** include the following headers.
 **Required**
 
 ```
-X-AIP-Version: 0.1
+X-AIP-Version: 1.0
 ```
 
 Used for protocol routing and version enforcement.
@@ -229,7 +229,7 @@ Example:
 
 ```json
 {
-  "aip_version": "0.1",
+  "aip_version": "1.0",
   "request_id": "req_92fA1",
   "status": "error",
   "error": {
@@ -241,7 +241,7 @@ Example:
 
 ---
 
-## What is explicitly out of scope (v0.1)
+## What is explicitly out of scope (v1.0)
 
 - OAuth  
 - JWT / JWS  
@@ -276,7 +276,7 @@ No unnecessary complexity.
 
 ---
 
-## Forward compatibility (v0.2+)
+## Forward compatibility (v1.1+)
 
 This header model cleanly upgrades to:
 
@@ -285,7 +285,7 @@ This header model cleanly upgrades to:
 - key rotation  
 - delegated operators (AdMesh-signed on behalf of platforms)  
 
-Without breaking v0.1 clients.
+Without breaking v1.0 clients.
 
 ---
 
@@ -298,7 +298,7 @@ This signing scheme is:
 - legally defensible  
 - operationally realistic  
 
-Exactly what v0.1 needs.
+Exactly what v1.0 needs.
 
 ---
 
@@ -307,7 +307,7 @@ Exactly what v0.1 needs.
 1. **Access / Citation Event schema**
 2. **Registry API for key issuance**
 3. **Operator-signed retrieve flow**
-4. **v0.2 public-key upgrade path**
+4. **v1.1+ public-key upgrade path**
 
 Say which one you want next.
 
@@ -315,6 +315,6 @@ Say which one you want next.
 
 ## See also
 
-- [RetrieveRequest](/schemas/retrieve-request) — Request that carries these headers  
-- [RetrieveResponse](/schemas/retrieve-response) — Response that publishers SHOULD sign  
-- [Security](/security) — Protocol-level security invariants  
+- [RetrieveRequest](/schemas/retrieve-request)  -  Request that carries these headers  
+- [RetrieveResponse](/schemas/retrieve-response)  -  Response that publishers SHOULD sign  
+- [Security](/security)  -  Protocol-level security invariants  

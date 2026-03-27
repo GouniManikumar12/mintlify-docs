@@ -1,88 +1,219 @@
+---
+title: Bid
+description: Brand Agent bid payload returned for a ContextRequest, including targeting, pricing, budget, recommendation, and optional delegation support
+---
+
 # Bid Schema
 
 ## Overview
-Brand Agent bid submitted in response to a `ContextRequest`. Includes pricing for CPX/CPC/CPA in micros format (with cents and dollars for display), structured recommendation metadata, and relevance scoring.
 
-## Required Fields
-| Field | Type | Description |
-|--------|------|-------------|
-| `bid_id` | string | Unique identifier for this bid |
-| `brand_agent_id` | string | Identifier of the Brand Agent placing the bid |
-| `context_id` | string | ID of the `ContextRequest` being bid on |
-| `wallet_id` | string | Wallet to debit if the bid wins |
-| `pricing` | object | Pricing vector with micros (authoritative), cents (display), and dollars (UI) |
-| `recommendation` | object | Recommendation metadata + creative input |
-| `timestamp` | string | ISO 8601 timestamp for the bid |
-| `relevance` | number | Relevance score for this bid (0.0-1.0). Required field used by operator for bid ranking |
+A **Bid** is the payload a Brand Agent returns for a [ContextRequest](/schemas/context-request). It declares:
 
-## Pricing Object
+- bid identity and versioning
+- where the bid applies (`targeting`)
+- how the agent wants to be paid (`pricing`)
+- how much it is willing to spend (`budget`)
+- what the platform may render (`recommendation`)
+- how relevant it believes the bid is (`declared_relevance`)
+- whether it can handle delegated execution (`delegation`)
 
-Pricing uses **USD micros** as the authoritative format (1 USD = 1,000,000 micros), with cents and dollars provided for brand-friendly display.
+---
+
+## Top-Level Fields
 
 | Field | Type | Required | Description |
-|--------|------|----------|-------------|
-| `currency` | string | Yes | ISO 4217 currency code (default `USD`) |
-| `display_currency` | string | Yes | Display currency code (default `USD`) |
-| `cpx_micros` | integer | No | Price per exposure in USD micros (authoritative) |
-| `cpx_cents` | integer | No | Price per exposure in cents (for display, derived from micros) |
-| `cpx_dollars` | number | No | Price per exposure in dollars (for UI, derived from micros) |
-| `cpc_micros` | integer | No | Price per click in USD micros (authoritative) |
-| `cpc_cents` | integer | No | Price per click in cents (for display, derived from micros) |
-| `cpc_dollars` | number | No | Price per click in dollars (for UI, derived from micros) |
-| `cpa_micros` | integer | No | Price per conversion in USD micros (authoritative) |
-| `cpa_cents` | integer | No | Price per conversion in cents (for display, derived from micros) |
-| `cpa_dollars` | number | No | Price per conversion in dollars (for UI, derived from micros) |
-| `preferred_pricing_model` | string | No | Preferred pricing model: "CPX", "CPC", or "CPA" |
+|-------|------|----------|-------------|
+| `spec_version` | string | Yes | Spec version. MUST be `"1.0"` |
+| `bid_id` | string | Yes | Unique identifier for this bid |
+| `brand_agent_id` | string | Yes | Identifier of the Brand Agent placing the bid |
+| `context_id` | string | Yes | ID of the ContextRequest being bid on |
+| `wallet_id` | string | Yes | Wallet to debit if the bid wins |
+| `targeting` | object | Yes | Brand-declared applicability constraints |
+| `pricing` | object | Yes | Billing model and per-event prices in micros |
+| `budget` | object | Yes | Spend caps and pacing controls |
+| `recommendation` | object | Yes | Creative input to render if the bid wins |
+| `declared_relevance` | number | Yes | Brand-declared relevance score (`0.0`-`1.0`) |
+| `supported_opportunities` | array | Yes | Opportunity types this bid supports |
+| `preferred_format` | string | Yes | Preferred creative format |
+| `format_constraints` | object | Yes | Rendering and ranking hints |
+| `valid_until` | string | Yes | RFC 3339 expiry timestamp for the bid |
+| `timestamp` | string | Yes | RFC 3339 creation timestamp for the bid |
+| `delegation` | object | No | Delegation capability declaration |
+| `processing_latency_ms` | integer | No | End-to-end bid response latency in milliseconds |
+| `metadata` | object | No | Optional vendor-namespaced metadata |
 
-**Note**: At least one of `cpx_micros`, `cpc_micros`, or `cpa_micros` must be provided. The operator uses micros values for all calculations. Cents and dollars are provided for brand-friendly display and UI rendering.
+---
 
-## Recommendation Object
+## `targeting`
 
-Contains `creative_input`, the unified creative input structure shared with the operator.
+Defines when the bid should be considered applicable.
 
 | Field | Type | Required | Description |
-|--------|------|----------|-------------|
+|-------|------|----------|-------------|
+| `intent_types` | array | Yes | Supported intent types such as `commercial` or `transactional` |
+| `decision_phases` | array | Yes | Supported phases such as `consideration`, `decision`, or `post_purchase` |
+| `verticals` | array | No | Normalized topical verticals such as `crm` |
+| `countries` | array | No | ISO 3166-1 alpha-2 country codes |
+| `locales` | array | No | BCP 47 locales such as `en-US` |
+
+Valid `intent_types`:
+`commercial`, `transactional`, `informational`, `navigational`, `support`, `unsafe`, `unknown`
+
+Valid `decision_phases`:
+`research`, `consideration`, `decision`, `post_purchase`, `unknown`
+
+---
+
+## `pricing`
+
+All pricing values use micros of the declared currency.
+
+`1 USD = 1,000,000 micros`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `currency` | string | Yes | ISO 4217 currency code |
+| `cpx_micros` | integer | No | Price per exposure in micros |
+| `cpc_micros` | integer | No | Price per click in micros |
+| `cpa_micros` | integer | No | Price per acquisition / verified outcome in micros |
+| `preferred_pricing_model` | string | No | Preferred billing model: `CPX`, `CPC`, or `CPA` |
+
+At least one of `cpx_micros`, `cpc_micros`, or `cpa_micros` MUST be present.
+
+---
+
+## `budget`
+
+Budget controls declared by the Brand Agent.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `max_bid_per_event_micros` | integer | Yes | Maximum spend allowed for a single billable event |
+| `daily_cap_micros` | integer | Yes | Maximum spend allowed for the current day |
+| `remaining_budget_micros` | integer | Yes | Remaining available budget when the bid is created |
+| `pacing_mode` | string | Yes | Budget pacing strategy: `even`, `accelerated`, or `manual` |
+
+---
+
+## `recommendation`
+
+Contains the creative payload the operator may transform into a supported format.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
 | `creative_input` | object | Yes | Unified creative input structure |
 
-The `creative_input` object contains:
-- `brand_name`: Brand or advertiser name
-- `product_name`: Product or offer name
-- `short_description`: 1-2 sentence summary (max 200 chars)
-- `long_description`: 2-4 sentence expanded description (max 500 chars)
-- `value_props`: Short value propositions or bullet points
-- `context_snippet`: 60-100 character contextual hint for weave format
-- `cta_label`: Call-to-action label
-- `cta_url`: Call-to-action URL
-- `assets`: Creative assets (logo, images, resource URLs)
+The `creative_input` object follows the [Creative Input JSON schema](/schemas-json/creative-input.json) and includes:
 
-## Optional Fields
+- `brand_name`
+- `product_name`
+- `short_description`
+- `long_description`
+- `value_props`
+- `context_snippet`
+- `cta_label`
+- `cta_url`
+- `assets`
 
-| Field | Type | Description |
-|--------|------|-------------|
-| `preferred_format` | string | Preferred creative format: "weave", "tail", "product_card", or "bridge" |
-| `processing_latency_ms` | integer | Round-trip latency from auction request receipt to bid submission (milliseconds) |
+---
+
+## `supported_opportunities`
+
+Array of opportunity types this bid is intended to serve.
+
+Allowed values:
+
+- `soft_recommendation`
+- `comparison_slot`
+- `decision_moment`
+- `transaction_trigger`
+
+---
+
+## `delegation`
+
+Optional block for Brand Agents that can take over task execution after explicit user consent.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `supported` | boolean | Yes | Whether delegation is supported |
+| `consent_required` | boolean | Yes, when supported | Whether explicit user consent is required |
+| `supported_for_intents` | object | Yes, when supported | Intent types and decision phases where delegation is allowed |
+| `required_scopes` | array | Yes, when supported | Context scopes required before session start |
+| `protocol` | object | Yes, when supported | Delegation protocol descriptor |
+| `mcp` | object | Yes, when supported | MCP session bootstrap details |
+| `session_constraints` | object | Yes, when supported | Session timeout and turn limits |
+
+### `delegation.required_scopes`
+
+Allowed values:
+
+- `intent`
+- `constraints`
+- `selection_context`
+- `conversation_summary`
+
+### `delegation.protocol`
+
+In v1.0, the standardized protocol type is `mcp`.
+
+### `delegation.mcp`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `server_url` | string | Yes | MCP server URL |
+| `tool_name` | string | Yes | MCP tool used to start the delegated session |
+| `session_init_schema_ref` | string | Yes | URI of the session initialization schema |
+
+### `delegation.session_constraints`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `multi_turn` | boolean | Yes | Whether the session supports multiple turns |
+| `session_timeout_seconds` | integer | Yes | Session timeout in seconds |
+| `max_turns` | integer | Yes | Maximum turn count allowed |
+
+---
+
+## `format_constraints`
+
+Rendering hints for operators that support multi-response output.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `max_responses` | integer | Yes | Maximum number of sponsored responses allowed in the rendered set |
+| `ranking` | string | Yes | Ranking hint. In v1.0, this is `operator_defined` |
+
+---
 
 ## Example
 
 ```json
 {
+  "spec_version": "1.0",
   "bid_id": "bid_7823",
   "brand_agent_id": "brand_agent_123",
   "context_id": "ctx_92f",
   "wallet_id": "wallet_890",
+  "targeting": {
+    "intent_types": ["commercial", "transactional"],
+    "decision_phases": ["consideration", "decision"],
+    "verticals": ["crm", "sales_software"],
+    "countries": ["US"],
+    "locales": ["en-US"]
+  },
   "pricing": {
     "currency": "USD",
-    "display_currency": "USD",
     "cpx_micros": 50000,
-    "cpx_cents": 5,
-    "cpx_dollars": 0.05,
     "cpc_micros": 450000,
-    "cpc_cents": 45,
-    "cpc_dollars": 0.45,
     "cpa_micros": 10000000,
-    "cpa_cents": 1000,
-    "cpa_dollars": 10.0,
     "preferred_pricing_model": "CPA"
+  },
+  "budget": {
+    "max_bid_per_event_micros": 10000000,
+    "daily_cap_micros": 50000000,
+    "remaining_budget_micros": 32000000,
+    "pacing_mode": "even"
   },
   "recommendation": {
     "creative_input": {
@@ -94,7 +225,7 @@ The `creative_input` object contains:
         "Automated pipeline insights",
         "Collaborative forecasting"
       ],
-      "context_snippet": "For startups needing higher limits and automated expense workflows.",
+      "context_snippet": "For teams comparing CRM options for scaling sales workflows.",
       "cta_label": "Start Free Trial",
       "cta_url": "https://nimbus.example.com/signup",
       "assets": {
@@ -104,29 +235,52 @@ The `creative_input` object contains:
       }
     }
   },
-  "timestamp": "2025-11-11T18:00:01Z",
-  "relevance": 0.87,
+  "declared_relevance": 0.87,
+  "supported_opportunities": ["comparison_slot", "decision_moment", "transaction_trigger"],
   "preferred_format": "weave",
-  "processing_latency_ms": 42
+  "delegation": {
+    "supported": true,
+    "consent_required": true,
+    "supported_for_intents": {
+      "intent_types": ["transactional", "commercial"],
+      "decision_phases": ["decision", "post_purchase"]
+    },
+    "required_scopes": ["intent", "constraints"],
+    "protocol": {
+      "type": "mcp",
+      "version": "1.0"
+    },
+    "mcp": {
+      "server_url": "https://agent.nimbus.example.com/mcp",
+      "tool_name": "start_crm_signup_session",
+      "session_init_schema_ref": "https://agent.nimbus.example.com/schemas/session-init.json"
+    },
+    "session_constraints": {
+      "multi_turn": true,
+      "session_timeout_seconds": 900,
+      "max_turns": 25
+    }
+  },
+  "format_constraints": {
+    "max_responses": 2,
+    "ranking": "operator_defined"
+  },
+  "processing_latency_ms": 42,
+  "valid_until": "2026-03-26T18:00:10Z",
+  "timestamp": "2026-03-26T18:00:01Z"
 }
 ```
 
+---
+
 ## Validation Rules
 
-- At least one of `cpx_micros`, `cpc_micros`, or `cpa_micros` must be provided
-- `relevance` must be between 0.0 and 1.0
-- `currency` and `display_currency` must be valid ISO 4217 codes
-- Arrays in `creative_input` must contain at least one entry where required
-- `resource_urls` and `image_urls` must be valid URIs
-- `timestamp` must be ISO 8601 / RFC 3339 formatted
-- Micros values are authoritative; cents and dollars are derived for display
+- `spec_version` MUST equal `"1.0"`
+- At least one of `cpx_micros`, `cpc_micros`, or `cpa_micros` MUST be present
+- `declared_relevance` MUST be between `0.0` and `1.0`
+- `currency` MUST be a valid ISO 4217 code
+- `countries` MUST use ISO 3166-1 alpha-2 codes
+- `valid_until` and `timestamp` MUST be RFC 3339 timestamps
+- If `delegation.supported` is `true`, the rest of the delegation fields become required
 
-## Pricing Format Migration
-
-**Old format** (deprecated):
-- Used string-based pricing: `"cpx": "0.05"`, `"cpc": "0.45"`, `"cpa": "10.00"`
-
-**New format** (current):
-- Uses integer micros (authoritative): `cpx_micros: 50000`, `cpc_micros: 450000`, `cpa_micros: 10000000`
-- Includes cents and dollars for display: `cpx_cents: 5`, `cpx_dollars: 0.05`
-- Conversion: 1 USD = 1,000,000 micros = 100 cents
+---

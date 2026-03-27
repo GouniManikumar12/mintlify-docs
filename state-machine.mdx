@@ -1,30 +1,30 @@
 ---
 title: State Machine
-description: Understand how AIP defines allowed state transitions and invariants for ad lifecycle tracking.
+description: How AIP defines allowed state transitions and invariants for decision lifecycle tracking.
 ---
 
-The **State Machine** defines protocol-level constraints on how a `serve_token` may transition through states — exposure, click, and conversion.  
-It ensures each `serve_token` transitions in one direction only, making billing and verification deterministic. Operators implement their own state handling logic as long as these protocol guarantees are met.
+The **State Machine** defines protocol-level constraints on how a `serve_token` may transition through states  -  from participation through outcome and settlement.
+It ensures each `serve_token` transitions in one direction only, making settlement and verification deterministic. Operators implement their own state handling logic as long as these protocol guarantees are met.
 
 ---
 
 ## 1. TL;DR
 
-> The AIP state machine defines allowed state transitions and invariants for ad lifecycle tracking, ensuring no event is double-counted or reversed. Operators implement their own detection, verification, and enforcement logic.
+> The AIP state machine defines allowed state transitions and invariants for decision lifecycle tracking, ensuring no event is double-counted or reversed. Operators implement their own detection, verification, and enforcement logic.
 
 ---
 
 ## 2. Why it matters
 
-In legacy ad systems, duplicate exposures, repeated clicks, or delayed conversions often lead to inaccurate billing.  
-AIP eliminates this by defining **protocol-level state constraints** — each serve token can only exist in one state at a time, with defined allowed transitions.
+In legacy systems, duplicate events, repeated interactions, or delayed outcomes often lead to inaccurate settlement.
+AIP eliminates this by defining **protocol-level state constraints**  -  each serve token can only exist in one state at a time, with defined allowed transitions.
 
 This makes every transaction:
-- Verifiable  
-- Reproducible  
+- Verifiable
+- Reproducible
 - Auditable
 
-Operators implement their own state management systems as long as they respect these protocol constraints.  
+Operators implement their own state management systems as long as they respect these protocol constraints.
 
 ---
 
@@ -33,22 +33,26 @@ Operators implement their own state management systems as long as they respect t
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING
-    PENDING --> EXPOSED: Exposure event verified
-    EXPOSED --> CLICKED: Click event verified
-    CLICKED --> CONVERTED: Conversion event verified
-    CONVERTED --> FINALIZED: Payout finalized
-    EXPOSED --> FINALIZED: Timeout (no click)
-    CLICKED --> FINALIZED: Timeout (no conversion)
+    PENDING --> EXPOSURE_SHOWN: exposure_shown verified
+    EXPOSURE_SHOWN --> INTERACTION_STARTED: interaction_started verified
+    EXPOSURE_SHOWN --> DELEGATION_STARTED: delegation_started verified
+    INTERACTION_STARTED --> TASK_COMPLETED: task_completed verified
+    DELEGATION_STARTED --> TASK_COMPLETED: task_completed verified
+    TASK_COMPLETED --> SETTLED: Settlement finalized
+    EXPOSURE_SHOWN --> SETTLED: Timeout (no further events)
+    INTERACTION_STARTED --> SETTLED: Timeout (no task completion)
+    DELEGATION_STARTED --> SETTLED: Timeout (no task completion)
     PENDING --> REFUNDED: Refund issued
-    EXPOSED --> REFUNDED: Refund issued
-    CLICKED --> REFUNDED: Refund issued
-    CONVERTED --> REFUNDED: Refund issued
-    FINALIZED --> [*]
+    EXPOSURE_SHOWN --> REFUNDED: Refund issued
+    INTERACTION_STARTED --> REFUNDED: Refund issued
+    DELEGATION_STARTED --> REFUNDED: Refund issued
+    TASK_COMPLETED --> REFUNDED: Refund issued
+    SETTLED --> [*]
     REFUNDED --> [*]
 ```
 
-Each state represents a **billing condition**.
-The protocol guarantees that once a token moves forward, it cannot regress (e.g., a converted ad cannot revert to "clicked"). Operators implement their own state detection and transition logic to enforce these constraints.
+Each state represents a **settlement condition**.
+The protocol guarantees that once a token moves forward, it cannot regress. Operators implement their own state detection and transition logic to enforce these constraints.
 
 ---
 
@@ -58,28 +62,48 @@ The protocol defines allowed transitions and constraints. Operators implement th
 
 | From | To | Trigger | Verification Responsibility |
 |------|----|----------|---------------------------|
-| PENDING | EXPOSED | `cpx_exposure` event | Operator (may use platform signals) |
-| EXPOSED | CLICKED | `cpc_click` event | Operator (may use platform and network signals) |
-| CLICKED | CONVERTED | `cpa_conversion` event | Operator (may use brand agent and network signals) |
-| EXPOSED | FINALIZED | Operator-defined expiration or attribution window | Operator |
-| CLICKED | FINALIZED | Operator-defined expiration or attribution window | Operator |
-| CONVERTED | FINALIZED | Operator-defined settlement processing | Operator |
+| PENDING | EXPOSURE_SHOWN | `exposure_shown` event | Operator (may use platform signals) |
+| EXPOSURE_SHOWN | INTERACTION_STARTED | `interaction_started` event | Operator (may use platform signals) |
+| EXPOSURE_SHOWN | DELEGATION_STARTED | `delegation_started` event | Operator (may use platform and agent signals) |
+| INTERACTION_STARTED | TASK_COMPLETED | `task_completed` event | Operator (may use brand agent signals) |
+| DELEGATION_STARTED | TASK_COMPLETED | `task_completed` event | Operator (may use brand agent signals) |
+| EXPOSURE_SHOWN | SETTLED | Operator-defined expiration window | Operator |
+| INTERACTION_STARTED | SETTLED | Operator-defined expiration window | Operator |
+| DELEGATION_STARTED | SETTLED | Operator-defined expiration window | Operator |
+| TASK_COMPLETED | SETTLED | Operator-defined settlement processing | Operator |
 | Any State | REFUNDED | Operator-defined refund or reversal action | Operator |
 
-AIP does not mandate specific time windows. Operators define their own expiration and attribution windows for state transitions. The protocol only guarantees that:
+AIP does not mandate specific time windows. Operators define their own expiration and attribution windows. The protocol only guarantees that:
 - Transitions are one-directional
 - No regression once a higher state is reached
 - At most one billable terminal state per `serve_token`
 
 ---
 
-## 5. Example lifecycle
+## 5. Example lifecycles
 
-1. Auction completes, `serve_token` generated → state = *PENDING*
-2. Operator verifies an **exposure** event → state = *EXPOSED*
-3. Operator verifies a **click** event → state = *CLICKED*
-4. Operator verifies a **conversion** event → state = *CONVERTED*
-5. Operator finalizes settlement → state = *FINALIZED*
+### Recommend mode  -  full lifecycle
+
+1. Selection completes, `serve_token` generated → state = *PENDING*
+2. Operator verifies a **exposure_shown** event → state = *EXPOSURE_SHOWN*
+3. Operator verifies an **interaction_started** event → state = *INTERACTION_STARTED*
+4. Operator verifies a **task_completed** event → state = *TASK_COMPLETED*
+5. Operator finalizes settlement → state = *SETTLED*
+
+### Delegate mode  -  full lifecycle
+
+1. Selection completes, `serve_token` generated → state = *PENDING*
+2. Operator verifies a **exposure_shown** event → state = *EXPOSURE_SHOWN*
+3. User consents, **delegation_started** event verified → state = *DELEGATION_STARTED*
+4. User completes task, **task_completed** event verified → state = *TASK_COMPLETED*
+5. Operator finalizes settlement → state = *SETTLED*
+
+### Recommend mode  -  participation only
+
+1. Selection completes → state = *PENDING*
+2. **exposure_shown** verified → state = *EXPOSURE_SHOWN*
+3. No further events within attribution window
+4. Operator settles CPX → state = *SETTLED*
 
 Each transition is timestamped and recorded according to operator-defined ledger policies.
 
@@ -88,11 +112,11 @@ Each transition is timestamped and recorded according to operator-defined ledger
 ## 6. How it prevents double billing
 
 The protocol constrains allowed transitions:
-- Two exposures for the same token cannot both transition the state forward.  
-- A click without prior exposure state is not a valid transition.  
-- A conversion without a verified click state is not a valid transition.  
+- Two exposure_shown events for the same token cannot both transition the state forward
+- An interaction_started without prior exposure_shown state is not a valid transition
+- A task_completed without a verified prior state is not a valid transition
 
-Operators implement their own logic to detect and enforce these constraints, ensuring **billing integrity** and **logical consistency**.
+Operators implement their own logic to detect and enforce these constraints, ensuring **settlement integrity** and **logical consistency**.
 
 ---
 
@@ -101,9 +125,9 @@ Operators implement their own logic to detect and enforce these constraints, ens
 Operators maintain ledgers that record state transitions and final states, ensuring:
 - Immutable event chains
 - Deterministic reconciliation
-- Verified payout records
+- Verified settlement records
 
-The protocol guarantees that finalized states are immutable. Operators define their own ledger structure and settlement policies.
+The protocol guarantees that settled states are immutable. Operators define their own ledger structure and settlement policies.
 
 ```json
 {
@@ -111,17 +135,18 @@ The protocol guarantees that finalized states are immutable. Operators define th
   "session_id": "s_001",
   "platform_id": "pf_chatapp",
   "agent_id": "ag_123",
-  "auction_id": "auc_981",
-  "state": "FINALIZED",
+  "selection_id": "sel_981",
+  "state": "SETTLED",
+  "interaction_mode": "delegate",
   "final_unit": "CPA",
   "final_charge": "10.00",
   "currency": "USD",
   "timestamps": {
-    "auction": "2025-11-11T18:00:00Z",
-    "exposure": "2025-11-11T18:00:00Z",
-    "click": "2025-11-11T18:02:00Z",
-    "conversion": "2025-11-11T18:30:00Z",
-    "finalized": "2025-11-11T19:00:00Z"
+    "selection": "2025-11-11T18:00:00Z",
+    "exposure_shown": "2025-11-11T18:00:00Z",
+    "delegation_started": "2025-11-11T18:01:00Z",
+    "task_completed": "2025-11-11T18:30:00Z",
+    "settled": "2025-11-11T19:00:00Z"
   }
 }
 ```
@@ -131,10 +156,11 @@ The protocol guarantees that finalized states are immutable. Operators define th
 ## 8. Guarantees
 
 The protocol guarantees:
-- State transitions are one-directional and irreversible.  
-- No regression once a higher state is reached.  
-- At most one billable terminal state per `serve_token`.  
-- Finalized states are immutable and audit-safe.
+- State transitions are one-directional and irreversible.
+- No regression once a higher state is reached.
+- At most one billable terminal state per `serve_token`.
+- Settled states are immutable and audit-safe.
+- Both recommend and delegate mode follow the same state machine with branching at EXPOSURE_SHOWN.
 
 Operators implement their own logic for detecting transitions, verifying events, handling expiration windows, and processing refunds or reversals.
 
@@ -142,4 +168,4 @@ Operators implement their own logic for detecting transitions, verifying events,
 
 ## Summary
 
-> The AIP state machine defines protocol-level constraints that ensure a single source of truth for every ad — preventing duplicates, enforcing fairness, and keeping the ecosystem financially clean. Operators implement their own state management systems to enforce these constraints.
+> The AIP state machine defines protocol-level constraints that ensure a single source of truth for every decision lifecycle  -  preventing duplicates, enforcing fairness, and keeping the ecosystem financially clean. Operators implement their own state management systems to enforce these constraints.

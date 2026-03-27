@@ -25,7 +25,7 @@ Events are **append-only facts**, not signals. No ads. No pricing. No user ident
 
 ## Event types
 
-v0.1 defines **two canonical event types**:
+v1.0 defines **two canonical event types**:
 
 1. **`access`**
 2. **`citation`**
@@ -37,7 +37,7 @@ Both share a common envelope.
 ## Canonical schema location
 
 ```
-https://schemas.agenticintentprotocol.com/aip/0.1/event.schema.json
+https://schemas.agenticintentprotocol.com/aip/1.0/event.schema.json
 ```
 
 ---
@@ -46,7 +46,7 @@ https://schemas.agenticintentprotocol.com/aip/0.1/event.schema.json
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `aip_version` | string | Yes | Must be `"0.1"`. |
+| `aip_version` | string | Yes | Must be `"1.0"`. |
 | `event_id` | string | Yes | Unique identifier for this event. |
 | `event_type` | string | Yes | `access` or `citation`. |
 | `timestamp` | string (date-time) | Yes | ISO 8601 when the event occurred. |
@@ -103,7 +103,7 @@ It does **not** imply endorsement, licensing, or commercial use.
 
 ```json
 {
-  "aip_version": "0.1",
+  "aip_version": "1.0",
   "event_id": "evt_access_001",
   "event_type": "access",
   "timestamp": "2025-11-14T18:22:01Z",
@@ -129,7 +129,7 @@ It does **not** imply endorsement, licensing, or commercial use.
 
 ```json
 {
-  "aip_version": "0.1",
+  "aip_version": "1.0",
   "event_id": "evt_citation_002",
   "event_type": "citation",
   "timestamp": "2025-11-14T18:22:05Z",
@@ -161,7 +161,7 @@ It does **not** imply endorsement, licensing, or commercial use.
 - user identifiers  
 - engagement scoring  
 
-Those belong to **separate systems**, not AIP v0.1.
+Those belong to **separate systems**, not AIP v1.0.
 
 ---
 
@@ -187,6 +187,6 @@ Full JSON Schema (Draft 2020-12): [access-citation-event.json](/schemas-json/acc
 
 ## See also
 
-- [RetrieveRequest](/schemas/retrieve-request) — Request that triggers retrieval and events  
-- [RetrieveResponse](/schemas/retrieve-response) — Response that leads to access events  
-- [aip.json](/schemas/aip) — `endpoints.event` and `required` for citation emission  
+- [RetrieveRequest](/schemas/retrieve-request)  -  Request that triggers retrieval and events  
+- [RetrieveResponse](/schemas/retrieve-response)  -  Response that leads to access events  
+- [aip.json](/schemas/aip)  -  `endpoints.event` and `required` for citation emission  

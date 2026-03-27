@@ -1,152 +1,511 @@
-# Platform Request Schema
+---
+title: Platform Request
+description: Operator-agnostic platform request schema for intent-based monetization — supports operator-derived and platform-derived classification input modes
+---
 
 ## Overview
 
-**PlatformRequest** is sent **Platform → AdMesh (Operator)**. It carries:
+A **PlatformRequest** is the canonical envelope that an AI platform sends to an AIP operator to initiate intent-based monetization. It is operator-agnostic: any conforming operator can process it.
 
-- **User context** (locale, placement, device, geography, identity)
-- **Platform-declared intent** (explicit, for publisher consent gating)
-- **Runtime context** (session, turn, query, optional messages)
-- **Auction parameters** (pricing model, floor, currency)
+The schema is designed around five principles:
 
-This payload is **platform-asserted**, not operator-interpreted. The operator validates it, checks publisher consent (e.g. `aip.json` editorial_domains vs `extensions.aip.intent`), and—if allowed—generates a **ContextRequest** for brand agents. Do not blur PlatformRequest with ContextRequest; they are distinct messages.
+1. **Consent is first-class.** Every request carries an explicit consent envelope. No consent, no processing.
+2. **Classification has two modes.** The platform either sends the interaction and the operator classifies it (**operator-derived**), or the platform sends pre-computed signals and the operator validates them (**platform-derived**).
+3. **Policy is auditable.** The operator produces a structured policy decision with thresholds, basis, and sensitivity — separate from classification and monetization.
+4. **Monetization is not just auction.** The `monetization` block supports auction as one mechanism, not the only one.
+5. **Identity is quarantined by default.** Platform-internal fields live in `identity.quarantined` and must never be forwarded downstream.
 
-## UCP structure
+---
 
-The PlatformRequest uses the **UCP (User Context Protocol)** envelope with nested objects: producer, context, identity, extensions.
+## Top-Level Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `spec_version` | string | UCP specification version (e.g. "1.0.0") |
-| `message_id` | string | Unique identifier for this auction request |
-| `timestamp` | string | ISO 8601 timestamp when the platform generated the request |
-| `producer` | object | Producer of the request (the AI platform/host) |
-| `context` | object | Context (language, publisher, placement, device, geography) |
-| `identity` | object | Identity (namespace, value_hash, confidence) |
-| `extensions` | object | Vendor-namespaced data; AIP uses `extensions.aip` |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `spec_version` | string | Yes | `"1.0"` |
+| `request_id` | string | Yes | Unique identifier for this request |
+| `timestamp` | string | Yes | RFC 3339 timestamp when the platform generated the request |
+| `platform` | object | Yes | The AI platform producing the request |
+| `identity` | object | Yes | Anonymous or pseudonymous subject identity |
+| `consent` | object | Yes | Effective consent state for this request |
+| `classification_input` | object | Yes | Interaction data or pre-computed signals — exactly one mode |
+| `policy_hints` | object | No | Non-binding hints from the platform |
+| `signal_validation` | object | No | Operator validation metadata (platform-derived mode only) |
+| `policy` | object | No | Auditable policy decision |
+| `monetization` | object | No | Monetization configuration and runtime controls |
 
-## Producer object
+---
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `agent_id` | string | Identifier of the AI platform sending this request |
-| `agent_role` | string | **Must be `"platform"`.** The platform is the AI host, not the content publisher. Reserve `"publisher"` for content owners only. |
-| `software` | string | Software name (e.g. "chatgpt") |
-| `software_version` | string | Software version or model identifier (e.g. "4.3-mini") |
+## `platform`
 
-## Context object
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `platform_id` | string | Yes | Platform identifier |
+| `role` | string | Yes | Must be `"platform"` |
+| `software.name` | string | Yes | Software name (e.g. `"assistant_app"`) |
+| `software.version` | string | Yes | Software version (e.g. `"1.2.0"`) |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `language` | string | User locale in BCP 47 format (e.g. "en-US") |
-| `publisher` | string | Publisher identifier (same as producer.agent_id in this context) |
-| `placement.ad_unit` | string | Platform surface: "conversation", "chat", "voice", etc. |
-| `device.platform` | string | Device platform: "web", "mobile", etc. |
-| `device.form_factor` | string | "mobile", "desktop", "tablet" |
-| `device.ua_hash` | string | Optional user agent hash |
-| `geography.country` | string | User country code (ISO 3166-1 alpha-2, e.g. "US") |
+---
 
-## Identity object
+## `identity`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `namespace` | string | Identity namespace (e.g. "platform_user") |
-| `value_hash` | string | Anonymous hashed user ID |
-| `confidence` | number | Confidence level for identity (0.0 to 1.0) |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `namespace` | string | Yes | Identity namespace (e.g. `"platform_user"`) |
+| `value_hash` | string | Yes | Hashed or pseudonymous identity value |
+| `confidence` | number | No | Identity confidence (`0.0`–`1.0`) |
+| `quarantined` | object | No | Platform-internal fields that **must never be forwarded downstream** |
 
-## Extensions: `extensions.aip`
+---
 
-AIP-specific data lives under `extensions.aip` and is split into **three sub-blocks** so consent logic never touches monetization:
+## `consent`
 
-| Block | Required | Purpose |
-|-------|----------|---------|
-| **intent** | Yes | Platform-declared intent for **publisher consent gating**. Must be explicit and structured so the operator can match against publisher `aip.json` `editorial_domains`. |
-| **runtime** | Yes | Session and query context; used for operator enrichment and ContextRequest generation. |
-| **auction** | No | Monetization parameters (pricing model, floor, currency). |
+Every request must carry an explicit consent envelope. The operator must not process a request where consent is denied or unknown without a policy basis for doing so.
 
-### `extensions.aip.intent`
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | string | Yes | `"granted"`, `"denied"`, `"unknown"`, `"not_required"` |
+| `source` | string | No | Source of consent: `"platform_ui"`, `"account_setting"`, `"jurisdiction_default"` |
+| `scope` | object | Yes | What is consented to (see below) |
+| `constraints` | object | Yes | What may be forwarded downstream (see below) |
+| `captured_at` | string | No | RFC 3339 timestamp of consent capture |
+| `proof_ref` | string | No | Reference to consent proof record |
 
-Intent must be **explicit** so it can be enforced against publisher `editorial_domains`. Do not infer intent only from `query_text` or `messages`.
+### `consent.scope`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `domain` | string | Editorial domain (e.g. "business", "technology"). Matched against publisher `aip.json` `editorial_domains`. |
-| `subdomain` | string | Finer-grained subdomain (e.g. "crm", "ai"). |
-| `confidence` | number | Confidence in this intent classification (0.0–1.0). |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `intent_based_monetization` | boolean | Yes | Whether the current intent moment may be monetized |
+| `agent_participation` | boolean | Yes | Whether external brands, agents, tools, or buyers may participate |
+| `measurement` | boolean | Yes | Whether monetization outcome measurement is permitted |
 
-### `extensions.aip.runtime`
+### `consent.constraints`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `session_id` | string | Conversation or interaction session ID |
-| `turn_index` | integer | Turn index in the conversation |
-| `query_text` | string | User's raw query text |
-| `messages` | array | Optional short conversation history (last N turns) |
-| `latency_budget_ms` | integer | Optional latency budget from platform (ms) |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `allow_raw_query_downstream` | boolean | Yes | Whether the raw query text may be forwarded |
+| `allow_message_history_downstream` | boolean | Yes | Whether message history may be forwarded |
+| `allow_identity_downstream` | boolean | Yes | Whether identity information may be forwarded |
 
-### `extensions.aip.auction`
+---
 
-Monetization is kept separate from intent so consent logic never touches auction logic.
+## `classification_input`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `pricing_model` | string | Preferred pricing model: "CPX", "CPC", "CPA" |
-| `cpx_floor` | number | Minimum CPX (USD) required by the platform for this auction |
-| `currency` | string | Currency for pricing (ISO 4217, e.g. "USD") |
+A PlatformRequest **MUST** include exactly one classification input form.
 
-## Example
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | `"interaction"` (operator-derived) or `"provided_signals"` (platform-derived) |
+| `interaction` | object | Conditional | Required when `type` is `"interaction"` |
+| `signals` | object | Conditional | Required when `type` is `"provided_signals"` |
+
+<Note>
+If `classification_input.type` is `"interaction"`, the request is **operator-derived**. The platform provides the interaction data and the operator derives classification outputs from that interaction.
+
+If `classification_input.type` is `"provided_signals"`, the request is **platform-derived**. The platform provides structured classification signals and the operator validates, normalizes, and governs those signals before using them for policy or monetization decisions.
+
+Platform-derived signals **MUST NOT** be treated as trusted by default. The operator remains the authoritative decision-maker for validation, policy, monetization eligibility, and downstream participation.
+</Note>
+
+---
+
+### Mode 1: Operator-Derived (`type: "interaction"`)
+
+Use this mode when the platform sends the interaction data and the operator performs classification.
+
+The platform provides the user interaction, surface metadata, consent, and identity envelope. The operator then classifies intent, maps taxonomy, evaluates policy, determines monetization eligibility, and optionally runs monetization logic.
+
+**When to use:**
+
+- The platform does not run its own intent classifier
+- The platform wants the operator to be the source of truth for classification
+- The platform wants simpler integration
+- The operator needs consistent classification across all platforms
+
+**Meaning:** *"Here is what happened. You classify it."*
+
+#### `classification_input.interaction`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `session` | object | No | Session context |
+| `surface` | object | Yes | Surface and device metadata |
+| `input` | object | Yes | The user query and optional message history |
+
+#### `interaction.session`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | No | Session identifier |
+| `turn_index` | integer | No | Zero-based turn index in the conversation |
+
+#### `interaction.surface`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `channel` | string | Yes | `"conversation"`, `"search_result"`, `"assistant_panel"`, `"embedded_assistant"`, `"voice_assistant"` |
+| `interaction_mode` | string | Yes | `"text"`, `"voice"`, `"multimodal"` |
+| `platform` | string | Yes | `"web"`, `"mobile"`, `"desktop_app"`, `"browser_extension"`, `"api"`, `"other"` |
+| `form_factor` | string | No | `"mobile"`, `"desktop"`, `"tablet"`, `"speaker"`, `"other"` |
+| `os` | string | No | Operating system (e.g. `"macOS"`, `"iOS"`, `"Android"`) |
+| `app_id` | string | No | Platform app or client identifier |
+| `app_version` | string | No | App version |
+| `device_type` | string | No | `"phone"`, `"laptop"`, `"desktop"`, `"tablet"`, `"speaker"`, `"tv"`, `"other"` |
+| `browser` | string | No | Browser name |
+| `browser_version` | string | No | Browser version |
+| `locale` | string | No | User locale |
+| `country` | string | No | ISO 3166-1 alpha-2 country code. Pattern: `^[A-Z]{2}$` |
+
+#### `interaction.input`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `query_text` | string | Yes | The user's raw query text |
+| `messages` | array | No | Short conversation history. Each item: `{ role, content }` |
+
+#### `interaction.input.messages[]`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `role` | string | Yes | `"user"`, `"assistant"`, `"system"`, `"tool"` |
+| `content` | string | Yes | Message content |
+
+#### Operator-derived example
 
 ```json
 {
-  "spec_version": "1.0.0",
-  "message_id": "req_92fA1",
-  "timestamp": "2025-11-14T18:22:00Z",
+  "classification_input": {
+    "type": "interaction",
+    "interaction": {
+      "session": {
+        "id": "sess_abc",
+        "turn_index": 2
+      },
+      "surface": {
+        "channel": "conversation",
+        "interaction_mode": "text",
+        "platform": "web",
+        "form_factor": "desktop",
+        "device_type": "laptop",
+        "os": "macOS",
+        "browser": "Chrome",
+        "browser_version": "146.0.0.0",
+        "locale": "en-US",
+        "country": "US"
+      },
+      "input": {
+        "query_text": "best CRM for small sales team",
+        "messages": [
+          { "role": "user", "content": "I need a CRM" },
+          { "role": "assistant", "content": "What size is your team?" }
+        ]
+      }
+    }
+  }
+}
+```
 
-  "producer": {
-    "agent_id": "openai_chat",
-    "agent_role": "platform",
-    "software": "chatgpt",
-    "software_version": "4.3-mini"
+---
+
+### Mode 2: Platform-Derived (`type: "provided_signals"`)
+
+Use this mode when the platform has already generated structured intent signals and sends those signals to the operator.
+
+The platform provides structured intent output, signal provenance, optional taxonomy and inferred context. The operator then validates the provided signals, normalizes scores if needed, applies trust rules, evaluates policy, and determines monetization eligibility.
+
+**The operator MUST NOT assume that platform-provided signals are trusted by default.**
+
+**When to use:**
+
+- The platform runs its own classifier
+- The platform runs a certified shared classifier locally
+- The platform wants lower latency or less raw interaction sharing
+- The operator supports signal validation for upstream classification
+
+**Meaning:** *"Here is our classification. Validate and act on it if acceptable."*
+
+#### `classification_input.signals`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `source` | object | Yes | Signal provenance and trust metadata |
+| `intent` | object | Yes | Structured intent classification |
+| `iab_content` | object | No | IAB Content Taxonomy mapping |
+| `context` | object | No | Inferred entities and constraints |
+
+#### `signals.source`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | `"platform_model"`, `"operator_model"`, `"third_party"` |
+| `name` | string | Yes | Model or classifier name |
+| `version` | string | Yes | Model version |
+| `calibration_version` | string | No | Calibration profile version |
+| `trust_tier` | string | No | `"unverified"`, `"self_attested"`, `"certified"`, `"operator_verified"`, `"operator_hosted"` |
+
+#### `signals.intent`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | `"commercial"`, `"transactional"`, `"informational"`, `"navigational"`, `"support"`, `"unsafe"`, `"unknown"` |
+| `subtype` | string | No | Interaction pattern (e.g. `"comparison"`, `"product_discovery"`) |
+| `decision_phase` | string | Yes | `"research"`, `"consideration"`, `"decision"`, `"post_purchase"`, `"unknown"` |
+| `confidence` | number | No | `0.0`–`1.0` |
+| `commercial_score` | number | No | `0.0`–`1.0` |
+
+#### `signals.iab_content`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `taxonomy` | string | Taxonomy name (e.g. `"IAB Content Taxonomy"`) |
+| `taxonomy_version` | string | Version (e.g. `"3.1"`) |
+| `tier1` | string | Top-level category |
+| `tier2` | string | Second-level category |
+| `tier3` | string | Third-level category |
+
+#### `signals.context`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `entities` | string[] | Named entities from the query |
+| `constraints` | object | Decision-relevant constraints |
+
+#### Platform-derived example
+
+```json
+{
+  "classification_input": {
+    "type": "provided_signals",
+    "signals": {
+      "source": {
+        "type": "platform_model",
+        "name": "intent_model_v3",
+        "version": "3.2.1",
+        "calibration_version": "2026-03",
+        "trust_tier": "self_attested"
+      },
+      "intent": {
+        "type": "commercial",
+        "subtype": "comparison",
+        "decision_phase": "decision",
+        "confidence": 0.89,
+        "commercial_score": 0.94
+      },
+      "iab_content": {
+        "taxonomy": "IAB Content Taxonomy",
+        "taxonomy_version": "3.1",
+        "tier1": "Business and Finance",
+        "tier2": "Business",
+        "tier3": "Business I.T."
+      },
+      "context": {
+        "entities": ["HubSpot", "Zoho", "Salesforce"],
+        "constraints": { "company_size": "small_team" }
+      }
+    }
+  }
+}
+```
+
+---
+
+## Normative Difference Between Modes
+
+| | Operator-Derived | Platform-Derived |
+|---|---|---|
+| **Input source** | Interaction data | Platform-generated signals |
+| **Classifier owner** | Operator | Platform |
+| **Classification authority** | Operator | Platform initially; operator controls trust, policy, and eligibility |
+| **Best for** | Consistency and auditability | Advanced integrations and lower raw data sharing |
+
+---
+
+## `policy_hints`
+
+Non-binding hints from the platform. The operator may use or ignore them.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `latency_budget_ms` | integer | Requested latency budget in milliseconds |
+| `preferred_pricing_model` | string | `"CPX"`, `"CPC"`, `"CPA"` |
+
+---
+
+## `signal_validation`
+
+Present only when `classification_input.type` is `"provided_signals"`. Contains the operator's validation and normalization metadata for platform-derived signals.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `"accepted"`, `"accepted_with_normalization"`, `"rejected"`, `"not_applicable"` |
+| `trust_tier_applied` | string | Trust tier the operator applied to the signals |
+| `normalized_scores.confidence` | number | Operator-normalized confidence (`0.0`–`1.0`) |
+| `normalized_scores.commercial_score` | number | Operator-normalized commercial score (`0.0`–`1.0`) |
+| `drift_risk` | string | `"low"`, `"medium"`, `"high"`, `"unknown"` |
+| `reason` | string | Human-readable explanation |
+
+The operator **MAY** reject platform-derived signals if:
+
+- Provenance is missing
+- Trust tier is insufficient
+- Calibration is unknown
+- Signals fail validation
+- The request falls into a restricted policy class
+
+---
+
+## `policy`
+
+Auditable policy decision produced after consent, classification, validation, and operator rules are applied.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `consent_eligibility` | string | `"allowed"`, `"restricted"`, `"not_allowed"` |
+| `monetization_eligibility` | string | `"allowed"`, `"allowed_with_caution"`, `"restricted"`, `"not_allowed"` |
+| `decision_basis` | string | See enum below |
+| `reason` | string | Human-readable explanation |
+| `applied_thresholds` | object | `{ confidence_min, commercial_score_min }` |
+| `sensitivity` | string | `"low"`, `"medium"`, `"high"`, `"prohibited"` |
+| `regulated_vertical` | boolean | Whether regulated-vertical controls apply |
+| `opportunity` | object | Monetization opportunity type and strength |
+
+**`decision_basis` values:**
+
+`interaction_classification` · `provided_signal` · `normalized_signal` · `score_threshold` · `policy_override` · `regulated_vertical_control` · `manual_override` · `consent_denied` · `consent_unknown` · `fallback`
+
+### `policy.opportunity`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | `"none"`, `"soft_recommendation"`, `"comparison_slot"`, `"decision_moment"`, `"transaction_trigger"` |
+| `strength` | string | `"low"`, `"medium"`, `"high"` |
+
+---
+
+## `monetization`
+
+Monetization configuration and runtime controls. Auction is one monetization mechanism, not the only one.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `enabled` | boolean | Whether monetization is enabled for this request |
+| `pricing_model` | string | `"CPX"`, `"CPC"`, `"CPA"` |
+| `auction.enabled` | boolean | Whether auction is enabled |
+| `auction.floor.amount` | number | Floor price amount |
+| `auction.floor.currency` | string | ISO 4217 currency code |
+
+---
+
+## Processing Expectations
+
+### For operator-derived requests
+
+The operator SHOULD:
+
+- Derive intent from the interaction
+- Produce classification outputs internally
+- Use those outputs as the basis for policy and monetization decisions
+
+### For platform-derived requests
+
+The operator SHOULD:
+
+- Inspect signal provenance
+- Validate or normalize the provided signals
+- Apply trust-tier logic
+- Use validated or normalized signals as the basis for policy and monetization decisions
+
+---
+
+## Full Example: Operator-Derived
+
+```json
+{
+  "spec_version": "1.0",
+  "request_id": "req_001",
+  "timestamp": "2026-03-26T18:30:00Z",
+  "platform": {
+    "platform_id": "chat_interface_x",
+    "role": "platform",
+    "software": {
+      "name": "assistant_app",
+      "version": "1.2.0"
+    }
   },
-
-  "context": {
-    "language": "en-US",
-    "publisher": "openai_chat",
-    "placement": { "ad_unit": "conversation" },
-    "device": {
-      "platform": "web",
-      "form_factor": "desktop",
-      "ua_hash": "ua_hash_xyz"
-    },
-    "geography": { "country": "US" }
-  },
-
   "identity": {
     "namespace": "platform_user",
-    "value_hash": "user_hash_abc123",
+    "value_hash": "user_hash_789",
     "confidence": 1.0
   },
-
-  "extensions": {
-    "aip": {
-      "intent": {
-        "domain": "business",
-        "subdomain": "crm",
-        "confidence": 0.91
+  "consent": {
+    "status": "granted",
+    "source": "platform_ui",
+    "scope": {
+      "intent_based_monetization": true,
+      "agent_participation": true,
+      "measurement": true
+    },
+    "constraints": {
+      "allow_raw_query_downstream": false,
+      "allow_message_history_downstream": false,
+      "allow_identity_downstream": false
+    },
+    "captured_at": "2026-03-26T18:29:00Z"
+  },
+  "classification_input": {
+    "type": "interaction",
+    "interaction": {
+      "session": {
+        "id": "sess_abc",
+        "turn_index": 2
       },
-      "runtime": {
-        "session_id": "sess_001",
-        "turn_index": 3,
-        "query_text": "best CRM for small teams",
+      "surface": {
+        "channel": "conversation",
+        "interaction_mode": "text",
+        "platform": "web",
+        "form_factor": "desktop",
+        "device_type": "laptop",
+        "os": "macOS",
+        "browser": "Chrome",
+        "browser_version": "146.0.0.0",
+        "locale": "en-US",
+        "country": "US"
+      },
+      "input": {
+        "query_text": "best CRM for small sales team",
         "messages": [
-          { "role": "user", "content": "best CRM tools?" },
-          { "role": "assistant", "content": "HubSpot, Zoho, Salesforce…" }
-        ],
-        "latency_budget_ms": 500
-      },
-      "auction": {
-        "pricing_model": "CPX",
-        "cpx_floor": 0.05,
+          { "role": "user", "content": "I need a CRM" },
+          { "role": "assistant", "content": "What size is your team?" }
+        ]
+      }
+    }
+  },
+  "policy_hints": {
+    "latency_budget_ms": 500,
+    "preferred_pricing_model": "CPX"
+  },
+  "policy": {
+    "consent_eligibility": "allowed",
+    "monetization_eligibility": "allowed",
+    "decision_basis": "interaction_classification",
+    "reason": "commercial intent detected with sufficient confidence",
+    "applied_thresholds": {
+      "confidence_min": 0.6,
+      "commercial_score_min": 0.7
+    },
+    "sensitivity": "low",
+    "regulated_vertical": false,
+    "opportunity": {
+      "type": "comparison_slot",
+      "strength": "high"
+    }
+  },
+  "monetization": {
+    "enabled": true,
+    "pricing_model": "CPX",
+    "auction": {
+      "enabled": true,
+      "floor": {
+        "amount": 0.05,
         "currency": "USD"
       }
     }
@@ -154,14 +513,130 @@ Monetization is kept separate from intent so consent logic never touches auction
 }
 ```
 
-## Validation rules
+---
 
-- `spec_version` must be "1.0.0" for UCP v1.0.
-- `message_id` must be a unique string identifier.
-- `producer.agent_role` must be `"platform"` (not "publisher").
-- `extensions.aip` must contain `intent` and `runtime`; `auction` is optional.
-- `extensions.aip.intent` must have `domain`, `subdomain`, and `confidence` for consent matching.
-- `context.language` must match `^[a-z]{2}-[A-Z]{2}$` (BCP 47).
-- `context.geography.country` must match `^[A-Z]{2}$` (ISO 3166-1 alpha-2).
-- `timestamp` must be RFC 3339 / ISO 8601.
-- `identity.confidence` must be between 0.0 and 1.0.
+## Full Example: Platform-Derived
+
+```json
+{
+  "spec_version": "1.0",
+  "request_id": "req_002",
+  "timestamp": "2026-03-26T18:31:00Z",
+  "platform": {
+    "platform_id": "chat_interface_x",
+    "role": "platform",
+    "software": {
+      "name": "assistant_app",
+      "version": "1.2.0"
+    }
+  },
+  "identity": {
+    "namespace": "platform_user",
+    "value_hash": "user_hash_456",
+    "confidence": 0.98
+  },
+  "consent": {
+    "status": "granted",
+    "source": "account_setting",
+    "scope": {
+      "intent_based_monetization": true,
+      "agent_participation": true,
+      "measurement": true
+    },
+    "constraints": {
+      "allow_raw_query_downstream": false,
+      "allow_message_history_downstream": false,
+      "allow_identity_downstream": false
+    }
+  },
+  "classification_input": {
+    "type": "provided_signals",
+    "signals": {
+      "source": {
+        "type": "platform_model",
+        "name": "intent_model_v3",
+        "version": "3.2.1",
+        "calibration_version": "2026-03",
+        "trust_tier": "self_attested"
+      },
+      "intent": {
+        "type": "commercial",
+        "subtype": "comparison",
+        "decision_phase": "decision",
+        "confidence": 0.89,
+        "commercial_score": 0.94
+      },
+      "iab_content": {
+        "taxonomy": "IAB Content Taxonomy",
+        "taxonomy_version": "3.1",
+        "tier1": "Business and Finance",
+        "tier2": "Business",
+        "tier3": "Business I.T."
+      },
+      "context": {
+        "entities": ["HubSpot", "Zoho", "Salesforce"],
+        "constraints": { "company_size": "small_team" }
+      }
+    }
+  },
+  "signal_validation": {
+    "status": "accepted_with_normalization",
+    "trust_tier_applied": "self_attested",
+    "normalized_scores": {
+      "confidence": 0.76,
+      "commercial_score": 0.83
+    },
+    "drift_risk": "medium",
+    "reason": "source accepted but normalized to network calibration profile"
+  },
+  "policy": {
+    "consent_eligibility": "allowed",
+    "monetization_eligibility": "allowed_with_caution",
+    "decision_basis": "normalized_signal",
+    "reason": "provided signals accepted after normalization",
+    "applied_thresholds": {
+      "confidence_min": 0.6,
+      "commercial_score_min": 0.7
+    },
+    "sensitivity": "low",
+    "regulated_vertical": false,
+    "opportunity": {
+      "type": "comparison_slot",
+      "strength": "high"
+    }
+  },
+  "monetization": {
+    "enabled": true,
+    "pricing_model": "CPX",
+    "auction": {
+      "enabled": true,
+      "floor": {
+        "amount": 0.07,
+        "currency": "USD"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Validation Rules
+
+- `spec_version` must be `"1.0"`.
+- `request_id` must be a non-empty string.
+- `timestamp` must be RFC 3339.
+- `platform.role` must be `"platform"`.
+- `consent` must contain `status`, `scope`, and `constraints`.
+- `classification_input` must contain exactly one of `interaction` or `signals` based on `type`.
+- When `type` is `"interaction"`, `interaction.input.query_text` and `interaction.surface` are required.
+- When `type` is `"provided_signals"`, `signals.source` and `signals.intent` are required.
+- `signals.intent` must contain `type` and `decision_phase`.
+- `identity.quarantined` must never be forwarded downstream.
+- `consent.constraints` flags must be respected when forwarding data to brand agents or downstream systems.
+
+---
+
+## Schema File
+
+JSON Schema (Draft 2020-12): [platform-request.json](/schemas-json/platform-request.json)

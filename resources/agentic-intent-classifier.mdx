@@ -1,0 +1,348 @@
+---
+title: Agentic Intent Classifier
+description: Reference implementation of the multi-head intent classification stack that produces the Agentic Intent Taxonomy decision envelope
+---
+
+## Overview
+
+The **Agentic Intent Classifier** is a multi-head query classification stack for conversational traffic. It is the reference implementation that produces the [Agentic Intent Taxonomy](/schemas/agentic-intent-taxonomy) decision envelope used throughout the AIP protocol.
+
+Given a single user query, the classifier runs three neural classification heads in a single forward pass, resolves IAB content taxonomy via a local embedding index, applies calibration, computes a commercial score, evaluates fallback and policy rules, and emits a schema-validated combined envelope containing `model_output`, `system_decision`, and `meta`.
+
+**Source:** [`agentic-intent-classifier`](https://github.com/GouniManikumar12/agentic-intent-classifier)
+**Hugging Face:** [`admesh/agentic-intent-classifier`](https://huggingface.co/admesh/agentic-intent-classifier)
+
+---
+
+## Quickstart
+
+```python
+from transformers import pipeline
+
+clf = pipeline(
+    "admesh-intent",
+    model="admesh/agentic-intent-classifier",
+    trust_remote_code=True,
+)
+
+out = clf("Which laptop should I buy for college?")
+print(out["model_output"]["classification"]["intent"])
+print(out["model_output"]["classification"]["iab_content"])
+print(out["system_decision"]["policy"])
+```
+
+---
+
+## Architecture
+
+The classifier uses a shared DistilBERT encoder with three linear classification heads trained via multitask learning, plus a separate IAB content classifier.
+
+```
+                     query_text
+                         │
+                   ┌─────┴─────┐
+                   │ DistilBERT │  (shared encoder, single forward pass)
+                   │  Encoder   │
+                   └─────┬─────┘
+                         │
+              ┌──────────┼──────────┐
+              ▼          ▼          ▼
+        intent_type  intent_subtype  decision_phase
+           head         head            head
+              │          │              │
+              ▼          ▼              ▼
+         calibration  calibration  calibration
+              │          │              │
+              └──────────┼──────────────┘
+                         │
+                   ┌─────┴─────┐
+                   │    IAB    │  (separate classifier + embedding index)
+                   │ Classifier│
+                   └─────┬─────┘
+                         │
+              ┌──────────┼──────────┐
+              ▼          ▼          ▼
+         commercial   fallback    policy
+           score      logic       rules
+              │          │          │
+              └──────────┼──────────┘
+                         │
+                         ▼
+              schema-validated envelope
+        (model_output + system_decision + meta)
+```
+
+### Heads
+
+| Head | Base Model | Labels | Output |
+|------|-----------|--------|--------|
+| `intent_type` | DistilBERT (shared) | 10 labels | High-level intent classification |
+| `intent_subtype` | DistilBERT (shared) | 18 labels | Interaction pattern |
+| `decision_phase` | DistilBERT (shared) | 7 labels | Commercial funnel stage |
+| `iab_content` | Separate classifier | Full IAB TSV paths | IAB Content Taxonomy 3.1 mapping (tier1–tier4) |
+
+The three multitask heads share a single encoder and run in one forward pass. The IAB head runs separately with its own classifier and a local embedding index over taxonomy nodes for retrieval-based reranking.
+
+---
+
+## Taxonomy Labels
+
+### `intent.type` (10 labels)
+
+| Label | Description |
+|-------|-------------|
+| `informational` | Seeking knowledge or understanding |
+| `exploratory` | Open-ended exploration without a specific goal |
+| `commercial` | Evaluating products, services, or solutions |
+| `transactional` | Ready to take a purchase or conversion action |
+| `support` | Seeking help with an existing product or service |
+| `personal_reflection` | Introspective or emotional processing |
+| `creative_generation` | Requesting creative content production |
+| `chit_chat` | Casual conversation with no task goal |
+| `ambiguous` | Intent cannot be determined from context |
+| `prohibited` | Content that violates safety or policy rules |
+
+### `intent.decision_phase` (7 labels)
+
+| Label | Description |
+|-------|-------------|
+| `awareness` | First contact with a topic or need |
+| `research` | Actively gathering information |
+| `consideration` | Evaluating options and narrowing choices |
+| `decision` | Ready to choose or commit |
+| `action` | Executing the decision (purchase, signup, etc.) |
+| `post_purchase` | After the transaction — review, setup, feedback |
+| `support` | Ongoing support for an existing relationship |
+
+### `intent.subtype` (18 labels)
+
+| Label | Description |
+|-------|-------------|
+| `education` | Learning or understanding a concept |
+| `product_discovery` | Finding new products or services |
+| `comparison` | Comparing alternatives side by side |
+| `evaluation` | Assessing a specific option in depth |
+| `deal_seeking` | Looking for promotions, discounts, or deals |
+| `provider_selection` | Choosing a vendor or provider |
+| `signup` | Creating an account or starting a trial |
+| `purchase` | Buying a product or subscribing |
+| `booking` | Reserving or scheduling a service |
+| `download` | Downloading software, content, or resources |
+| `contact_sales` | Reaching out to a sales team |
+| `task_execution` | Performing a specific operational task |
+| `onboarding_setup` | Setting up or configuring a product |
+| `troubleshooting` | Diagnosing and fixing issues |
+| `account_help` | Account access, settings, or management |
+| `billing_help` | Billing, invoicing, or payment issues |
+| `follow_up` | Continuing a previous conversation thread |
+| `emotional_reflection` | Processing feelings or experiences |
+
+### `iab_content`
+
+IAB content mapping is derived from every row in the [IAB Content Taxonomy 3.1 TSV](https://github.com/InteractiveAdvertisingBureau/Taxonomies/blob/develop/Content%20Taxonomies/Content%20Taxonomy%203.1.tsv). The classifier supports `tier1` through `tier4` with `mapping_mode` (`exact`, `nearest_equivalent`, `internal_extension`) and `mapping_confidence`.
+
+---
+
+## Inference Pipeline
+
+The `classify_query` function is the single entry-point for classification:
+
+1. **Multitask forward pass** — Runs the shared DistilBERT encoder once. Decodes logits for all three heads (`intent_type`, `intent_subtype`, `decision_phase`) via calibrated argmax.
+
+2. **Confidence calibration** — Each head applies per-label calibration artifacts (when available) to produce calibrated confidence scores with threshold gating.
+
+3. **Commercial score** — Computed from `intent_type`, `decision_phase`, and `subtype` using a deterministic heuristic.
+
+4. **IAB content resolution** — Runs a separate supervised classifier over full taxonomy paths. Uses a local embedding index for taxonomy-node retrieval and reranking. Outputs `tier1`–`tier4` with `mapping_mode` and `mapping_confidence`.
+
+5. **Fallback evaluation** — If any head falls below its confidence threshold, fallback metadata is produced with `reason` (`confidence_below_threshold`, `ambiguous_query`, `policy_default`) and safe defaults.
+
+6. **Policy and opportunity** — Applies `commercial_score` thresholds, sensitivity rules, and regulated-vertical checks to produce `monetization_eligibility` and `opportunity` type/strength.
+
+7. **Schema validation** — The full envelope is validated against the response schema before returning.
+
+---
+
+## Output Envelope
+
+The classifier produces the [Agentic Intent Taxonomy](/schemas/agentic-intent-taxonomy) envelope with an additional `meta` block:
+
+```json
+{
+  "model_output": {
+    "classification": {
+      "iab_content": {
+        "taxonomy": "IAB Content Taxonomy",
+        "taxonomy_version": "3.1",
+        "tier1": { "id": "52", "label": "Business and Finance" },
+        "tier2": { "id": "53", "label": "Business" },
+        "tier3": { "id": "72", "label": "Business I.T." },
+        "mapping_mode": "nearest_equivalent",
+        "mapping_confidence": 0.93
+      },
+      "intent": {
+        "type": "commercial",
+        "subtype": "comparison",
+        "decision_phase": "decision",
+        "confidence": 0.87,
+        "commercial_score": 0.92,
+        "summary": "User is evaluating CRM tools for a small team.",
+        "component_confidence": {
+          "intent_type": {
+            "label": "commercial",
+            "confidence": 0.91,
+            "raw_confidence": 0.88,
+            "confidence_threshold": 0.6,
+            "calibrated": true,
+            "meets_threshold": true
+          },
+          "intent_subtype": {
+            "label": "comparison",
+            "confidence": 0.85,
+            "raw_confidence": 0.82,
+            "confidence_threshold": 0.5,
+            "calibrated": true,
+            "meets_threshold": true
+          },
+          "decision_phase": {
+            "label": "decision",
+            "confidence": 0.89,
+            "raw_confidence": 0.86,
+            "confidence_threshold": 0.5,
+            "calibrated": true,
+            "meets_threshold": true
+          },
+          "overall_strategy": "min_required_component_confidence"
+        }
+      }
+    }
+  },
+  "system_decision": {
+    "policy": {
+      "monetization_eligibility": "allowed",
+      "eligibility_reason": "commercial_score_above_threshold",
+      "decision_basis": "score_threshold",
+      "applied_thresholds": {
+        "commercial_score_min": 0.7,
+        "intent_type_confidence_min": 0.6,
+        "intent_subtype_confidence_min": 0.5,
+        "decision_phase_confidence_min": 0.5
+      },
+      "sensitivity": "low",
+      "regulated_vertical": false
+    },
+    "opportunity": {
+      "type": "comparison_slot",
+      "strength": "high"
+    },
+    "intent_trajectory": ["decision"]
+  },
+  "meta": {
+    "system_version": "0.9.0",
+    "calibration_enabled": true,
+    "iab_mapping_is_placeholder": false
+  }
+}
+```
+
+### `meta` block
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `system_version` | string | Classifier version |
+| `calibration_enabled` | boolean | Whether any head used calibrated confidence |
+| `iab_mapping_is_placeholder` | boolean | Whether IAB mapping used placeholder fallback |
+
+### `component_confidence`
+
+Per-head confidence details are included inside `model_output.classification.intent.component_confidence`. Each head reports:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `label` | string | Predicted label |
+| `confidence` | number | Calibrated confidence (`0.0`–`1.0`) |
+| `raw_confidence` | number | Pre-calibration confidence |
+| `confidence_threshold` | number | Minimum threshold for this head |
+| `calibrated` | boolean | Whether calibration artifacts were applied |
+| `meets_threshold` | boolean | Whether confidence meets the threshold |
+
+---
+
+## API
+
+The classifier exposes a local HTTP API via `demo_api.py`:
+
+### `POST /classify`
+
+**Request:**
+
+```json
+{ "text": "best CRM for small teams" }
+```
+
+**Response:** Full classification envelope (see Output Envelope above).
+
+### `GET /health`
+
+Returns head readiness and calibration status:
+
+```json
+{
+  "status": "ok",
+  "system_version": "0.9.0",
+  "heads": [
+    { "head": "intent_type", "model_path": "...", "calibration_path": "...", "ready": true, "calibrated": true },
+    { "head": "intent_subtype", "model_path": "...", "calibration_path": "...", "ready": true, "calibrated": true },
+    { "head": "decision_phase", "model_path": "...", "calibration_path": "...", "ready": true, "calibrated": true },
+    { "head": "iab_content", "model_path": "...", "calibration_path": "...", "ready": true, "calibrated": true }
+  ]
+}
+```
+
+### `GET /version`
+
+```json
+{
+  "system_version": "0.9.0",
+  "api_schema_version": "2026-03-22"
+}
+```
+
+---
+
+## What The Classifier Does
+
+- Runs three classifier heads (`intent_type`, `intent_subtype`, `decision_phase`) via a shared multitask DistilBERT encoder
+- Resolves `iab_content` through a local embedding index over taxonomy nodes plus label/path reranking
+- Applies calibration artifacts when present
+- Computes `commercial_score` from intent type, decision phase, and subtype
+- Applies fallback when confidence is too weak or policy-safe blocking is required
+- Emits a schema-validated combined envelope conforming to the [Agentic Intent Taxonomy](/schemas/agentic-intent-taxonomy)
+
+## What The Classifier Does Not Do
+
+- It is not a multi-turn memory system
+- It is not a production-optimized low-latency serving path (use the operator's Groq-based classifier for production latency targets)
+- It is not yet trained on large real-traffic human-labeled intent data
+- Combined decision logic is heuristic, though materially stronger than rule-based baselines
+
+---
+
+## Relationship to PlatformRequest
+
+In the AIP protocol, the classifier can be used in two ways depending on the [classification input mode](/schemas/platform-request#mode-1-operator-derived-type-interaction):
+
+| Mode | Who runs the classifier | How it connects |
+|------|------------------------|-----------------|
+| **Operator-derived** | The operator runs the classifier on `interaction.input.query_text` | Operator uses the classifier output to populate `policy` and drive auction decisions |
+| **Platform-derived** | The platform runs the classifier locally and sends `provided_signals` | Operator validates the signals via `signal_validation` and may normalize scores |
+
+The classifier output envelope (`model_output` + `system_decision`) maps directly to the structures in the platform request `policy` block and the `signals.intent` block.
+
+---
+
+## Related
+
+- [Agentic Intent Taxonomy](/schemas/agentic-intent-taxonomy) — The decision envelope schema this classifier produces
+- [Platform Request](/schemas/platform-request) — How classification feeds into the platform request
+- [Hugging Face Model](https://huggingface.co/admesh/agentic-intent-classifier) — Hosted model for quick testing

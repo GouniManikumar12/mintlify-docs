@@ -1,0 +1,115 @@
+---
+title: Interaction Modes
+description: How AIP defines the two modes of commercial participation  -  recommend and delegate.
+---
+
+After selection determines which brand agent participates, the Operator determines the **interaction mode**  -  how that participation manifests in the user's experience.
+
+AIP defines two interaction modes. This is the core abstraction that separates AIP from traditional advertising protocols.
+
+---
+
+## 1. Recommend Mode
+
+In recommend mode, the brand agent contributes to the AI's response without any session transfer or delegation session. The user may still click through the recommendation and continue exploring in an external browser or workflow.
+
+**When it is used:**
+- Research and consideration phases
+- Informational and commercial intent
+- When the user is exploring options, not ready to act
+
+**What happens:**
+1. Operator selects a brand agent via selection
+2. Brand agent's content is integrated into the AI response
+3. User sees the recommendation alongside organic results
+4. No session is created  -  no handoff occurs
+5. The platform tracks `exposure_shown` and optionally `interaction_started`. If the user completes the target action outside the AI platform, `task_completed` can still be verified and settled.
+
+**What AIP governs:**
+- Whether participation is allowed for this intent
+- Which agent is selected
+- What content the agent provides
+- How the participation event is verified and settled
+
+**What AIP does not control:**
+- How the platform renders the recommendation
+- Where in the response it appears
+- The visual treatment or labeling
+
+---
+
+## 2. Delegate Mode
+
+In delegate mode, the AI offers to hand off the session to a brand agent. The user explicitly consents, and a session is initiated where the brand agent executes a task on the user's behalf.
+
+**When it is used:**
+- Decision and action phases
+- Transactional intent
+- When the user is ready to sign up, purchase, or complete a workflow
+
+**What happens:**
+1. Operator selects a brand agent via selection
+2. Operator determines that delegation is the appropriate interaction mode
+3. AI asks the user for confirmation before handoff
+4. If the user consents, a delegation session is initiated
+5. Brand agent receives scoped context and executes the task
+6. The platform tracks `delegation_started` and optionally `task_completed`
+
+**What AIP governs:**
+- Whether delegation is allowed for this intent
+- Which agent receives the session
+- What context is shared with the agent (scoped)
+- Whether user consent is required (always yes)
+- How outcome events are verified and settled
+
+**What AIP does not control:**
+- How the brand agent renders its experience
+- The internal implementation of the brand agent's workflow
+- Platform-specific UI for the consent prompt
+
+---
+
+## Mode selection logic
+
+The Operator determines the interaction mode based on intent signals from the PlatformRequest:
+
+| Intent type | Decision phase | Typical mode |
+|-------------|---------------|--------------|
+| Informational | Research | Recommend |
+| Commercial | Consideration | Recommend |
+| Commercial | Comparison | Recommend |
+| Transactional | Decision | Delegate |
+| Transactional | Action | Delegate |
+
+Operators may define their own mode selection logic. The protocol requires that:
+
+- The mode is determined **after** selection, not before
+- Delegate mode **always** requires user consent
+- The mode is recorded in the selection result for downstream tracking
+
+---
+
+## Why this matters
+
+Traditional protocols treat every commercial interaction the same  -  show something, track a click. AIP recognizes that AI-driven decisions have two fundamentally different outcomes:
+
+1. **Influence**  -  the user learns something that shapes their decision (recommend)
+2. **Execution**  -  the user takes action through a commercial agent (delegate)
+
+By making this distinction first-class, AIP enables platforms to support real task completion, not just content insertion. This is what makes delegation  -  and outcome-based settlement  -  possible.
+
+---
+
+## Summary
+
+| | Recommend | Delegate |
+|---|-----------|----------|
+| **Session transfer** | No | Yes |
+| **User consent** | Not required | Required |
+| **Typical intent** | Informational / commercial | Transactional |
+| **Typical phase** | Research / consideration | Decision / action |
+| **Primary event** | `exposure_shown` | `delegation_started` |
+| **Outcome event** | `interaction_started` | `task_completed` |
+| **Settlement basis** | Participation or interaction | Outcome (CPA) |
+
+---

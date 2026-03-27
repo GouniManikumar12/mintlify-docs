@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.agenticintentprotocol.com/aip/0.1/schema.json",
-  "title": "Agentic Intent Protocol – Publisher Declaration (v0.1)",
+  "$id": "https://schemas.agenticintentprotocol.com/aip/1.0/schema.json",
+  "title": "Agentic Intent Protocol – Publisher Declaration (v1.0)",
   "description": "Declarative publisher consent and capability declaration for permissioned AI access under the Agentic Intent Protocol.",
   "type": "object",
 
@@ -24,7 +24,7 @@
 
     "aip_version": {
       "type": "string",
-      "const": "0.1"
+      "const": "1.0"
     },
 
     "publisher": {
@@ -68,7 +68,7 @@
         "state": {
           "type": "string",
           "enum": ["active", "paused", "disabled"],
-          "description": "Operational state of access. Optional in v0.1."
+          "description": "Operational state of access. Optional in v1.0."
         },
         "mode": {
           "type": "string",

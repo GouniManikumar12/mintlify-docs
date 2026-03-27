@@ -1,11 +1,17 @@
 ---
-title: End-to-end flow
-description: End-to-end flow from PlatformRequest through every schema and JSON structure
+title: End-to-End Flow
+description: Complete flows for both recommend and delegate modes  -  from PlatformRequest through every schema and event.
 ---
 
 ## Flow Overview
 
-The end-to-end AIP flow connects AI Platforms, Operators, and Brand Agents through a series of request/response cycles, auctions, and event verifications.
+AIP connects AI Platforms, Operators, and Brand Agents through a series of request/response cycles, selection, and event verification. The protocol supports two distinct flows based on the interaction mode.
+
+---
+
+## Flow 1: Recommend Mode
+
+Used when the user is researching, considering, or comparing options. The brand agent contributes to the AI response without any session transfer.
 
 ```mermaid
 sequenceDiagram
@@ -13,70 +19,141 @@ sequenceDiagram
     participant Platform as AI Platform
     participant Operator as AIP Operator
     participant BrandAgent as Brand Agent
-    participant Ledger as Ledger/Wallet
 
-    User->>Platform: User query/intent
-    Platform->>Operator: PlatformRequest<br/>(UCP format)
-    Note over Platform,Operator: Contains: intent (domain/subdomain),<br/>runtime (query, session), auction (cpx_floor)
-    
-    Operator->>Operator: Derive ContextRequest<br/>(UCP-like format)
-    Note over Operator: Removes raw user data,<br/>enriches with intent
-    
+    User->>Platform: "Best accounting software for freelancers"
+    Platform->>Operator: PlatformRequest
+    Note over Platform,Operator: Contains: intent (commercial, consideration),<br/>runtime (query, session),<br/>selection params
+
+    Operator->>Operator: Evaluate participation<br/>eligibility
+    Note over Operator: Check intent type,<br/>governance rules
+
+    Operator->>Operator: Derive ContextRequest
+    Note over Operator: Remove raw user data,<br/>enrich with intent
+
     Operator->>BrandAgent: ContextRequest<br/>(privacy-preserving)
     Note over Operator,BrandAgent: Contains: intent, verticals,<br/>allowed_formats,<br/>latency_budget_ms
-    
-    BrandAgent->>BrandAgent: Evaluate & generate bid
-    BrandAgent->>Operator: BidResponse<br/>(with recommendation)
-    Note over BrandAgent,Operator: Contains: pricing (micros),<br/>creative_input, relevance
-    
-    Operator->>Operator: Select winning bid
-    Operator->>Platform: AuctionResult<br/>(with creative)
-    Note over Operator,Platform: Contains: serve_token,<br/>format-specific creative
-    
-    Platform->>User: Display recommendation
-    
-    User->>User: Sees ad (CPX)
-    Platform->>Operator: CPX Exposure Event
-    Note over Platform,Operator: Verified exposure
-    
-    alt User clicks
-        User->>User: Clicks ad (CPC)
-        Platform->>Operator: CPC Click Event
-        Note over Platform,Operator: Verified click
-        
+
+    BrandAgent->>BrandAgent: Evaluate and respond
+    BrandAgent->>Operator: Response<br/>(with recommendation content)
+    Note over BrandAgent,Operator: Contains: pricing,<br/>creative_input, relevance
+
+    Operator->>Operator: Run selection,<br/>determine mode: recommend
+    Operator->>Platform: SelectionResult<br/>(mode: recommend)
+    Note over Operator,Platform: Contains: serve_token,<br/>format-specific content
+
+    Platform->>User: AI integrates recommendation
+
+    User->>User: Sees recommendation
+    Platform->>Operator: exposure_shown event
+
+    alt User engages
+        User->>User: Clicks recommendation
+        Platform->>Operator: interaction_started event
+
         alt User converts
-            User->>User: Completes action (CPA)
-            BrandAgent->>Operator: CPA Conversion Event
-            Note over BrandAgent,Operator: Verified conversion
+        User->>User: Navigates to brand site and completes the target action
+        BrandAgent->>Operator: task_completed event
         end
     end
-    
-    Operator->>Ledger: Record verified event
-    Operator->>Ledger: Update wallet balances
-    Note over Operator,Ledger: Settle: CPA > CPC > CPX<br/>(one charge per serve_token)
+
+    Operator->>Operator: Verify highest event,<br/>settle
 ```
+
+### Recommend flow summary
+
+1. User asks a question with commercial intent
+2. Platform sends PlatformRequest to Operator
+3. Operator evaluates participation eligibility  -  allowed
+4. Operator derives ContextRequest and sends to eligible brand agents
+5. Brand agents respond with pricing and content
+6. Operator runs selection, determines recommend mode
+7. Platform receives SelectionResult and integrates recommendation into AI response
+8. Events track the lifecycle: exposure_shown → interaction_started → task_completed
+9. Only the highest-value event is settled
+
+---
+
+## Flow 2: Delegate Mode
+
+Used when the user has transactional intent and is ready to act. The AI hands off the session to a brand agent for task execution.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Platform as AI Platform
+    participant Operator as AIP Operator
+    participant BrandAgent as Brand Agent
+
+    User->>Platform: "Sign me up for QuickBooks"
+    Platform->>Operator: PlatformRequest
+    Note over Platform,Operator: Contains: intent (transactional, action),<br/>runtime (query, session)
+
+    Operator->>Operator: Evaluate participation<br/>eligibility
+    Note over Operator: Transactional intent,<br/>delegation allowed
+
+    Operator->>Operator: Derive ContextRequest
+    Operator->>BrandAgent: ContextRequest
+    BrandAgent->>Operator: Response (with delegation capability)
+
+    Operator->>Operator: Run selection,<br/>determine mode: delegate
+    Operator->>Platform: SelectionResult<br/>(mode: delegate, delegation object)
+    Note over Operator,Platform: Contains: serve_token,<br/>delegation session_id,<br/>context_scope
+
+    Platform->>User: "QuickBooks can handle your signup. Proceed?"
+    User->>Platform: Confirms consent
+    Platform->>Operator: Consent confirmed
+
+    Operator->>BrandAgent: Session initiated<br/>(scoped context)
+    Note over Operator,BrandAgent: Only intent + constraints<br/>shared per context_scope
+
+    BrandAgent->>Operator: delegation_started event
+    BrandAgent->>User: Signup flow begins
+
+    User->>BrandAgent: Completes signup
+    BrandAgent->>Operator: task_completed event
+    Note over BrandAgent,Operator: outcome_type: signup
+
+    Operator->>Operator: Verify outcome,<br/>settle CPA
+```
+
+### Delegate flow summary
+
+1. User expresses transactional intent
+2. Platform sends PlatformRequest to Operator
+3. Operator evaluates eligibility  -  delegation is allowed
+4. Operator derives ContextRequest and sends to eligible agents
+5. Brand agent responds with delegation capability
+6. Operator runs selection, determines delegate mode
+7. Platform receives SelectionResult with delegation object
+8. Platform asks user for consent
+9. User consents  -  session handed off to brand agent with scoped context
+10. Brand agent executes the task
+11. `task_completed` event fired and verified
+12. Operator settles CPA
+
+---
 
 ## 1. Platform Request (AI Platform → Operator)
 
 **Schema:** [`platform-request.json`](/schemas/platform-request)
 
-The AI platform initiates an ad auction by sending a `PlatformRequest` to the operator. The operator validates the request (signature, publisher `aip.json`, and match of `editorial_domains` vs `extensions.aip.intent`); if allowed, it derives a **ContextRequest** and sends it to brand agents.
+The AI platform initiates the process by sending a `PlatformRequest` to the operator. The operator validates the request (signature, platform `aip.json`, and match of `editorial_domains` vs `extensions.aip.intent`); if eligible, it derives a **ContextRequest** and sends it to brand agents.
 
-### Key Fields:
-- `spec_version`: UCP specification version (e.g. "1.0.0")
-- `message_id`: Unique identifier for this auction request
+### Key fields:
+- `spec_version`: AIP request schema version (e.g. "1.0")
+- `message_id`: Unique identifier for this request
 - `timestamp`: ISO 8601 timestamp
-- `producer`: Producer information; **`agent_role` must be `"platform"`** (AI host; reserve "publisher" for content owners)
+- `producer`: Producer information; **`agent_role` must be `"platform"`**
 - `context`: Context (language, publisher, placement, device, geography)
 - `identity`: Identity (namespace, value_hash, confidence)
-- `extensions.aip.intent`: **Required.** Platform-declared intent (domain, subdomain, confidence) for publisher consent gating; operator matches against `aip.json` editorial_domains
+- `extensions.aip.intent`: **Required.** Platform-declared intent (domain, subdomain, confidence) for participation governance
 - `extensions.aip.runtime`: **Required.** session_id, turn_index, query_text, optional messages, latency_budget_ms
-- `extensions.aip.auction`: Optional. pricing_model, cpx_floor, currency (consent logic must not touch auction logic)
+- `extensions.aip.selection`: Optional. pricing_model, cpx_floor, currency
 
 ### Example:
 ```json
 {
-  "spec_version": "1.0.0",
+  "spec_version": "1.0",
   "message_id": "req_92fA1",
   "timestamp": "2025-11-14T18:22:00Z",
   "producer": {
@@ -88,7 +165,7 @@ The AI platform initiates an ad auction by sending a `PlatformRequest` to the op
   "context": {
     "language": "en-US",
     "publisher": "openai_chat",
-    "placement": { "ad_unit": "conversation" },
+    "placement": { "unit": "conversation" },
     "device": { "platform": "web", "form_factor": "desktop", "ua_hash": "ua_hash_xyz" },
     "geography": { "country": "US" }
   },
@@ -110,7 +187,7 @@ The AI platform initiates an ad auction by sending a `PlatformRequest` to the op
         ],
         "latency_budget_ms": 500
       },
-      "auction": { "pricing_model": "CPX", "cpx_floor": 0.05, "currency": "USD" }
+      "selection": { "pricing_model": "CPX", "cpx_floor": 0.05, "currency": "USD" }
     }
   }
 }
@@ -124,38 +201,33 @@ The AI platform initiates an ad auction by sending a `PlatformRequest` to the op
 
 The operator normalizes the platform request and enriches it with intent analysis, then sends a `ContextRequest` to brand agents.
 
-### Key Fields:
-- `spec_version`: AIP specification version (default: "aip/1.0")
+### Key fields:
+- `spec_version`: AIP specification version (default: "1.0")
 - `message_id`: Unique identifier (maps to PlatformRequest message_id)
 - `timestamp`: ISO 8601 timestamp
 - `producer`: Producer information (from PlatformRequest)
 - `session_id`: Conversation or interaction session ID
 - `turn_index`: Turn index in the conversation
-- `context_id`: Unique ID for this auction request
+- `context_id`: Unique ID for this selection request
 - `language`: User locale in BCP 47 format
-- `publisher`: Publisher identifier
-- `placement`: Placement information (ad_unit)
-- `device`: Device information (platform, form_factor)
-- `geography`: Geographic information (country)
 - `intent`: Operator-generated semantic understanding
   - `type`: "informational" | "commercial" | "transactional"
   - `decision_phase`: "research" | "compare" | "decide" | "act"
   - `confidence`: Confidence score (0.0-1.0)
   - `summary`: Short summary of conversation context
-  - `operator_relevance_score`: Operator's relevance score (optional)
-- `verticals`: Normalized topical verticals (e.g., ["crm", "smb_software"])
-- `allowed_formats`: Creative formats allowed (["weave", "tail", "product_card", "bridge"])
-- `latency_budget_ms`: Platform latency budget in milliseconds (optional)
+- `verticals`: Normalized topical verticals
+- `allowed_formats`: Content formats allowed
+- `latency_budget_ms`: Platform latency budget in milliseconds
 
 ### Example:
 ```json
 {
-  "spec_version": "aip/1.0",
+  "spec_version": "1.0",
   "message_id": "req_92fA1",
   "timestamp": "2025-11-14T18:22:00Z",
   "producer": {
     "agent_id": "openai_chat",
-    "agent_role": "publisher",
+    "agent_role": "platform",
     "software": "chatgpt",
     "software_version": "4.3-mini"
   },
@@ -165,23 +237,11 @@ The operator normalizes the platform request and enriches it with intent analysi
   "allowed_formats": ["weave", "tail", "product_card"],
   "context_id": "ctx_92fA1",
   "language": "en-US",
-  "publisher": "openai_chat",
-  "placement": {
-    "ad_unit": "conversation"
-  },
-  "device": {
-    "platform": "web",
-    "form_factor": "desktop"
-  },
-  "geography": {
-    "country": "US"
-  },
   "intent": {
     "type": "commercial",
     "decision_phase": "compare",
     "confidence": 0.87,
-    "summary": "User is evaluating CRM tools and narrowing down options.",
-    "operator_relevance_score": 0.87
+    "summary": "User is evaluating CRM tools and narrowing down options."
   },
   "verticals": ["crm", "smb_software"]
 }
@@ -189,48 +249,35 @@ The operator normalizes the platform request and enriches it with intent analysi
 
 ---
 
-## Auction Window and Timing
+## Selection window and timing
 
-AIP uses a time-bounded auction window to ensure low latency and predictable outcomes.
+AIP uses a time-bounded selection window to ensure low latency and predictable outcomes.
 
-* The auction window is derived from the PlatformRequest `latency_budget_ms` field
-* The Operator computes the available bid window by subtracting operator-side overhead (classification, filtering, dispatch) from the platform's latency budget
-* The auction window begins when the ContextRequest is published
-* Brand Agents MUST submit a BidResponse before the computed window expires
+* The selection window is derived from the PlatformRequest `latency_budget_ms` field
+* The Operator computes the available response window by subtracting operator overhead from the platform's latency budget
+* The window begins when the ContextRequest is published
+* Brand agents MUST submit responses before the computed window expires
 * If `latency_budget_ms` is not provided, the Operator MUST apply a default fallback
 
-If the window expires with no bids, the outcome is treated as `no_bid`. Late bids are ignored and do not participate in selection or settlement.
+If the window expires with no responses, the outcome is `no_match`. Late responses are ignored.
 
 ---
 
-## 3. Bid (Brand Agents → Operator)
+## 3. Brand Agent Response (Brand Agents → Operator)
 
 **Schema:** [`bid.json`](/schemas/bid)
 
-Brand agents evaluate the context request and submit bids containing pricing and creative input.
+Brand agents evaluate the context request and submit responses containing pricing and content.
 
-### Key Fields:
-- `bid_id`: Unique identifier for this bid
+### Key fields:
+- `bid_id`: Unique identifier for this response
 - `brand_agent_id`: Identifier of the brand agent
-- `context_id`: ID of the ContextRequest being bid on
-- `wallet_id`: Wallet to debit if the bid wins
+- `context_id`: ID of the ContextRequest being responded to
+- `wallet_id`: Wallet to debit if selected
 - `pricing`: Pricing vector with micros (authoritative), cents (display), and dollars (UI)
-  - `currency`: Currency code (ISO 4217)
-  - `display_currency`: Display currency code
-  - `cpx_micros`: Price per exposure in USD micros (authoritative)
-  - `cpx_cents`: Price per exposure in cents (for display)
-  - `cpx_dollars`: Price per exposure in dollars (for UI)
-  - `cpc_micros`: Price per click in USD micros (optional)
-  - `cpc_cents`: Price per click in cents (optional)
-  - `cpc_dollars`: Price per click in dollars (optional)
-  - `cpa_micros`: Price per conversion in USD micros (optional)
-  - `cpa_cents`: Price per conversion in cents (optional)
-  - `cpa_dollars`: Price per conversion in dollars (optional)
-  - `preferred_pricing_model`: Preferred billing model ("CPX", "CPC", or "CPA")
-- `recommendation.creative_input`: Unified creative input structure
+- `recommendation.creative_input`: Unified content structure
 - `relevance`: Relevance score (0.0-1.0, required)
-- `preferred_format`: Preferred creative format (optional)
-- `processing_latency_ms`: Round-trip latency in milliseconds (optional)
+- `supports_delegation`: Whether this agent supports delegate mode (optional)
 
 ### Example:
 ```json
@@ -265,69 +312,73 @@ Brand agents evaluate the context request and submit bids containing pricing and
       ],
       "context_snippet": "For startups needing higher limits and automated expense workflows.",
       "cta_label": "Start Free Trial",
-      "cta_url": "https://nimbus.example.com/signup",
-      "assets": {
-        "logo_url": "https://cdn.example.com/nimbus/logo.png",
-        "image_urls": ["https://cdn.example.com/nimbus/crm.png"],
-        "resource_urls": ["https://nimbus.example.com/signup"]
-      }
+      "cta_url": "https://nimbus.example.com/signup"
     }
   },
   "timestamp": "2025-11-11T18:00:01Z",
   "relevance": 0.87,
-  "preferred_format": "weave",
-  "processing_latency_ms": 42
+  "supports_delegation": true
 }
 ```
 
 ---
 
-## 4. Creative Input (Part of Bid)
+## 4. PlatformResponse (Operator → AI Platform)
 
-The unified creative input structure that brand agents generate. Contains all fields needed for any ad format.
+The operator evaluates the auction and returns a `PlatformResponse` to the AI platform.
 
-### Key Fields:
-- `brand_name`: Brand or advertiser name
-- `product_name`: Product or offer name
-- `short_description`: 1-2 sentence summary (max 200 chars)
-- `long_description`: 2-4 sentence expanded description (max 500 chars)
-- `value_props`: Short value propositions or bullet points
-- `context_snippet`: 60-100 character contextual hint for weave format
-- `cta_label`: Call-to-action label
-- `cta_url`: Call-to-action URL
-- `assets`: Creative assets (logo, images, resource URLs)
-
----
-
-## 5. Auction Result (Operator → AI Platform)
-
-**Schema:** [`auction-result.json`](/schemas/auction-result)
-
-The operator selects the winning bid, generates format-specific creative, and returns the result to the AI platform.
-
-### Key Fields:
-- `auction_id`: Unique identifier for this auction
+### Key fields:
+- `response_id`: Unique identifier for this response
 - `serve_token`: Token used to track downstream events
-- `winner`: Winning bid info
-  - `brand_agent_id`: Winning Brand Agent
-  - `preferred_unit`: Requested billing unit (CPX, CPC, or CPA)
-  - `reserved_amount_cents`: Amount placed on hold at auction time
-- `render`: Format-specific creative content
-- `ttl_ms`: Time-to-live in milliseconds (1000-300000)
+- `status`: Outcome status (`filled`, `no_fill`, `error`)
+- `winner`: Winning bid state, pricing, and billing reservation
+- `render`: Structured render payload for platform presentation
+- `delegation`: Optional delegation availability for the winning bid
+- `ttl_ms`: Time-to-live in milliseconds
 
-### Example:
+### Example (recommend mode):
 ```json
 {
+  "spec_version": "1.0",
+  "response_id": "resp_981",
   "auction_id": "auc_981",
   "serve_token": "stk_abcxyz123",
+  "timestamp": "2026-03-26T18:00:02Z",
+  "status": "filled",
   "winner": {
+    "bid_id": "bid_7823",
     "brand_agent_id": "ba_451",
-    "preferred_unit": "CPA",
-    "reserved_amount_cents": 500
+    "pricing": {
+      "model": "CPA",
+      "price_micros": 10000000,
+      "currency": "USD"
+    },
+    "billing": {
+      "reserved_amount_micros": 500000000,
+      "currency": "USD"
+    }
   },
   "render": {
     "format": "weave",
-    "weave_content": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
+    "disclosure": "[Ad]",
+    "creative": {
+      "advertiser": {
+        "brand_name": "Nimbus"
+      },
+      "ad_assets": {
+        "headline": "Scale your CRM",
+        "description": "Built for founders.",
+        "cta_text": "Try for free"
+      },
+      "landing_page_url": "https://nimbus.example.com/signup",
+      "click_url": "https://admesh.click/stk_abcxyz123"
+    }
+  },
+  "delegation": {
+    "available": true,
+    "mode": "optional",
+    "trigger": "user_action",
+    "cta_text": "Continue with Nimbus"
   },
   "ttl_ms": 60000
 }
@@ -335,214 +386,125 @@ The operator selects the winning bid, generates format-specific creative, and re
 
 ---
 
-## 6. Creative (Part of Auction Result)
+## 5. Events (Platform/Brand Agent → Operator)
 
-Format-specific creative content generated by the operator from CreativeInput. Supports three formats: weave, tail, and product_card.
+After participation begins, events track the decision lifecycle.
 
-### Format 1: Weave
-Short, inline, contextual text to insert into assistant response.
+### 5.1 Exposure shown
 
-```json
-{
-  "format": "weave",
-  "weave_content": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
-}
-```
-
-### Format 2: Tail
-Paragraph-level block ad to show after organic response.
+Sent when the user sees the recommendation or delegation offer.
 
 ```json
 {
-  "format": "tail",
-  "tail_content": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management.\n\nStart Free Trial: https://admesh.click/stk_abcxyz123"
-}
-```
-
-### Format 3: Product Card
-Structured card data with title, description, value props, and assets.
-
-```json
-{
-  "format": "product_card",
-  "product_card": {
-    "title": "Nimbus CRM Pro",
-    "subtitle": "Nimbus",
-    "description": "CRM built for growing teams, with AI-assisted workflows.",
-    "value_props": [
-      "Automated pipeline insights",
-      "Collaborative forecasting"
-    ],
-    "assets": {
-      "logo_url": "https://cdn.example.com/nimbus/logo.png",
-      "primary_image_url": "https://cdn.example.com/nimbus/crm.png"
-    },
-    "admesh_url": "https://admesh.click/stk_abcxyz123"
-  }
-}
-```
-
----
-
-## 7. Events (Platform → Operator)
-
-After the ad is served, the platform sends events to track user engagement.
-
-### 7.1 CPX Exposure Event
-
-Sent when the user sees the ad.
-
-```json
-{
-  "event_id": "evt_cpx_001",
+  "event_id": "evt_ps_001",
   "serve_token": "stk_abcxyz123",
-  "event_type": "cpx_exposure",
+  "event_type": "exposure_shown",
   "timestamp": "2025-11-14T18:22:05Z",
   "platform_id": "openai_chat",
   "session_id": "sess_001",
-  "user_id": "user_hash_abc123",
-  "geo": "US",
   "auth": {
-    "nonce": "nonce_exposure_123",
-    "sig": "sig_exposure_456"
+    "nonce": "nonce_ps_123",
+    "sig": "sig_ps_456"
   }
 }
 ```
 
-### 7.2 CPC Click Event
+### 5.2 Interaction started
 
-Sent when the user clicks the ad.
+Sent when the user engages with the recommendation.
 
 ```json
 {
-  "event_id": "evt_cpc_001",
+  "event_id": "evt_is_001",
   "serve_token": "stk_abcxyz123",
-  "event_type": "cpc_click",
+  "event_type": "interaction_started",
   "timestamp": "2025-11-14T18:22:10Z",
   "platform_id": "openai_chat",
   "session_id": "sess_001",
-  "click_url": "https://admesh.click/stk_abcxyz123",
+  "interaction_url": "https://admesh.click/stk_abcxyz123",
   "auth": {
-    "nonce": "nonce_click_123",
-    "sig": "sig_click_456"
+    "nonce": "nonce_is_123",
+    "sig": "sig_is_456"
   }
 }
 ```
 
-### 7.3 CPA Conversion Event
+### 5.3 Delegation started
 
-Sent when the user completes a conversion action (e.g., signup, purchase).
+Sent when the user consents and a session is handed off (delegate mode only).
 
 ```json
 {
-  "event_id": "evt_cpa_001",
+  "event_id": "evt_ds_001",
   "serve_token": "stk_abcxyz123",
-  "event_type": "cpa_conversion",
+  "event_type": "delegation_started",
+  "timestamp": "2025-11-14T18:22:15Z",
+  "platform_id": "openai_chat",
+  "session_id": "sess_001",
+  "delegation_session_id": "del_sess_001",
+  "agent_id": "ba_451",
+  "auth": {
+    "nonce": "nonce_ds_123",
+    "sig": "sig_ds_456"
+  }
+}
+```
+
+### 5.4 Task completed
+
+Sent when the user completes the target action.
+
+```json
+{
+  "event_id": "evt_tc_001",
+  "serve_token": "stk_abcxyz123",
+  "event_type": "task_completed",
   "timestamp": "2025-11-14T18:25:00Z",
   "platform_id": "openai_chat",
   "session_id": "sess_001",
-  "conversion_type": "signup",
-  "conversion_value_cents": 0,
-  "conversion_window_hours": 168,
+  "outcome_type": "signup",
+  "outcome_value_cents": 0,
   "auth": {
-    "nonce": "nonce_conversion_123",
-    "sig": "sig_conversion_456"
+    "nonce": "nonce_tc_123",
+    "sig": "sig_tc_456"
   }
 }
 ```
 
 ---
 
-## End-to-end Flow Diagram
-
-```
-┌─────────────────┐
-│  AI Platform    │
-│  (OpenAI, etc.) │
-└────────┬────────┘
-         │
-         │ 1. PlatformRequest
-         │
-         ▼
-┌─────────────────┐
-│    Operator     │
-│  (AdMesh, etc.) │
-└────────┬────────┘
-         │
-         │ 2. ContextRequest
-         │
-         ▼
-┌─────────────────┐
-│  Brand Agents   │
-│  (Nimbus, etc.) │
-└────────┬────────┘
-         │
-         │ 3. Bid (with CreativeInput)
-         │
-         ▼
-┌─────────────────┐
-│    Operator     │
-│  (Selects winner│
-│   & generates   │
-│    creative)    │
-└────────┬────────┘
-         │
-         │ 4. AuctionResult (with Creative)
-         │
-         ▼
-┌─────────────────┐
-│  AI Platform    │
-│  (Displays ad)  │
-└────────┬────────┘
-         │
-         │ 5. Events
-         │    (CPX → CPC → CPA)
-         │
-         ▼
-┌─────────────────┐
-│    Operator      │
-│  (Processes     │
-│   events &      │
-│   updates       │
-│   ledger/wallet)│
-└─────────────────┘
-```
-
----
-
-## Schema Relationships
+## Schema relationships
 
 | Schema | Used In | Purpose |
 |--------|---------|---------|
-| `platform-request` | AI Platform → Operator | Initial auction request |
-| `context-request` | Operator → Brand Agents | Normalized request with intent |
-| `bid` | Brand Agents → Operator | Bid submission with pricing |
-| `creative` | Part of `auction-result` | Format-specific creative |
-| `auction-result` | Operator → AI Platform | Winning bid response |
+| `platform-request` | AI Platform → Operator | Initial participation request |
+| `context-request` | Operator → Brand Agents | Eligible participation context |
+| `bid` | Brand Agents → Operator | Response with pricing and content |
+| `selection-result` | Operator → AI Platform | Selected agent + interaction mode |
 
 ---
 
-## Key Identifiers Flow
+## Key identifiers flow
 
 ```
-request_id (PlatformRequest)
+message_id (PlatformRequest)
     ↓
-context_id (ContextRequest) ← maps to request_id
+context_id (ContextRequest) ← maps to message_id
     ↓
-bid_id (Bid) ← references context_id
+bid_id (Response) ← references context_id
     ↓
-auction_id (AuctionResult) ← references context_id
+response_id (PlatformResponse) ← references context_id
     ↓
-serve_token (AuctionResult) ← used in all events
+serve_token (PlatformResponse) ← used in all events
     ↓
 event_id (Events) ← references serve_token
     ↓
-ledger_id (LedgerRecord) ← references event_id, bid_id, context_id
+ledger_id (Settlement record) ← references event_id, bid_id, context_id
 ```
 
 ---
 
-## Common Patterns
+## Common patterns
 
 ### Authentication
 All requests include an `auth` object with:
@@ -556,12 +518,12 @@ All timestamps use ISO 8601 / RFC 3339 format:
 
 ### Money/Currency
 - Prices in `pricing` object: Decimal strings (e.g., `"0.05"`)
-- Amounts in events/ledger: Integer cents (e.g., `5` for $0.05)
+- Amounts in events/settlement: Integer cents (e.g., `5` for $0.05)
 - Currency: ISO 4217 code (e.g., `"USD"`)
 
 ### IDs
 - Platform-generated: `req_*`, `sess_*`, `user_*`
-- Operator-generated: `ctx_*`, `auc_*`, `stk_*`
+- Operator-generated: `ctx_*`, `sel_*`, `stk_*`
 - Brand Agent-generated: `bid_*`
 - Event-generated: `evt_*`
 - System-generated: `ledger_*`, `wallet_*`

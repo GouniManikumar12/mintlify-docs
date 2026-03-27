@@ -1,163 +1,298 @@
-# Context Request Schema
+---
+title: Context Request
+description: Operator-generated, bid-safe auction context derived from a valid PlatformRequest — sent to downstream brand agents for bidding
+---
 
 ## Overview
 
-**ContextRequest** is sent **AdMesh (Operator) → Brand Agents**. It is **not** a PlatformRequest.
+A **ContextRequest** is an operator-generated, bid-safe request sent to downstream brand agents after upstream consent, policy, and monetization eligibility have already been resolved. It is derived from a valid [PlatformRequest](/schemas/platform-request), but it is **not** a PlatformRequest.
 
-- **Not UCP** — UCP-inspired only. It is operator-enriched, operator-trusted, and (eventually) operator-signed.
-- **Role:** “Given a valid, consented platform request, here is the enriched auction context you may bid on.” Permission has already been decided; this message is for bidding only.
-- **Intent here ≠ intent in PlatformRequest.** PlatformRequest intent is platform-asserted and used for **publisher consent gating** (e.g. match against `aip.json` editorial_domains). ContextRequest intent is **operator-generated** and used for **brand bidding decisions**. They can differ; that is expected.
+The ContextRequest is the object that brand agents receive and bid on. It is optimized for:
 
-Normalized request that an Operator sends to subscribed Brand Agents when opening an auction. Uses a UCP-like format with enriched context, intent classification, and operator-generated metadata. Includes enriched intent, allowed creative formats, and timing information.
+- **Auction-safe context** — no raw interaction text, no full message history, no internal operator reasoning
+- **Operator-enriched intent** — the intent block is operator-generated and downstream-safe, not a pass-through of platform signals
+- **Allowed creative constraints** — what formats the platform surface supports
+- **Usage restrictions** — explicit may/may-not permissions for data handling
+- **Traceability** — every ContextRequest links back to the originating PlatformRequest
 
-## Structure
+<Warning>
+A ContextRequest **MUST NOT** contain raw interaction text, full message history, or internal operator reasoning unless explicitly permitted by downstream usage policy.
+</Warning>
 
-The ContextRequest follows a UCP-like structure with the following top-level fields:
+---
+
+## Top-Level Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `spec_version` | string | Yes | Spec version. **MUST** be `"1.0"` |
+| `context_request_id` | string | Yes | Unique identifier for this operator-generated ContextRequest |
+| `source_request_id` | string | Yes | Reference to the originating `PlatformRequest.request_id` |
+| `timestamp` | string | Yes | RFC 3339 timestamp when the operator generated this ContextRequest |
+| `operator` | object | Yes | The system that generated the ContextRequest |
+| `platform` | object | Yes | The upstream AI platform where the interaction originated |
+| `session` | object | Yes | Session identity and turn position |
+| `surface` | object | Yes | Unified surface descriptor (replaces placement, device, geography, language) |
+| `intent` | object | Yes | Operator-generated, bid-safe intent classification |
+| `allowed_formats` | array | Yes | Creative formats the operator allows for this auction |
+| `auction` | object | No | Auction timing constraints |
+| `verticals` | array | No | Normalized topical verticals |
+| `consent` | object | No | Downstream-effective consent permissions |
+| `usage_constraints` | object | No | Explicit data usage restrictions for brand agents |
+| `extensions` | object | No | Optional operator-defined extension metadata |
+
+---
+
+## Traceability
+
+Every ContextRequest **MUST** contain:
+
+- A unique `context_request_id` identifying this specific auction context
+- A `source_request_id` referencing the originating [PlatformRequest](/schemas/platform-request)
+
+This dual-ID design avoids conflating the original platform message with the derived auction message. The operator is the author of the ContextRequest; the platform is the source of the upstream interaction.
+
+---
+
+## `operator`
+
+Identifies the system that generated this ContextRequest.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `operator_id` | string | Yes | Operator identifier |
+
+---
+
+## `platform`
+
+Identifies the upstream AI platform where the user interaction originated. This is **not** the entity generating the ContextRequest — that is the `operator`.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `platform_id` | string | Yes | Platform identifier (e.g. `"openai_chat"`) |
+| `software` | object | Yes | Software identity |
+| `software.name` | string | Yes | Product name |
+| `software.version` | string | Yes | Version or model identifier |
+
+<Note>
+The `platform` block replaces the old `producer` object. The platform is the AI host where the interaction occurred. The operator is the system that generated the ContextRequest. These are two distinct roles.
+</Note>
+
+---
+
+## `session`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Conversation or interaction session identifier |
+| `turn_index` | integer | Yes | How many turns into the session the user is (minimum: `0`) |
+
+---
+
+## `surface`
+
+A unified surface descriptor that replaces the old fragmented `placement`, `device`, `geography`, and `language` fields.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `channel` | string | Yes | `"conversation"`, `"search_result"`, `"assistant_panel"`, `"embedded_assistant"`, `"voice_assistant"` |
+| `interaction_mode` | string | Yes | `"text"`, `"voice"`, `"multimodal"` |
+| `platform` | string | Yes | `"web"`, `"mobile"`, `"desktop_app"`, `"browser_extension"`, `"api"`, `"other"` |
+| `form_factor` | string | No | `"mobile"`, `"desktop"`, `"tablet"`, `"speaker"`, `"other"` |
+| `country` | string | No | ISO 3166-1 alpha-2 country code (e.g. `"US"`) |
+| `locale` | string | No | BCP 47 locale (e.g. `"en-US"`) |
+
+---
+
+## `auction`
+
+Timing constraints for the auction.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `latency_budget_ms` | integer | No | Maximum time in milliseconds brand agents have to respond |
+| `context_window_ms` | integer | No | Time window within which the auction context is valid |
+
+---
+
+## `intent`
+
+The `intent` in a ContextRequest is **operator-generated** and **downstream-safe**. It is used for bidding and creative selection. It may differ from any platform-provided or platform-derived intent found earlier in the upstream pipeline. That difference is valid and expected.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | `"commercial"`, `"transactional"`, `"informational"`, `"navigational"`, `"support"`, `"unsafe"`, `"unknown"` |
+| `subtype` | string | No | Interaction pattern (e.g. `"comparison"`, `"product_discovery"`) |
+| `decision_phase` | string | Yes | `"research"`, `"consideration"`, `"decision"`, `"post_purchase"`, `"unknown"` |
+| `confidence` | number | Yes | Calibrated confidence score (`0.0`–`1.0`) |
+| `summary` | string | Yes | Operator-generated bid-safe summary. **MUST NOT** contain raw user queries or message content |
+| `relevance_score` | number | No | Operator-computed relevance score for auction ranking (`0.0`–`1.0`) |
+| `iab_content` | object | No | IAB Content Taxonomy mapping for the classified intent |
+
+### `intent.iab_content`
+
+IAB content taxonomy mapping derived from the operator's classification. Brand agents use this for vertical targeting and creative selection.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `taxonomy` | string | Yes | Taxonomy name (e.g. `"IAB Content Taxonomy"`) |
+| `taxonomy_version` | string | Yes | Taxonomy version (e.g. `"3.1"`) |
+| `tier1` | string | Yes | Top-level IAB category |
+| `tier2` | string | No | Second-level IAB category |
+| `tier3` | string | No | Third-level IAB category |
+| `tier4` | string | No | Fourth-level IAB category |
+
+<Warning>
+The `intent` block **MUST NOT** include `classification_reasoning` or any internal operator logic. Only expose the outputs that brand agents need to act on: type, phase, confidence, summary, and relevance score.
+</Warning>
+
+---
+
+## `allowed_formats`
+
+Creative formats allowed by the operator for this auction.
+
+Valid values: `"weave"`, `"tail"`, `"product_card"`, `"bridge"`
+
+---
+
+## `verticals`
+
+Array of normalized topical verticals identified by the operator (e.g. `["crm", "smb_software"]`).
+
+---
+
+## `consent`
+
+Downstream-effective consent permissions. Brand agents do not receive the full upstream consent envelope — only the permissions relevant to their participation.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `spec_version` | string | AIP specification version (default: "aip/1.0") |
-| `message_id` | string | Unique identifier for this context request (maps to PlatformRequest message_id) |
-| `timestamp` | string | ISO 8601 timestamp of the event |
-| `producer` | object | Producer information (from PlatformRequest) |
-| `session_id` | string | Conversation or interaction session ID |
-| `turn_index` | integer | Turn index in the conversation |
-| `latency_budget_ms` | integer | End-to-end latency budget in milliseconds (optional) |
-| `allowed_formats` | array | Creative formats allowed by the operator |
-| `context_id` | string | Unique identifier generated after transforming to ContextRequest |
-| `language` | string | User locale in BCP 47 format |
-| `publisher` | string | Publisher identifier (same as producer.agent_id) |
-| `placement` | object | Placement information |
-| `device` | object | Device information |
-| `geography` | object | Geographic information |
-| `intent` | object | Operator-generated semantic understanding |
-| `verticals` | array | Normalized topical verticals |
-| `embeddings` | array | Optional embedding information (optional) |
-| `consent` | object | Optional consent information (optional) |
-| `usage_constraints` | object | Optional usage constraints (optional) |
-| `platform_type` | string | Platform type for format determination (optional) |
-| `extensions` | object | Additional extension metadata (optional) |
+| `agent_participation` | boolean | Whether the user has consented to brand agent participation |
+| `measurement` | boolean | Whether the user has consented to measurement and attribution |
 
-## Producer Object
+---
 
-Forwarded from PlatformRequest. The producer is the **platform** (AI host), not the content publisher.
+## `usage_constraints`
+
+Explicit usage restrictions that downstream brand agents **MUST** respect.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `agent_id` | string | Identifier of the AI platform |
-| `agent_role` | string | **Must be `"platform"`** when forwarded from PlatformRequest. Reserve "publisher" for content owners. |
-| `software` | string | Software name |
-| `software_version` | string | Software version or model identifier |
+| `may_store` | boolean | Whether the brand agent may store the context data |
+| `may_train` | boolean | Whether the brand agent may use the data for model training |
+| `may_forward` | boolean | Whether the brand agent may forward the data to third parties |
+| `retention_ttl_seconds` | integer | Maximum retention time in seconds. Data **MUST** be discarded after this TTL |
 
-## Placement Object
+---
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ad_unit` | string | Platform surface type: "conversation", "chat", "voice", etc. |
+## Processing Rules
 
-## Device Object
+1. **Not a PlatformRequest.** A ContextRequest is derived from a PlatformRequest, but the operator is the author. The platform is the source of the upstream interaction.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `platform` | string | Device platform: "web", "mobile", etc. |
-| `form_factor` | string | Device form factor: "mobile", "desktop", "tablet" |
+2. **No raw interaction leakage.** A ContextRequest MUST NOT contain raw `query_text`, raw `messages`, or `classification_reasoning`. The `intent.summary` is the only natural-language field, and it is operator-generated and sanitized.
 
-## Geography Object
+3. **Intent may differ from upstream.** The intent in a ContextRequest is operator-generated. It may differ from any platform-provided or platform-derived intent in the originating PlatformRequest. That difference is valid and expected — the operator applies its own classification, normalization, and policy.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `country` | string | User country code (ISO 3166-1 alpha-2) |
+4. **Usage constraints are binding.** If `usage_constraints.may_store` is `false`, the brand agent MUST NOT persist the context data beyond the auction. If `retention_ttl_seconds` is set, the brand agent MUST discard data after that TTL.
 
-## Intent Object
+5. **Consent is downstream-scoped.** The `consent` block contains only the permissions relevant to brand agents, not the full upstream consent model.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `type` | string | High-level intent classification |
-| `decision_phase` | string | Commercial funnel decision phase |
-| `confidence` | number | Confidence score for intent classification (0.0-1.0) |
-| `summary` | string | Short operator-generated summary of the relevant conversation context |
-| `operator_relevance_score` | number | Operator's relevance score for the query (0.0-1.0, optional) |
-| `classification_reasoning` | string | LLM reasoning for intent classification (optional) |
-| `intent_confidence` | number | Confidence score for intent classification (0.0-1.0, optional) |
-
-## Required Fields
-
-| Field | Type | Description |
-|--------|------|-------------|
-| `spec_version` | string | AIP specification version |
-| `message_id` | string | Unique identifier for this context request |
-| `timestamp` | string | ISO 8601 timestamp |
-| `producer` | object | Producer information |
-| `session_id` | string | Conversation/session identifier |
-| `turn_index` | integer | Turn index in the conversation |
-| `context_id` | string | Unique ID for this auction request |
-| `language` | string | User locale in BCP 47 format |
-| `publisher` | string | Publisher identifier |
-| `placement` | object | Placement information |
-| `device` | object | Device information |
-| `geography` | object | Geographic information |
-| `intent` | object | Operator-generated semantic understanding |
-| `verticals` | array | Normalized topical verticals |
-
-## Optional Fields
-
-| Field | Type | Description |
-|--------|------|-------------|
-| `latency_budget_ms` | integer | Platform latency budget in milliseconds |
-| `allowed_formats` | array | Creative formats allowed: `weave`, `tail`, `product_card`, `bridge` |
-| `embeddings` | array | Optional embedding information for semantic search |
-| `consent` | object | Optional consent information |
-| `usage_constraints` | object | Optional usage constraints |
-| `platform_type` | string | Platform type (e.g., 'chat', 'search', 'assistant', 'vibe_coding_platform') |
-| `extensions` | object | Additional extension metadata from PlatformRequest (non-AIP) |
+---
 
 ## Example
 
 ```json
 {
-  "spec_version": "aip/1.0",
-  "message_id": "req_92fA1",
-  "timestamp": "2025-11-14T18:22:00Z",
-  "producer": {
-    "agent_id": "openai_chat",
-    "agent_role": "publisher",
-    "software": "chatgpt",
-    "software_version": "4.3-mini"
+  "spec_version": "1.0",
+  "context_request_id": "ctxreq_92fA1",
+  "source_request_id": "req_92fA1",
+  "timestamp": "2026-03-26T18:22:00Z",
+
+  "operator": {
+    "operator_id": "operator_x"
   },
-  "session_id": "sess_001",
-  "turn_index": 3,
-  "latency_budget_ms": 500,
-  "allowed_formats": ["weave", "tail", "product_card"],
-  "context_id": "ctx_92fA1",
-  "language": "en-US",
-  "publisher": "openai_chat",
-  "placement": {
-    "ad_unit": "conversation"
+
+  "platform": {
+    "platform_id": "openai_chat",
+    "software": {
+      "name": "chatgpt",
+      "version": "4.3-mini"
+    }
   },
-  "device": {
+
+  "session": {
+    "id": "sess_001",
+    "turn_index": 3
+  },
+
+  "surface": {
+    "channel": "conversation",
+    "interaction_mode": "text",
     "platform": "web",
-    "form_factor": "desktop"
-  },
-  "geography": {
+    "form_factor": "desktop",
+    "locale": "en-US",
     "country": "US"
   },
+
+  "auction": {
+    "latency_budget_ms": 500
+  },
+
+  "allowed_formats": ["weave", "tail", "product_card"],
+
   "intent": {
     "type": "commercial",
-    "decision_phase": "compare",
+    "subtype": "comparison",
+    "decision_phase": "decision",
     "confidence": 0.87,
     "summary": "User is evaluating CRM tools and narrowing down options.",
-    "operator_relevance_score": 0.87,
-    "classification_reasoning": "User query indicates commercial intent with comparison phase based on keywords and context.",
-    "intent_confidence": 0.92
+    "relevance_score": 0.87,
+    "iab_content": {
+      "taxonomy": "IAB Content Taxonomy",
+      "taxonomy_version": "3.1",
+      "tier1": "Business and Finance",
+      "tier2": "Business",
+      "tier3": "Business I.T."
+    }
   },
+
   "verticals": ["crm", "smb_software"],
-  "platform_type": "chat"
+
+  "consent": {
+    "agent_participation": true,
+    "measurement": true
+  },
+
+  "usage_constraints": {
+    "may_store": false,
+    "may_train": false,
+    "may_forward": false,
+    "retention_ttl_seconds": 300
+  }
 }
 ```
 
-## Notes
+---
 
-- `allowed_formats` lets operators constrain how creatives render for the requesting platform surface.
-- `platform_type` is used by brand agents to determine preferred format (e.g., bridge format for vibe_coding_platform).
-- `intent.operator_relevance_score` and `intent.classification_reasoning` provide additional context for brand agent decision-making.
-- `extensions` may contain vendor-namespaced metadata from the original PlatformRequest.
+## What Changed from the Previous Schema
+
+| Before | After | Why |
+|--------|-------|-----|
+| `message_id` (reused from PlatformRequest) | `context_request_id` + `source_request_id` | Separate operator-generated ID from upstream reference for clean traceability |
+| `producer` (mixed platform/operator identity) | `operator` + `platform` (distinct blocks) | The operator generates the ContextRequest; the platform is the upstream source |
+| `publisher`, `placement`, `device`, `geography`, `language`, `platform_type` | `surface` (unified object) | Eliminates fragmentation and redundancy |
+| `classification_reasoning` in intent | Removed | Internal operator reasoning is a leakage risk and should not reach brand agents |
+| `intent_confidence` + `confidence` (duplicated) | Single `confidence` field | Removes duplication |
+| `consent` (full upstream envelope) | `consent` (downstream-scoped: `agent_participation`, `measurement`) | Brand agents only need their effective permissions |
+| `usage_constraints.disallowed` (string array) | `may_store`, `may_train`, `may_forward`, `retention_ttl_seconds` | Explicit boolean permissions are clearer and enforceable |
+| `context` (nested wrapper) | Flat top-level fields | Removes unnecessary nesting for a bid-optimized object |
+
+---
+
+## Related
+
+- [Platform Request](/schemas/platform-request) — The upstream request that the ContextRequest is derived from
+- [Bid](/schemas/bid) — The response brand agents send back to the operator
+- [Platform Response](/schemas/auction-result) — The operator's auction outcome after evaluating bids

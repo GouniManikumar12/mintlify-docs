@@ -15,10 +15,10 @@ AIP defines protocol-level security invariants for message authenticity, integri
 
 ## 2. Why it matters
 
-In digital advertising, fraud and data tampering are common:  
-- Fake clicks and exposures  
-- Replay or duplicate requests  
-- Manipulated billing data  
+In any protocol that governs commercial participation, fraud and data tampering are risks:
+- Fabricated participation or outcome events
+- Replay or duplicate requests
+- Manipulated settlement data
 
 AIP is designed to reduce these risks by requiring **signature-based verification** for every message in the protocol. Operators implement their own security systems to enforce these requirements.
 
@@ -31,7 +31,7 @@ The protocol defines the following security invariants:
 | Guarantee | Description |
 |------------|--------------|
 | **Authenticity** | Messages must be authenticated to verify their origin. |
-| **Integrity** | Messages must be tamper-evident — data cannot be silently altered after signing. |
+| **Integrity** | Messages must be tamper-evident  -  data cannot be silently altered after signing. |
 | **Non-repudiation** | Message authentication mechanisms must enable non-repudiation. |
 | **Replay protection** | Unique nonces and timestamps must prevent reused requests within operator-defined validity windows. |
 | **Confidentiality** | Transport must use encrypted channels (e.g., HTTPS or gRPC). |
@@ -40,9 +40,9 @@ Operators implement their own cryptographic systems to enforce these guarantees.
 
 ---
 
-## 4. Signature Model
+## 4. Signature model
 
-Each message — from `ContextRequest` to `EventPacket` — must provide a verifiable signature or equivalent authentication mechanism.
+Each message  -  from `ContextRequest` to `EventPacket`  -  must provide a verifiable signature or equivalent authentication mechanism.
 
 ### Example signature approach
 
@@ -50,22 +50,22 @@ The following is an **example** of how messages may be signed. Operators may use
 
 ```bash
 X-AIP-Signature: HMAC(method + path + body + timestamp + nonce)
-X-AIP-Version: 0.1
+X-AIP-Version: 1.0
 ```
 
 ### Verification steps (example)
 
-1. Receiver verifies the signature using the appropriate authentication mechanism.  
-2. If verification succeeds, the message is considered authentic.  
+1. Receiver verifies the signature using the appropriate authentication mechanism.
+2. If verification succeeds, the message is considered authentic.
 3. If verification fails, the message is rejected.
 
 Operators define their own signature algorithms, timestamp formats, and verification logic. The protocol only requires that messages are authenticated and integrity-protected.
 
-For **RetrieveRequest** and **RetrieveResponse** (platform ↔ publisher, no ads), the normative signing scheme is defined in [AIP Authentication & Signing (v0.1)](/authentication-signing): required headers, canonical string, HMAC-SHA256, replay window, and verification rules.
+For **RetrieveRequest** and **RetrieveResponse** (platform ↔ publisher, no commercial participation), the normative signing scheme is defined in [AIP Authentication & Signing (v1.0)](/authentication-signing): required headers, canonical string, HMAC-SHA256, replay window, and verification rules.
 
 ---
 
-## 5. Key Management
+## 5. Key management
 
 Participants manage keys according to their own security policies. Each participant (Platform, Operator, Brand Agent) must:
 
@@ -77,7 +77,7 @@ Operators define their own key management policies, rotation schedules, and stor
 
 ---
 
-## 6. Replay and Duplication Defense
+## 6. Replay and duplication defense
 
 AIP requires replay protection mechanisms. Operators implement their own nonce tracking and timestamp validation:
 
@@ -89,19 +89,19 @@ Operators define their own validity windows, nonce storage mechanisms, and rejec
 
 ---
 
-## 7. Secure Event Verification
+## 7. Secure event verification
 
-**Operators are the verification authority** for all events. Each event (`cpx_exposure`, `cpc_click`, `cpa_conversion`) must be verified by the Operator using:
+**Operators are the verification authority** for all events. Each event (`exposure_shown`, `interaction_started`, `delegation_started`, `task_completed`) must be verified by the Operator using:
 
 - Authentication and integrity verification of the event message
 - Serve token validation
 - Timestamp checks within operator-defined windows
 
-Platforms and Brand Agents may provide signals or data, but verification responsibility rests with the Operator. Operators implement their own verification logic and may use different approaches (e.g., hash validation, signature verification, or other integrity checks).
+Platforms and Brand Agents may provide signals or data, but verification responsibility rests with the Operator. Operators implement their own verification logic.
 
 ---
 
-## 8. Audit and Compliance
+## 8. Audit and compliance
 
 Operators may expose security artifacts for audit or compliance purposes. The protocol does not mandate specific audit ledgers, compliance frameworks, or audit infrastructure. Operators implement their own audit and compliance systems according to their requirements.
 

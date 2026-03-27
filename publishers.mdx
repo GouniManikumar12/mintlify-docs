@@ -1,0 +1,199 @@
+---
+title: Publishers
+description: How content publishers participate in AIP through permissioned access, structured retrieval, and post-retrieval accountability.
+---
+
+# Publishers
+
+A Publisher is a content owner that declares how AI platforms may access its content under the Agentic Intent Protocol. Publishers control access through a machine-readable declaration (`aip.json`), serve content via a structured retrieval endpoint, and receive accountability events for every access and citation.
+
+Within AIP, publishers are the content layer - they define what can be accessed, under what conditions, and within what editorial scope.
+
+---
+
+## What is a publisher?
+
+A **Publisher** is an entity that:
+
+1. **Declares access permissions**
+   Publishers publish a `/.well-known/aip.json` file that defines whether, when, and within what editorial scope AI platforms may access content.
+
+2. **Serves content via RetrieveRequest/RetrieveResponse**
+   When an AI platform sends a valid, authenticated `RetrieveRequest`, the publisher evaluates it against declared policies and returns permitted content chunks or an explicit denial.
+
+3. **Verifies request authenticity**
+   Publishers verify HMAC signatures on every incoming request using the AIP authentication and signing spec.
+
+4. **Receives access and citation events**
+   Publishers receive structured events that record when content was accessed and how it was cited, enabling post-retrieval accountability and audit.
+
+5. **Controls content boundaries**
+   Publishers define retrieval limits (max chunks, max tokens), supported retrieval modes, and cache policies. AI platforms must respect these constraints.
+
+---
+
+## Examples of publishers
+
+- News organizations and media companies
+- Industry research publishers
+- Technical documentation providers
+- Knowledge base operators
+- Academic and scientific publishers
+- Government and public data portals
+- Specialized vertical content providers (legal, medical, financial)
+
+If an entity owns content and wants to control how AI systems access it, it can be a Publisher in AIP.
+
+---
+
+## Publisher responsibilities
+
+### Publishers MUST
+
+- Publish a valid `/.well-known/aip.json` declaration
+- Implement the retrieve endpoint (`POST /pag/retrieve` or equivalent)
+- Verify AIP authentication headers on every request (`X-AIP-Key-Id`, `X-AIP-Timestamp`, `X-AIP-Nonce`, `X-AIP-Signature`)
+- Evaluate requests against `intent_access` and `editorial_domains` from `aip.json`
+- Enforce declared retrieval limits (`max_chunks`, `max_tokens`)
+- Emit `access` events for every successful retrieval
+- Return explicit denial responses (with reason) when access is not permitted
+- Reject unsigned or invalid requests with `401` or `403`
+
+### Publishers SHOULD
+
+- Sign responses using the same HMAC mechanism
+- Emit `citation` events when `endpoints.event.required` is `true` in `aip.json`
+- Store `(key_id, nonce)` pairs for replay protection within the replay window
+
+### Publishers MAY
+
+- Support multiple retrieval modes (chunks, citations, full article)
+- Define custom editorial domain hierarchies using dot notation
+- Use the `extensions` namespace for vendor-specific metadata
+- Set `compliance.sunset` for automatic expiration of access declarations
+
+---
+
+## The aip.json declaration
+
+Every publisher begins by publishing a declaration at `/.well-known/aip.json`. This file defines:
+
+| Section | What it controls |
+|---------|-----------------|
+| **`intent_access`** | Master switch, operational state, access mode, training use, storage rights, cache policy |
+| **`editorial_domains`** | Editorial scope boundary for AI access |
+| **`endpoints`** | Capabilities, retrieve, and event endpoints |
+| **`retrieval`** | Supported modes and limits (chunks, citations, max tokens) |
+| **`compliance`** | Revocation rights, notice requirements, expiration |
+
+The declaration is **consent-based and publisher-controlled**. No monetization, ranking, or enforcement logic is defined here.
+
+See: [aip.json schema](/schemas/aip)
+
+---
+
+## Retrieval flow
+
+When an AI platform needs publisher content in response to a user query:
+
+1. Platform checks the publisher's `aip.json` for compatibility
+2. Platform sends an authenticated `RetrieveRequest` to the publisher's retrieve endpoint
+3. Publisher verifies the signature and validates the request
+4. Publisher matches `intent.domain` against `editorial_domains`
+5. Publisher evaluates `intent_access` constraints
+6. Publisher returns a `RetrieveResponse` with content chunks, a denial, or an error
+
+```
+Platform -> RetrieveRequest -> Publisher -> RetrieveResponse -> Platform
+```
+
+No operator, auction, or pricing logic is involved in this flow. Retrieval is a direct, permissioned exchange between platform and publisher.
+
+See: [RetrieveRequest schema](/schemas/retrieve-request) and [RetrieveResponse schema](/schemas/retrieve-response)
+
+---
+
+## Authentication and signing
+
+Every RetrieveRequest must carry four required headers:
+
+| Header | Purpose |
+|--------|---------|
+| `X-AIP-Version` | Protocol version routing |
+| `X-AIP-Key-Id` | Identifies the API key used to sign the request |
+| `X-AIP-Timestamp` | ISO 8601 timestamp for replay protection |
+| `X-AIP-Nonce` | Random single-use value (minimum 16 bytes entropy) |
+| `X-AIP-Signature` | HMAC-SHA256 signature of the canonical request string |
+
+Publishers verify the signature, check timestamp freshness (default window: 300 seconds), and reject replayed nonces.
+
+See: [Authentication and Signing](/authentication-signing)
+
+---
+
+## Access and citation events
+
+AIP defines two event types for post-retrieval accountability:
+
+| Event type | When emitted | Who emits |
+|------------|-------------|-----------|
+| **`access`** | Content was successfully returned | Publisher |
+| **`citation`** | Content was surfaced to the user as a citation | Platform |
+
+Events are append-only facts. They contain no advertising, pricing, or user identity data.
+
+Publishers use these events to:
+
+- Verify how content was accessed
+- Audit citation accuracy
+- Support dispute resolution
+- Track usage patterns
+
+See: [Access and Citation Events schema](/schemas/access-citation-event)
+
+---
+
+## What publishers do NOT do
+
+Publishers in AIP:
+
+- Do not participate in auctions or selection
+- Do not submit bids or pricing
+- Do not receive ContextRequests
+- Do not interact with the Operator's commercial layer
+- Do not expose user identifiers
+
+The publisher layer is intentionally separate from the commercial participation layer. Publishers govern content access; operators govern commercial participation.
+
+---
+
+## Getting started
+
+To integrate as a publisher:
+
+1. **Publish `aip.json`** - Deploy a valid declaration at `/.well-known/aip.json` on your domain
+2. **Register with the AIP Registry** - Obtain API keys and a shared secret
+3. **Implement the retrieve endpoint** - Accept authenticated `RetrieveRequest` payloads and return `RetrieveResponse`
+4. **Implement signature verification** - Validate HMAC signatures on every incoming request
+5. **Emit access events** - Fire an `access` event for every successful retrieval
+6. **Test end-to-end** - Verify the full flow: declaration discovery, authenticated retrieval, event emission
+
+---
+
+## Role within the protocol
+
+Publishers are the content layer of AIP.
+Platforms are the intent layer.
+Operators are the governance and commercial layer.
+
+**Publisher Access Governance (PAG)** is the subset of AIP that defines how publishers declare, control, and audit AI access to their content - without any coupling to the commercial participation protocol.
+
+---
+
+## See also
+
+- [aip.json schema](/schemas/aip) - Publisher declaration format
+- [RetrieveRequest](/schemas/retrieve-request) - Platform-to-publisher retrieval request
+- [RetrieveResponse](/schemas/retrieve-response) - Publisher-to-platform retrieval response
+- [Access and Citation Events](/schemas/access-citation-event) - Post-retrieval accountability events
+- [Authentication and Signing](/authentication-signing) - Message authentication and signing spec

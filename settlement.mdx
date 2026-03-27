@@ -1,0 +1,133 @@
+---
+title: Settlement
+description: AIP's protocol-level settlement invariants for outcome-based billing.
+---
+
+AIP defines protocol-level constraints for settlement and operator-defined accounting records. **AIP does not define wallet implementations, revenue sharing models, payout timing, or payment rails.** All wallet and payout mechanics are operator-defined.
+
+---
+
+## 1. TL;DR
+
+> AIP guarantees that each verified event is attributable to operator-defined settlement records, each `serve_token` resolves to at most one terminal charge, and all settlement records are immutable and auditable. Operators implement their own wallet systems and payout logic.
+
+---
+
+## 2. Why it matters
+
+AIP provides settlement invariants that ensure:
+- No double billing
+- One terminal settlement per `serve_token`
+- Immutable settlement records
+- Full auditability
+
+Operators implement their own wallet systems, revenue sharing models, payout schedules, and payment mechanisms as long as these protocol guarantees are met.
+
+---
+
+## 3. Settlement invariants
+
+The protocol guarantees the following invariants:
+
+### Settlement records
+
+Operators maintain settlement records that link verified events to settlement outcomes. Each settlement record:
+- Links to a `serve_token` from the original selection
+- Records the terminal event type (CPX, CPC, or CPA)
+- Records the interaction mode (recommend or delegate)
+- Contains immutable timestamps and state information
+
+### Event-to-settlement linkage
+
+Every verified event (`exposure_shown`, `interaction_started`, `delegation_started`, `task_completed`) must be attributable to a settlement outcome linked to the `serve_token`. Events must be linkable to:
+- The original `serve_token` from the selection
+- An operator-defined settlement record that reflects the final settlement state
+- The terminal billing unit (highest verified event in the lifecycle)
+
+### One terminal charge per serve_token
+
+Each `serve_token` resolves to **at most one terminal charge**. The protocol guarantees:
+- If a `task_completed` is verified, lower events are not billed
+- If an `interaction_started` is verified (and no task_completed), exposure_shown is not billed
+- If only `exposure_shown` is verified, CPX is billed
+
+This follows the event lifecycle: task_completed (CPA) > interaction_started (CPC) > exposure_shown (CPX).
+
+### Settlement immutability and auditability
+
+Once a settlement record reaches a settled state, it is immutable. All settlement records:
+- Are tamper-evident and auditable
+- Can be independently verified by any participant
+- Provide full auditability of all settlement decisions
+
+---
+
+## 4. Outcome-based settlement
+
+AIP settlement is outcome-based. The protocol does not settle for mere exposure  -  it tracks the full lifecycle and settles for the highest-value event.
+
+### Recommend mode settlement
+
+| Highest verified event | Settlement unit | What was settled |
+|----------------------|----------------|-----------------|
+| `exposure_shown` only | CPX | Commercial response was surfaced |
+| `interaction_started` | CPC | User engaged with recommendation |
+| `task_completed` | CPA | User completed an action (e.g., signup via brand's site) |
+
+### Delegate mode settlement
+
+| Highest verified event | Settlement unit | What was settled |
+|----------------------|----------------|-----------------|
+| `exposure_shown` only | CPX | Delegation offer was surfaced but user declined |
+| `delegation_started` | Operator-defined | User consented and session was created |
+| `task_completed` | CPA | User completed the delegated task |
+
+---
+
+## 5. Example settlement record (non-normative)
+
+The following example illustrates a settlement record structure. **This is non-normative**  -  field names, structure, and granularity are illustrative only. Operators define their own settlement record schemas.
+
+```json
+{
+  "serve_token": "stk_abcxyz123",
+  "session_id": "s_001",
+  "platform_id": "pf_chatapp",
+  "agent_id": "ag_123",
+  "selection_id": "sel_981",
+  "interaction_mode": "delegate",
+  "state": "SETTLED",
+  "final_unit": "CPA",
+  "final_charge": "10.00",
+  "currency": "USD",
+  "timestamps": {
+    "selection": "2025-11-11T18:00:00Z",
+    "exposure_shown": "2025-11-11T18:00:00Z",
+    "delegation_started": "2025-11-11T18:01:00Z",
+    "task_completed": "2025-11-11T18:30:00Z",
+    "settled": "2025-11-11T19:00:00Z"
+  }
+}
+```
+
+---
+
+## 6. Guarantees
+
+The protocol guarantees:
+
+- **No double billing**: Each `serve_token` resolves to at most one terminal charge
+- **One terminal settlement per serve_token**: The event lifecycle ensures only the highest verified event is billed
+- **Immutable settlement records**: Settled records cannot be modified
+- **Full auditability**: All settlement records are tamper-evident and can be independently verified
+- **Mode-aware settlement**: Settlement records include the interaction mode for full context
+
+Operators implement their own wallet systems, revenue sharing, payout schedules, dispute resolution, and payment mechanisms. The protocol only constrains the linkage between events, `serve_token`, and settlement records.
+
+---
+
+## Summary
+
+> AIP defines protocol-level settlement invariants that ensure each `serve_token` resolves to at most one terminal charge based on the highest verified outcome, with immutable and auditable settlement records. Operators implement their own wallet and payout systems to enforce these constraints.
+
+Next: [Security](/security)

@@ -61,7 +61,7 @@ Run a simple test to verify your setup:
 curl -X POST https://adnetwork.example/api/test-auction   -H "Authorization: Bearer <API_KEY>"   -d '{"intent":"Best CRM for startups"}'
 ```
 
-If successful, you will receive an `AuctionResult` payload containing bid and creative data.
+If successful, you will receive a `PlatformResponse` payload containing winner state, creative data, and optional delegation/tracking metadata.
 
 ---
 

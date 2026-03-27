@@ -1,178 +1,463 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aip.org/schemas/bid.json",
   "title": "Bid",
-  "description": "Brand Agent bid submitted in response to a ContextRequest",
+  "description": "Brand Agent bid submitted in response to a ContextRequest.",
   "type": "object",
+  "additionalProperties": false,
   "required": [
+    "spec_version",
     "bid_id",
     "brand_agent_id",
     "context_id",
     "wallet_id",
+    "targeting",
     "pricing",
+    "budget",
     "recommendation",
-    "timestamp",
-    "relevance"
+    "declared_relevance",
+    "supported_opportunities",
+    "preferred_format",
+    "format_constraints",
+    "valid_until",
+    "timestamp"
   ],
   "properties": {
+    "spec_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Bid schema version."
+    },
     "bid_id": {
       "type": "string",
-      "description": "Unique identifier for this bid",
+      "description": "Unique identifier for this bid.",
       "example": "bid_7823"
     },
     "brand_agent_id": {
       "type": "string",
-      "description": "Identifier of the brand agent placing the bid",
+      "description": "Identifier of the brand agent placing the bid.",
       "example": "brand_agent_123"
     },
     "context_id": {
       "type": "string",
-      "description": "ID of the ContextRequest being bid on",
+      "description": "Identifier of the ContextRequest being bid on.",
       "example": "ctx_92f"
     },
     "wallet_id": {
       "type": "string",
-      "description": "Wallet to debit if the bid wins",
+      "description": "Wallet to debit if the bid wins.",
       "example": "wallet_890"
     },
+    "targeting": {
+      "$ref": "#/$defs/targeting"
+    },
     "pricing": {
-      "type": "object",
-      "description": "Pricing vector for different billing events. Uses micros (authoritative), cents (brand-friendly), and dollars (display).",
-      "required": ["currency", "display_currency"],
-      "properties": {
-        "currency": {
-          "type": "string",
-          "description": "Currency code (ISO 4217)",
-          "pattern": "^[A-Z]{3}$",
-          "default": "USD",
-          "example": "USD"
-        },
-        "display_currency": {
-          "type": "string",
-          "description": "Display currency code (ISO 4217)",
-          "pattern": "^[A-Z]{3}$",
-          "default": "USD",
-          "example": "USD"
-        },
-        "cpx_micros": {
-          "type": "integer",
-          "description": "Price per exposure in USD micros (1 USD = 1,000,000 micros). Authoritative value.",
-          "minimum": 0,
-          "example": 50000
-        },
-        "cpx_cents": {
-          "type": "integer",
-          "description": "Price per exposure in cents (for brand-friendly display). Derived from cpx_micros.",
-          "minimum": 0,
-          "example": 5
-        },
-        "cpx_dollars": {
-          "type": "number",
-          "description": "Price per exposure in dollars (for UI display). Derived from cpx_micros.",
-          "minimum": 0,
-          "example": 0.05
-        },
-        "cpc_micros": {
-          "type": "integer",
-          "description": "Price per click in USD micros (1 USD = 1,000,000 micros). Authoritative value.",
-          "minimum": 0,
-          "example": 450000
-        },
-        "cpc_cents": {
-          "type": "integer",
-          "description": "Price per click in cents (for brand-friendly display). Derived from cpc_micros.",
-          "minimum": 0,
-          "example": 45
-        },
-        "cpc_dollars": {
-          "type": "number",
-          "description": "Price per click in dollars (for UI display). Derived from cpc_micros.",
-          "minimum": 0,
-          "example": 0.45
-        },
-        "cpa_micros": {
-          "type": "integer",
-          "description": "Price per conversion in USD micros (1 USD = 1,000,000 micros). Authoritative value.",
-          "minimum": 0,
-          "example": 10000000
-        },
-        "cpa_cents": {
-          "type": "integer",
-          "description": "Price per conversion in cents (for brand-friendly display). Derived from cpa_micros.",
-          "minimum": 0,
-          "example": 1000
-        },
-        "cpa_dollars": {
-          "type": "number",
-          "description": "Price per conversion in dollars (for UI display). Derived from cpa_micros.",
-          "minimum": 0,
-          "example": 10.0
-        },
-        "preferred_pricing_model": {
-          "type": "string",
-          "description": "Preferred pricing model: 'CPX', 'CPC', or 'CPA'",
-          "enum": ["CPX", "CPC", "CPA"],
-          "example": "CPA"
-        }
-      },
-      "additionalProperties": false
+      "$ref": "#/$defs/pricing"
+    },
+    "budget": {
+      "$ref": "#/$defs/budget"
     },
     "recommendation": {
       "type": "object",
-      "description": "Recommendation metadata that will be rendered to the user if the bid wins",
+      "description": "Recommendation metadata and creative input that the operator may render if the bid wins.",
       "required": ["creative_input"],
+      "additionalProperties": false,
       "properties": {
         "creative_input": {
-          "$ref": "./creative-input.json",
-          "description": "Unified creative input structure (see CreativeInput schema)"
+          "$ref": "./creative-input.json"
         }
+      }
+    },
+    "declared_relevance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Brand-declared relevance score for this bid (0.0-1.0). Operators may combine this with their own scoring.",
+      "example": 0.87
+    },
+    "supported_opportunities": {
+      "type": "array",
+      "description": "Opportunity types this bid is intended to support.",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "soft_recommendation",
+          "comparison_slot",
+          "decision_moment",
+          "transaction_trigger"
+        ]
       },
-      "additionalProperties": false
+      "example": [
+        "comparison_slot",
+        "decision_moment",
+        "transaction_trigger"
+      ]
+    },
+    "preferred_format": {
+      "type": "string",
+      "description": "Preferred creative format for this bid.",
+      "enum": ["weave", "tail", "product_card", "bridge"],
+      "example": "weave"
+    },
+    "delegation": {
+      "$ref": "#/$defs/delegation"
+    },
+    "format_constraints": {
+      "$ref": "#/$defs/formatConstraints"
+    },
+    "processing_latency_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Round-trip latency from auction request receipt to bid submission in milliseconds.",
+      "example": 42
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 timestamp after which the bid MUST be treated as expired.",
+      "example": "2026-03-26T18:00:10Z"
     },
     "timestamp": {
       "type": "string",
       "format": "date-time",
-      "description": "ISO 8601 timestamp when the bid was generated",
-      "example": "2025-11-11T18:00:01Z"
+      "description": "RFC 3339 timestamp when the bid was generated.",
+      "example": "2026-03-26T18:00:01Z"
     },
-    "relevance": {
-      "type": "number",
-      "description": "Relevance score for this bid (0.0-1.0). Required field used by operator for bid ranking.",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "example": 0.87
+    "metadata": {
+      "type": "object",
+      "description": "Optional vendor-namespaced metadata.",
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9_-]{1,63}$": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "targeting": {
+      "type": "object",
+      "description": "Brand-declared targeting constraints that define when this bid should be considered applicable.",
+      "additionalProperties": false,
+      "required": ["intent_types", "decision_phases"],
+      "properties": {
+        "intent_types": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "commercial",
+              "transactional",
+              "informational",
+              "navigational",
+              "support",
+              "unsafe",
+              "unknown"
+            ]
+          },
+          "description": "Intent types this bid targets."
+        },
+        "decision_phases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["research", "consideration", "decision", "post_purchase", "unknown"]
+          },
+          "description": "Decision phases this bid targets."
+        },
+        "verticals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Normalized topical verticals this bid targets."
+        },
+        "countries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "description": "ISO 3166-1 alpha-2 country codes this bid targets."
+        },
+        "locales": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "BCP 47 locales this bid targets."
+        }
+      }
     },
-    "preferred_format": {
-      "type": "string",
-      "description": "Preferred creative format for this bid",
-      "enum": ["weave", "tail", "product_card", "bridge"],
-      "example": "weave"
+    "pricing": {
+      "type": "object",
+      "description": "Pricing vector for supported billing events. All monetary values are expressed in micros of the declared currency.",
+      "additionalProperties": false,
+      "required": ["currency"],
+      "properties": {
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code.",
+          "example": "USD"
+        },
+        "cpx_micros": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Price per exposure in micros.",
+          "example": 50000
+        },
+        "cpc_micros": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Price per click in micros.",
+          "example": 450000
+        },
+        "cpa_micros": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Price per acquisition or verified outcome in micros.",
+          "example": 10000000
+        },
+        "preferred_pricing_model": {
+          "type": "string",
+          "description": "Preferred pricing model for operator ranking and settlement preference.",
+          "enum": ["CPX", "CPC", "CPA"],
+          "example": "CPA"
+        }
+      },
+      "anyOf": [
+        { "required": ["cpx_micros"] },
+        { "required": ["cpc_micros"] },
+        { "required": ["cpa_micros"] }
+      ]
     },
-    "processing_latency_ms": {
-      "type": "integer",
-      "description": "Round-trip latency from auction request receipt to bid submission (milliseconds). Used by operator to track brand agent response times.",
-      "minimum": 0,
-      "example": 42
+    "budget": {
+      "type": "object",
+      "description": "Budget controls and pacing constraints for the bid.",
+      "additionalProperties": false,
+      "required": [
+        "max_bid_per_event_micros",
+        "daily_cap_micros",
+        "remaining_budget_micros",
+        "pacing_mode"
+      ],
+      "properties": {
+        "max_bid_per_event_micros": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum amount the brand agent is willing to spend for a single billable event.",
+          "example": 10000000
+        },
+        "daily_cap_micros": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum spend allowed for the current day.",
+          "example": 50000000
+        },
+        "remaining_budget_micros": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Remaining available budget at bid creation time.",
+          "example": 32000000
+        },
+        "pacing_mode": {
+          "type": "string",
+          "enum": ["even", "accelerated", "manual"],
+          "description": "Budget pacing strategy declared by the brand agent.",
+          "example": "even"
+        }
+      }
+    },
+    "delegation": {
+      "type": "object",
+      "description": "Optional delegation capability declaration for brand agents that can execute the task directly after user consent.",
+      "additionalProperties": false,
+      "required": ["supported"],
+      "properties": {
+        "supported": {
+          "type": "boolean",
+          "description": "Whether the brand agent supports delegated execution."
+        },
+        "consent_required": {
+          "type": "boolean",
+          "description": "Whether explicit user consent is required before delegation begins."
+        },
+        "supported_for_intents": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["intent_types", "decision_phases"],
+          "properties": {
+            "intent_types": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "commercial",
+                  "transactional",
+                  "informational",
+                  "navigational",
+                  "support",
+                  "unsafe",
+                  "unknown"
+                ]
+              }
+            },
+            "decision_phases": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": ["research", "consideration", "decision", "post_purchase", "unknown"]
+              }
+            }
+          }
+        },
+        "required_scopes": {
+          "type": "array",
+          "description": "Context scopes the brand agent requires before it can start a delegated session.",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["intent", "constraints", "selection_context", "conversation_summary"]
+          }
+        },
+        "protocol": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "version"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["mcp"],
+              "description": "Delegation transport or tool invocation protocol."
+            },
+            "version": {
+              "type": "string",
+              "description": "Delegation protocol version."
+            }
+          }
+        },
+        "mcp": {
+          "type": "object",
+          "description": "MCP-specific session bootstrap details.",
+          "additionalProperties": false,
+          "required": ["server_url", "tool_name", "session_init_schema_ref"],
+          "properties": {
+            "server_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "MCP server base URL."
+            },
+            "tool_name": {
+              "type": "string",
+              "description": "MCP tool to invoke for delegated session initiation."
+            },
+            "session_init_schema_ref": {
+              "type": "string",
+              "format": "uri",
+              "description": "URI of the session initialization schema."
+            }
+          }
+        },
+        "session_constraints": {
+          "type": "object",
+          "description": "Runtime constraints for a delegated session.",
+          "additionalProperties": false,
+          "required": ["multi_turn", "session_timeout_seconds", "max_turns"],
+          "properties": {
+            "multi_turn": {
+              "type": "boolean",
+              "description": "Whether the delegated session supports multiple turns."
+            },
+            "session_timeout_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum session lifetime in seconds."
+            },
+            "max_turns": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum number of turns permitted in the delegated session."
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "supported": { "const": true }
+            },
+            "required": ["supported"]
+          },
+          "then": {
+            "required": [
+              "consent_required",
+              "supported_for_intents",
+              "required_scopes",
+              "protocol",
+              "mcp",
+              "session_constraints"
+            ]
+          }
+        }
+      ]
+    },
+    "formatConstraints": {
+      "type": "object",
+      "description": "Rendering and ranking hints for operators that support multi-response output.",
+      "additionalProperties": false,
+      "required": ["max_responses", "ranking"],
+      "properties": {
+        "max_responses": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of sponsored responses the brand agent permits in the same rendered set.",
+          "example": 2
+        },
+        "ranking": {
+          "type": "string",
+          "enum": ["operator_defined"],
+          "description": "Ranking hint. In v1.0, operator-defined ranking is the only standardized value.",
+          "example": "operator_defined"
+        }
+      }
     }
   },
   "examples": [
     {
+      "spec_version": "1.0",
       "bid_id": "bid_7823",
       "brand_agent_id": "brand_agent_123",
       "context_id": "ctx_92f",
       "wallet_id": "wallet_890",
+      "targeting": {
+        "intent_types": ["commercial", "transactional"],
+        "decision_phases": ["consideration", "decision"],
+        "verticals": ["crm", "sales_software"],
+        "countries": ["US"],
+        "locales": ["en-US"]
+      },
       "pricing": {
         "currency": "USD",
-        "display_currency": "USD",
         "cpx_micros": 50000,
-        "cpx_cents": 5,
-        "cpx_dollars": 0.05,
         "cpc_micros": 450000,
-        "cpc_cents": 45,
-        "cpc_dollars": 0.45,
         "cpa_micros": 10000000,
-        "cpa_cents": 1000,
-        "cpa_dollars": 10.0,
         "preferred_pricing_model": "CPA"
+      },
+      "budget": {
+        "max_bid_per_event_micros": 10000000,
+        "daily_cap_micros": 50000000,
+        "remaining_budget_micros": 32000000,
+        "pacing_mode": "even"
       },
       "recommendation": {
         "creative_input": {
@@ -184,7 +469,7 @@
             "Automated pipeline insights",
             "Collaborative forecasting"
           ],
-          "context_snippet": "For startups needing higher limits and automated expense workflows.",
+          "context_snippet": "For teams comparing CRM options for scaling sales workflows.",
           "cta_label": "Start Free Trial",
           "cta_url": "https://nimbus.example.com/signup",
           "assets": {
@@ -194,11 +479,43 @@
           }
         }
       },
-      "timestamp": "2025-11-11T18:00:01Z",
-      "relevance": 0.87,
+      "declared_relevance": 0.87,
+      "supported_opportunities": [
+        "comparison_slot",
+        "decision_moment",
+        "transaction_trigger"
+      ],
       "preferred_format": "weave",
-      "processing_latency_ms": 42
+      "delegation": {
+        "supported": true,
+        "consent_required": true,
+        "supported_for_intents": {
+          "intent_types": ["transactional", "commercial"],
+          "decision_phases": ["decision", "post_purchase"]
+        },
+        "required_scopes": ["intent", "constraints"],
+        "protocol": {
+          "type": "mcp",
+          "version": "1.0"
+        },
+        "mcp": {
+          "server_url": "https://agent.nimbus.example.com/mcp",
+          "tool_name": "start_crm_signup_session",
+          "session_init_schema_ref": "https://agent.nimbus.example.com/schemas/session-init.json"
+        },
+        "session_constraints": {
+          "multi_turn": true,
+          "session_timeout_seconds": 900,
+          "max_turns": 25
+        }
+      },
+      "format_constraints": {
+        "max_responses": 2,
+        "ranking": "operator_defined"
+      },
+      "processing_latency_ms": 42,
+      "valid_until": "2026-03-26T18:00:10Z",
+      "timestamp": "2026-03-26T18:00:01Z"
     }
-  ],
-  "$id": "https://aip.org/schemas/bid.json"
+  ]
 }

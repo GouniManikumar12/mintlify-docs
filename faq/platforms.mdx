@@ -1,26 +1,30 @@
 ---
-title: "FAQ – Platforms"
+title: "FAQ -- Platforms"
 description: "Frequently asked questions for AI platforms integrating with AIP"
 ---
 
 <AccordionGroup>
-  <Accordion title="How does AIP monetize AI intent?">
-    AI platforms send anonymized ContextRequests to the Ad Network when they detect monetizable intent. Verified exposures generate CPX-based payouts through the ledger.
+  <Accordion title="How does AIP enable commercial participation in AI?">
+    AI platforms send anonymized PlatformRequests to an Operator when they detect actionable intent. The Operator evaluates participation eligibility, runs selection, and returns a recommendation or delegation offer. Verified outcomes generate payouts through the settlement system.
   </Accordion>
 
-  <Accordion title="What data is shared with the Ad Network?">
-    Only anonymized context: intent text, session ID, platform ID, and metadata such as region or language. No user identifiers are included.
+  <Accordion title="What data is shared with brand agents?">
+    Brand agents receive only anonymized ContextRequests  -  intent classification, decision phase, vertical signals, and metadata. No raw user queries, conversation transcripts, or user identifiers are shared. In delegation, context is further scoped by `context_scope`.
   </Accordion>
 
   <Accordion title="How are payouts determined?">
-    Each verified CPX, CPC, or CPA event triggers a ledger entry. Monthly settlement occurs automatically from the Ad Network wallet to the Platform wallet.
+    Each verified lifecycle event (exposure_shown, interaction_started, delegation_started, task_completed) is recorded. Only the highest-value event per serve_token is settled. Periodic settlement occurs automatically from the Operator to the Platform.
   </Accordion>
 
   <Accordion title="What happens if verification fails?">
-    If an event signature or timestamp is invalid, it is excluded from settlement. Platforms can inspect verification logs via the /events API.
+    If an event signature or timestamp is invalid, it is excluded from settlement. Platforms can inspect verification logs via the events API.
   </Accordion>
 
-  <Accordion title="How does consent work?">
-    Platforms must surface disclosure labels such as [Ad] and manage user consent for personalized or monetized responses.
+  <Accordion title="How does delegation consent work?">
+    When the Operator returns a SelectionResult with delegate mode, the platform must present the offer to the user and collect explicit consent before any session transfer occurs. If the user declines, no session is created. The protocol does not prescribe the consent UI.
+  </Accordion>
+
+  <Accordion title="What if no brand agent responds?">
+    If no responses arrive within the selection window, the Operator returns a `no_match` response. Platforms should handle this gracefully  -  render a fallback or continue the user workflow.
   </Accordion>
 </AccordionGroup>

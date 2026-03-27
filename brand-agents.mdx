@@ -1,324 +1,305 @@
 ---
 title: Brand Agents
-description: How AI and autonomous advertiser agents participate in AIP auctions and respond to verified intent.
+description: How commercial agents participate in AIP  -  from recommendation to delegation and task execution.
 ---
-Brand Agents are AI agents or autonomous bidding systems that act on behalf of advertisers.  They evaluate incoming intent, decide whether to participate, and submit structured bids into AIP auctions.  
 
-A Brand Agent can be rule based, ML driven, or fully autonomous. AIP does not prescribe how it is built, only how it must speak to the protocol.
+Brand Agents are AI agents or autonomous systems that act on behalf of commercial entities. They evaluate incoming intent, decide whether to participate, submit structured responses, and  -  in delegate mode  -  accept session handoffs to execute real tasks.
 
+A Brand Agent can be rule-based, ML-driven, or fully autonomous. AIP does not prescribe how it is built, only how it must speak to the protocol.
 
-## How Operators and Brand Agents Work Together
+---
 
-This section describes the public interaction flow between AIP Operators and Brand Agents. It focuses on protocol-level request and response behavior and does not prescribe internal implementation details.
+## How operators and brand agents work together
 
 ### High-level flow
 
-1. A Platform sends a **PlatformRequest** containing user intent and contextual signals to the Operator.
-2. The Operator derives a **ContextRequest**, removing raw user data and applying privacy controls.
-3. The Operator classifies the request into one or more category pools.
-4. The Operator publishes the ContextRequest to subscribed Brand Agents using a supported transport.
-5. Brand Agents evaluate the ContextRequest and decide whether to bid.
-6. Brand Agents submit a **BidResponse** to the Operator within the auction window.
-7. The Operator selects a winning bid (if any) and returns the result to the Platform.
-8. Verified events (CPX, CPC, CPA) are reported and settled via the Operator ledger.
-
-This interaction model ensures privacy-preserving intent exchange, time-bounded auctions, and deterministic settlement.
+1. A Platform sends a **PlatformRequest** containing user intent to the Operator.
+2. The Operator evaluates participation eligibility and derives a **ContextRequest**.
+3. The Operator publishes the ContextRequest to subscribed Brand Agents.
+4. Brand Agents evaluate the ContextRequest and decide whether to participate.
+5. Brand Agents submit a **response** to the Operator within the selection window.
+6. The Operator selects a winning response and determines the interaction mode.
+7. In recommend mode: the brand's content is integrated into the AI response.
+8. In delegate mode: the brand agent receives a session handoff and executes a task.
+9. Verified events are reported and settled via the Operator.
 
 ---
 
-## Privacy-First Context Model
+## Privacy-first context model
 
-AIP separates intent capture from bidding decisions to protect user privacy.
+AIP separates intent capture from participation decisions to protect user privacy.
 
 * Platforms send **PlatformRequests** containing full interaction context to Operators.
 * Operators derive a **ContextRequest** by removing sensitive or identifying data.
 * Brand Agents receive **only** the ContextRequest.
 
-This model ensures that Brand Agents can make effective bidding decisions without access to raw user data, conversation transcripts, or identifiers.
+Brand Agents can make effective participation decisions without access to raw user data, conversation transcripts, or identifiers.
 
 ---
 
-## Auction Window and Timing
+## Selection window and timing
 
-AIP uses a time-bounded auction window to ensure low latency and predictable outcomes.
+AIP uses a time-bounded selection window to ensure low latency and predictable outcomes.
 
-* The auction window is determined by the platform's `latency_budget_ms` field in the PlatformRequest
-* The Operator computes the available bid window by subtracting operator overhead (embedding generation, search, filtering, dispatch) from the platform's latency budget
-* The window begins when the Operator publishes the ContextRequest
-* Brand Agents must submit a BidResponse before the computed window expires
-* If no `latency_budget_ms` is provided, the Operator uses a default fallback
-
-If the auction window closes before a bid is received, the Operator treats the outcome as `no_bid`. Late responses are ignored and do not participate in selection or settlement.
+* The selection window is determined by the platform's `latency_budget_ms`
+* The Operator computes the available response window by subtracting operator overhead
+* Brand Agents must submit responses before the window expires
+* Late responses are ignored and do not participate in selection or settlement
 
 ---
 
-## 1. What Brand Agents Do
+## 1. What brand agents do
 
 A Brand Agent:
 
-- Receives BidRequests from an AIP Operator  
-- Evaluates anonymized user intent  
-- Decides whether the advertiser wants to compete  
-- Returns a structured BidResponse  
-- Participates in real time auctions  
-- Receives verified CPX, CPC, and CPA callbacks  
-- Optimizes spend based on Operator ledger records  
+- Receives ContextRequests from an AIP Operator
+- Evaluates anonymized user intent
+- Decides whether to participate
+- Returns a structured response
+- Participates in real-time selection
+- Supports recommend mode (content contribution) and/or delegate mode (task execution)
+- Receives verified lifecycle event callbacks
+- Optimizes spend based on Operator settlement records
 
 Brand Agents can be operated by:
 
-- SaaS or software companies  
-- E-commerce brands  
-- Mobile apps  
-- Marketplaces  
-- Agencies  
-- Affiliate networks  
-- AI-native advertiser bots  
-- Third-party autonomous agents  
+- SaaS or software companies
+- E-commerce brands
+- Mobile apps
+- Marketplaces
+- Agencies
+- AI-native service providers
+- Third-party autonomous agents
 
 AIP imposes no limit on who can operate a Brand Agent.
 
 ---
 
-## 2. Normative Responsibilities
-
-The following are MUST, MUST NOT, and MAY requirements for all Brand Agents.
+## 2. Normative responsibilities
 
 ### Brand Agents MUST
 
-- Expose a stable HTTP endpoint or another transport supported by the Operator  
-- Respond to BidRequests within the Operator timeout  
-- Return one BidResponse per request  
-- Include at least one valid price field:  
-  - `price_cpc` and/or  
-  - `price_cpa`  
-- Provide a valid `landing_url`  
-- Include required creative metadata  
-- Respect the AIP event ladder: CPA overrides CPC, CPC overrides CPX  
-- Verify serve tokens in event callbacks  
-- Maintain spend accuracy using Operator ledger entries  
+- Expose a stable HTTP endpoint or supported transport
+- Respond to ContextRequests within the Operator selection window
+- Return one response per request
+- Include at least one valid price field (`price_cpc` and/or `price_cpa`)
+- Provide valid content and a landing URL
+- Include required creative metadata
+- Respect the AIP event lifecycle: task_completed overrides interaction_started, which overrides exposure_shown
+- Verify serve tokens in event callbacks
+- Maintain spend accuracy using Operator settlement records
 
 ### Brand Agents MUST NOT
 
-- Submit malformed or incomplete bid payloads  
-- Return bids without pricing  
-- Manipulate or forge serve tokens  
-- Generate artificial events or simulated traffic  
-- Submit multiple bids for a single BidRequest  
+- Submit malformed or incomplete response payloads
+- Return responses without pricing
+- Manipulate or forge serve tokens
+- Generate artificial events or simulated traffic
+- Submit multiple responses for a single ContextRequest
 
 ### Brand Agents MAY
 
-- Use any internal logic, including rules, heuristics, ML, LTV models, or autonomous agents  
-- Dynamically adjust pricing based on performance  
-- Decline to bid using `no_bid: true`  
-- Use contextual embeddings, RAG, or classifier models  
-- Implement their own budget and ROAS controls  
+- Use any internal logic, including rules, heuristics, ML, LTV models, or autonomous agents
+- Dynamically adjust pricing based on performance
+- Decline to participate using `no_bid: true`
+- Use contextual embeddings, RAG, or classifier models
+- Implement their own budget and outcome controls
+- Support one or both interaction modes (recommend and delegate)
 
 ---
 
-## 3. BidRequest (What Brand Agents Receive)
+## 3. What brand agents receive
 
 Brand Agents do **not** receive PlatformRequests.
 
-Brand Agents receive a **ContextRequest**, which uses a UCP-like format with enriched context fields for bidding decisions. It is a privacy-preserving, operator-derived representation of user intent used solely for bidding decisions.
+Brand Agents receive a **ContextRequest**  -  a privacy-preserving, operator-derived representation of user intent used solely for participation decisions.
 
 ### Privacy guarantees
 
 A ContextRequest **does not include**:
 
-* Raw user queries (`query_text`)
+* Raw user queries
 * Conversation history or message transcripts
-* User identifiers (`user_id`, account IDs, device IDs)
+* User identifiers (user_id, account IDs, device IDs)
 
-### What Brand Agents do receive
+### What brand agents do receive
 
 A ContextRequest may include:
 
 * Intent summary or classification
-* Decision phase (research, comparison, purchase, etc.)
+* Decision phase (research, comparison, decision, action)
 * Vertical or category signals
 * Geographic or market region (coarse-grained)
 * Operator-defined metadata and policy constraints
-* Timing and auction parameters
-
-The ContextRequest schema defines the allowed structure and extensibility points. Operators MAY include additional fields as permitted by the schema.
-
-### Typical fields
-
-| Field             | Description                                       |
-| ----------------- | ------------------------------------------------- |
-| `intent.text`     | Anonymized user query or derived summary         |
-| `session_id`      | Unique session identifier                        |
-| `serve_token_hint`| Pre auction token reference                      |
-| `categories`      | Optional taxonomies                              |
-| `timestamp`       | Request creation time                            |
-| `policy`          | Operator defined bidding rules or limits         |
-
-Operators MAY include additional metadata.  
-AIP allows extensibility.
+* Timing and selection parameters
 
 ---
 
-## 4. BidResponse (What Brand Agents Return)
+## 4. Brand agent response
 
-Brand Agents submit bids to the Operator using a **BidResponse**, sent to the operator-provided bid endpoint (for example, via `POST /aip/bid-response`).
+Brand Agents submit responses to the Operator within the selection window.
 
-Each BidResponse:
+Each response:
 
-* Must be submitted within the active auction window
+* Must be submitted within the active selection window
 * Is evaluated only if received before the window closes
 * Is associated with a single ContextRequest
 
-Operators provide the bid submission endpoint (`operator_bid_url`) as part of the integration contract. Brand Agents must treat this endpoint as time-sensitive and idempotent per request.
+| Field | Required | Description |
+|-------|----------|-------------|
+| `price_cpc` | optional | Amount willing to pay for an interaction |
+| `price_cpa` | optional | Amount willing to pay for a completed task |
+| `creative` | required | Text or metadata used in the recommendation |
+| `landing_url` | required | Destination URL |
+| `ttl` | required | Validity window in milliseconds |
+| `supports_delegation` | optional | Whether this agent can accept session handoffs |
+| `no_bid` | optional | Indicates declining to participate |
 
-A BidResponse MUST conform to the AIP bid schema.
+At least one of `price_cpc` or `price_cpa` MUST be included for a valid response.
 
-| Field        | Required | Description                                      |
-| ------------ | -------- | ------------------------------------------------ |
-| `price_cpc`  | optional | Amount willing to pay for a click               |
-| `price_cpa`  | optional | Amount willing to pay for a conversion          |
-| `creative`   | required | Text or metadata used in the recommendation     |
-| `landing_url`| required | Advertiser destination URL                      |
-| `ttl`        | required | Validity window in milliseconds                 |
-| `no_bid`     | optional | Indicates declining the request                 |
-
-At least one of `price_cpc` or `price_cpa` MUST be included for a valid bid.
-
-CPX does not require explicit bidding because it is always settled by the Operator when no higher event occurs.
+CPX (exposure_shown) does not require explicit pricing  -  it is always settled by the Operator when no higher event occurs.
 
 ---
 
-## 5. Public Brand Agent Endpoints
+## 5. Participation in recommend mode
 
-Operators interact with Brand Agents through publicly exposed, operator-facing endpoints. These endpoints define the protocol surface and do not imply internal architecture.
+In recommend mode, the brand agent contributes content that is integrated into the AI's response:
 
-### Receive auction requests
-
-**POST /brand_agents/{brand_agent_id}/auction**
-
-Used by the Operator to deliver a ContextRequest to a Brand Agent.
-
-* Payload: ContextRequest schema
-* Delivery: asynchronous, fire-and-forget
-* Operators MAY apply rate limits or batching
-* Brand Agents MUST process requests within the auction window
-
-### Submit bid responses
-
-**POST /aip/bid-response**
-
-Used by Brand Agents to submit a BidResponse to the Operator.
-
-* Payload: BidResponse schema
-* Must be sent within the auction window
-* Late responses are treated as `no_bid`
-
-### Receive auction results (optional)
-
-**POST /brand_agents/{brand_agent_id}/auction_result**
-
-Operators MAY notify Brand Agents of win/loss outcomes for observability or optimization purposes.
+- Provide creative content (short description, value propositions, CTA)
+- Content is rendered by the platform using the operator's format
+- No session transfer occurs
+- Events tracked: `exposure_shown`, optionally `interaction_started`, optionally `task_completed`
 
 ---
 
-## 6. Event Callbacks
+## 6. Participation in delegate mode
 
-Once a Brand Agent wins an auction, the Operator sends event notifications tied to the serve token.
+In delegate mode, the brand agent receives a session handoff and executes a task:
+
+### Brand agents that support delegation MUST:
+
+- Accept session initiation from the Operator
+- Respect context scope boundaries  -  only use data provided in the scoped context
+- Provide a functional experience that completes the intended task
+- Fire `delegation_started` when the session begins
+- Fire `task_completed` when the outcome is verified
+- Handle session timeouts and errors gracefully
+
+### What the brand agent receives at session initiation:
+
+- `session_id`  -  the delegation session identifier
+- `context_scope`  -  an array defining what context is shared (e.g., `["intent", "constraints"]`)
+- Intent and constraint data as defined by the scope
+- The serve_token for event tracking
+
+### What the brand agent never receives:
+
+- Raw user queries or conversation transcripts
+- User identifiers
+- Other agents' participation data
+
+---
+
+## 7. Event callbacks
+
+Once a Brand Agent is selected, the Operator sends event notifications tied to the serve token.
 
 ### Event types
 
-| Event | Meaning                                                    |
-| ----- | ---------------------------------------------------------- |
-| CPX   | Exposure happened, settled only if no CPC or CPA occurs    |
-| CPC   | User clicked the recommendation                            |
-| CPA   | User completed the target action                           |
+| Event | Meaning |
+|-------|---------|
+| `exposure_shown` | Commercial response was surfaced to the user |
+| `interaction_started` | User engaged with the recommendation |
+| `delegation_started` | Session handoff occurred (delegate mode) |
+| `task_completed` | User completed the target action |
 
 Brand Agents MUST:
 
-- Verify the serve token  
-- Confirm the event order is valid per the event ladder  
-- Use callbacks for optimization and budget management  
-
-Brand Agents MAY ignore CPX or CPC if they optimize only for CPA.
+- Verify the serve token
+- Confirm the event order is valid per the lifecycle
+- Use callbacks for optimization and budget management
 
 ---
 
-## 7. Wallets, Spend, and Settlement
-
-AIP does not dictate a specific wallet architecture.
+## 8. Settlement and spend
 
 ### Operator responsibilities
 
 Operators MUST:
 
-- Maintain accurate spend ledgers  
-- Settle based on CPX, CPC, CPA event ladder  
-- Expose ledger records to Brand Agents  
-- Guarantee no double billing  
+- Maintain accurate settlement ledgers
+- Settle based on the event lifecycle (highest event wins)
+- Expose settlement records to Brand Agents
+- Guarantee no double billing
 
 ### Brand Agent responsibilities
 
 Brand Agents MUST:
 
-- Track spend using Operator ledger entries  
-- Manage advertiser budgets  
-- Ensure funding is available for bidding  
+- Track spend using Operator settlement records
+- Manage budgets
+- Ensure funding is available for participation
 
 Brand Agents MAY:
 
-- Pause bidding when caps are reached  
-- Adjust bids dynamically using ROAS or CAC targets  
-- Run ML pipelines that optimize by event type  
+- Pause participation when caps are reached
+- Adjust pricing dynamically using outcome targets
+- Run ML pipelines that optimize by event type and interaction mode
 
 ---
 
-## 8. Implementation Guidance (Non Normative)
+## 9. Implementation guidance (non-normative)
 
 A Brand Agent can be implemented in any technology stack.
 
 ### Simple rules engine
 
 ```typescript
-if (intent.text.includes("CRM")) {
-  bid_cpc = 2.0;
+if (intent.type === "commercial" && intent.verticals.includes("CRM")) {
+  return { price_cpa: 10.0, supports_delegation: true };
 } else {
-  no_bid = true;
+  return { no_bid: true };
 }
 ```
 
-### ML driven agent
+### ML-driven agent
 
-- Classify the query
+- Classify the intent
 - Predict user value
-- Compute an optimal bid
+- Compute an optimal price
 - Enforce margin and budget constraints
+- Decide whether to support delegation for this request
 
 ### Fully autonomous agent
 
 - Runs continuously
-- Learns from verified events
+- Learns from verified outcomes
 - Adjusts pricing in real time
-- Optimizes cross operator ROAS
+- Optimizes cross-operator performance
+- Dynamically enables/disables delegation support based on conversion data
 
 AIP cares only about interface correctness, not internal strategy.
 
 ---
 
-## 9. Summary
+## 10. Summary
 
-Brand Agents are AI or autonomous advertiser agents that:
+Brand Agents are commercial agents that:
 
-- Receive intent
+- Receive intent context
 - Evaluate relevance
-- Submit structured bids
-- Participate in real time auctions
-- Receive CPX, CPC, and CPA callbacks
+- Submit structured responses
+- Participate in real-time selection
+- Support recommend mode, delegate mode, or both
+- Receive lifecycle event callbacks
 - Manage budgets and performance
 
 AIP ensures:
 
-- Fair auction behavior
-- Transparent event settlement
+- Fair selection behavior
+- Transparent outcome settlement
 - Consistent interaction across Operators
-- Interoperability between advertiser agents
+- Interoperability between commercial agents
+- Clear separation between recommendation and task execution
 
 Brand Agents can be simple or deeply intelligent. The protocol defines the contract, not the strategy.

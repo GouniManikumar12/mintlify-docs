@@ -1,0 +1,30 @@
+---
+title: "FAQ -- Operators"
+description: "Frequently asked questions for operators implementing AIP"
+---
+
+<AccordionGroup>
+  <Accordion title="What is the Operator's role in AIP?">
+    The Operator governs participation eligibility, runs selection, determines interaction mode (recommend or delegate), verifies lifecycle events, and manages settlement across all participants.
+  </Accordion>
+
+  <Accordion title="How does selection work?">
+    Operators can implement auction-based, rule-based, or hybrid selection. The protocol defines timing constraints, input requirements, and outcome guarantees. Operators define their own scoring logic (balancing value, relevance, and quality).
+  </Accordion>
+
+  <Accordion title="How is fraud prevented?">
+    Each message includes a cryptographic signature and nonce. Duplicate or tampered requests are rejected automatically. Operators are the verification authority for all lifecycle events.
+  </Accordion>
+
+  <Accordion title="How does delegation management work?">
+    When the Operator determines delegate mode, it includes a delegation object in the SelectionResult. The platform collects user consent, confirms to the Operator, and the Operator initiates the session with the brand agent using scoped context.
+  </Accordion>
+
+  <Accordion title="How is settlement reconciled?">
+    Verified settlement records are aggregated by wallet each period. Operators perform reconciliation before triggering payouts. Only the highest-value event per serve_token is settled.
+  </Accordion>
+
+  <Accordion title="What happens during a dispute?">
+    Disputed events are reviewed against ledger records. If invalid, funds revert to the originating wallet and an updated revision_id is recorded.
+  </Accordion>
+</AccordionGroup>

@@ -31,10 +31,10 @@ This ensures:
 AIP defines constraints and guarantees for auctions, not the specific algorithms:
 
 ### **1. Input Requirements**
-An AI platform submits a `PlatformRequest` (UCP format) describing the user's query or action. The request includes `latency_budget_ms` to specify the platform's timing requirements.
+An AI platform submits a `PlatformRequest` describing the user's query or action. The request includes `latency_budget_ms` to specify the platform's timing requirements.
 
 ### **2. Distribution Requirements**
-The Operator derives a `ContextRequest` (UCP-like format) and distributes it to Brand Agents. Operators define their own distribution mechanisms (category pools, transport methods, etc.).
+The Operator derives a `ContextRequest` and distributes it to Brand Agents. Operators define their own distribution mechanisms (category pools, transport methods, etc.).
 
 ### **3. Timing Constraints**
 - The auction window is derived from the platform's `latency_budget_ms` field in the PlatformRequest
@@ -47,7 +47,7 @@ The Operator derives a `ContextRequest` (UCP-like format) and distributes it to 
 Brand Agents submit signed `BidResponse` payloads with pricing, creative input, and relevance scores. Operators collect bids received within the auction window.
 
 ### **5. Outcome Guarantees**
-The Operator MUST return a single `AuctionResult` (or `no_bid` when no responses arrive in time) and a `serve_token` back to the Platform. The protocol guarantees deterministic settlement based on the event ladder (CPA > CPC > CPX).
+The Operator MUST return a single `PlatformResponse` and a `serve_token` back to the Platform. When no responses arrive in time, the response uses `status: "no_fill"`. The protocol guarantees deterministic settlement based on the event ladder (CPA > CPC > CPX).
 
 ## 4. Scoring (Informational)
 
@@ -66,28 +66,52 @@ Operators apply their own scoring logic consistently for all bids, producing det
 
 **Note**: AIP does not mandate how operators combine these signals or weight them. Each operator defines their own scoring methodology.
 
-## 5. AuctionResult
+## 5. PlatformResponse
 
-The operator returns an `AuctionResult` containing the winning bid and format-specific creative:
+The operator returns a `PlatformResponse` containing the auction status, winning bid state, render payload, and optional delegation/tracking metadata:
 
 ```json
 {
+  "spec_version": "1.0",
+  "response_id": "resp_981",
   "auction_id": "auc_981",
   "serve_token": "stk_abcxyz123",
+  "timestamp": "2026-03-26T18:00:02Z",
+  "status": "filled",
   "winner": {
+    "bid_id": "bid_7823",
     "brand_agent_id": "ba_451",
-    "preferred_unit": "CPA",
-    "reserved_amount_cents": 500
+    "pricing": {
+      "model": "CPA",
+      "price_micros": 10000000,
+      "currency": "USD"
+    },
+    "billing": {
+      "reserved_amount_micros": 500000000,
+      "currency": "USD"
+    }
   },
   "render": {
     "format": "weave",
-    "weave_content": "[Ad] For startups needing higher limits and automated expense workflows. CRM built for growing teams, with AI-assisted workflows. Learn more: https://admesh.click/stk_abcxyz123"
+    "disclosure": "[Ad]",
+    "creative": {
+      "advertiser": {
+        "brand_name": "Nimbus"
+      },
+      "ad_assets": {
+        "headline": "Scale your CRM",
+        "description": "Built for founders.",
+        "cta_text": "Try for free"
+      },
+      "landing_page_url": "https://nimbus.example.com/signup",
+      "click_url": "https://admesh.click/stk_abcxyz123"
+    }
   },
   "ttl_ms": 60000
 }
 ```
 
-For complete auction result schema, see: [Auction Result Schema](/schemas/auction-result)
+For the complete schema, see: [Platform Response Schema](/schemas/auction-result)
 
 ## 6. Transparency and Verification
 
@@ -95,7 +119,7 @@ Every exchange in the auction cycle is logged as verifiable artifacts:
 
 - signed `ContextRequest`
 - signed `BidResponse`
-- signed `AuctionResult`
+- signed `PlatformResponse`
 - timestamps and nonces
 - protocol version identifiers
 
@@ -107,7 +131,7 @@ User asks: **"Best AI note-taking tools."**
 2. Operator derives `ContextRequest` and distributes it to eligible Brand Agents using operator-defined mechanisms.
 3. Brand Agents return bids within the computed auction window.
 4. Operator applies its scoring algorithm to rank bids.
-5. Platform receives a single `AuctionResult` with `serve_token`.
+5. Platform receives a single `PlatformResponse` with `serve_token`.
 6. Exposure and click events connect cleanly to the same attribution chain via `serve_token`.
 
 ## 7. Protocol Guarantees
@@ -122,4 +146,4 @@ AIP ensures:
 
 ## Summary
 
-AIP defines protocol-level constraints for auctions—timing, inputs, and outcome guarantees—while operators implement their own auction mechanics and scoring algorithms. The protocol harmonizes how Platforms monetize intent, how Brand Agents compete, and how Operators deliver transparent, reproducible outcomes within their own implementation choices.
+AIP defines protocol-level constraints for auctions - timing, inputs, and outcome guarantees - while operators implement their own auction mechanics and scoring algorithms. The protocol harmonizes how Platforms monetize intent, how Brand Agents compete, and how Operators deliver transparent, reproducible outcomes within their own implementation choices.

@@ -1,36 +1,36 @@
 ---
 title: AIP Operators
-description: Learn how to implement and operate an AIP-compatible ad network.
+description: How to implement and operate an AIP-compatible participation operator.
 ---
-An **AIP operator** is any ad network that implements the Agentic Intent Protocol.  
+
+An **AIP Operator** is any entity that implements the Agentic Intent Protocol.
 Operators act as the bridge between:
 
 - **AI Platforms** (who send anonymized intent)
-- **Brand Agents** (who bid on that intent)
-- **The AIP Ledger** (which verifies exposure, click, and conversion events)
+- **Brand Agents** (who participate via recommendation or delegation)
+- **The AIP Settlement Layer** (which verifies outcomes and settles payments)
 
-Any compliant ad network can implement AIP and operate as an operator. AdMesh provides one example implementation.
+Any compliant entity can implement AIP and operate as an operator. AdMesh provides one example implementation.
 
 This page explains how operators work, what they must implement, and how others can integrate with them.
 
 ---
 
-## How Operators and Brand Agents Work Together
-
-This section describes the public interaction flow between AIP Operators and Brand Agents. It defines the protocol-level responsibilities of the Operator without prescribing internal architecture.
+## How operators and brand agents work together
 
 ### High-level flow
 
 1. A Platform submits a **PlatformRequest** containing user intent to the Operator.
-2. The Operator derives a **ContextRequest**, removing raw user data and enforcing privacy rules.
-3. The Operator classifies the ContextRequest into one or more category pools.
-4. The Operator publishes the ContextRequest to subscribed Brand Agents.
-5. Brand Agents evaluate the ContextRequest and submit bids within the auction window.
-6. The Operator evaluates bids according to AIP auction rules.
-7. The Operator returns the winning recommendation (or `no_bid`) to the Platform.
-8. Verified events are recorded and settled via the Operator ledger.
+2. The Operator evaluates **participation eligibility** based on governance rules.
+3. The Operator derives a **ContextRequest**, removing raw user data and enforcing privacy rules.
+4. The Operator filters brand agents that match the context and governance constraints.
+5. The Operator distributes (broadcasts) the `ContextRequest` to **all matching** Brand Agents.
+6. Brand Agents evaluate the ContextRequest and submit signed responses within the selection window.
+7. The Operator runs **selection** and determines the **interaction mode** (recommend or delegate).
+8. The Operator returns the SelectionResult (or `no_match`) to the Platform.
+9. Verified events are recorded and settled via the Operator's settlement system.
 
-The Operator is responsible for enforcing timing, verification, and settlement guarantees.
+The Operator is responsible for enforcing governance, timing, verification, and settlement guarantees.
 
 ---
 
@@ -40,80 +40,78 @@ Operators receive **PlatformRequests** from Platforms. These requests may contai
 
 Before distributing requests to Brand Agents, Operators MUST derive a **ContextRequest**.
 
-### PlatformRequest (Operator-facing)
+### PlatformRequest (operator-facing)
 
-PlatformRequest uses UCP (User Context Protocol) format with nested structure (spec_version, message_id, producer, context, identity, extensions). A PlatformRequest may include:
+PlatformRequest uses the AIP canonical request format. A PlatformRequest may include:
 
 * Raw user queries or commands
 * Conversation state
 * Platform session identifiers
 * Platform-specific metadata
-* `latency_budget_ms` - the platform's latency budget for the auction
+* `latency_budget_ms`  -  the platform's latency budget for selection
 
-### ContextRequest (Brand Agent-facing)
+### ContextRequest (brand agent-facing)
 
-ContextRequest uses a UCP-like format with enriched context for brand agents. A ContextRequest:
+ContextRequest uses the AIP canonical context format with enriched fields. A ContextRequest:
 
 * Removes raw user data
 * Removes conversation transcripts
 * Removes user identifiers
 * Retains only decision-relevant intent signals
-* Includes the `latency_budget_ms` from the PlatformRequest (for timing calculations)
+* Includes the `latency_budget_ms` from the PlatformRequest
 
 Operators MUST ensure that Brand Agents receive **only** ContextRequests.
 
-This conversion enforces privacy while enabling effective bidding.
-
 ---
 
-## Public Operator ↔ Brand Agent Interfaces
+## Public Operator ↔ Brand Agent interfaces
 
-Operators expose public protocol endpoints to interact with Brand Agents. These interfaces define the external contract and do not constrain internal systems.
+Operators expose public protocol endpoints to interact with Brand Agents.
 
-### Deliver auction requests to Brand Agents
+### Deliver selection requests to brand agents
 
-**POST /brand_agents/{brand_agent_id}/auction**
+**POST /brand_agents/brand_agent_id/selection**
 
 Used by the Operator to deliver a ContextRequest to a Brand Agent.
 
 * Payload: ContextRequest schema
 * Delivery: asynchronous
 * Operators MAY apply rate limiting
-* Operators MUST respect the auction window
+* Operators MUST respect the selection window
 
-### Receive bid responses
+### Receive responses
 
-**POST /aip/bid-response**
+**POST /aip/response**
 
-Used by Brand Agents to submit BidResponses.
+Used by Brand Agents to submit responses.
 
-* Payload: BidResponse schema
-* Responses received after the auction window are ignored
+* Payload: Response schema
+* Responses received after the selection window are ignored
 * Each response maps to a single ContextRequest
 
-### Optional auction result notification
+### Optional result notification
 
-**POST /brand_agents/{brand_agent_id}/auction_result**
+**POST /brand_agents/brand_agent_id/selection_result**
 
 Operators MAY notify Brand Agents of win or loss outcomes for transparency or optimization.
 
 ---
 
-## Auction Window and Timing
+## Selection window and timing
 
-AIP uses a time-bounded auction window to ensure low latency and predictable outcomes.
+AIP uses a time-bounded selection window to ensure low latency and predictable outcomes.
 
-* The auction window is determined by the platform's `latency_budget_ms` field in the PlatformRequest
-* The Operator computes the available bid window by subtracting operator overhead (embedding generation, search, filtering, dispatch) from the platform's latency budget
-* The window begins when the Operator publishes the ContextRequest
-* Brand Agents must submit a BidResponse before the computed window expires
+* The selection window is determined by the platform's `latency_budget_ms`
+* The Operator computes the available response window by subtracting operator overhead
+* The window begins when the Operator distributes the ContextRequest to matching Brand Agents
+* Brand Agents must submit responses before the window expires
 * If no `latency_budget_ms` is provided, the Operator uses a default fallback
 
-If the auction window closes before a bid is received, the Operator treats the outcome as `no_bid`. Late responses are ignored and do not participate in selection or settlement.
+If the window closes with no responses, the Operator treats the outcome as `no_match`.
 
 ---
 
-## Operator Privacy Responsibilities
+## Operator privacy responsibilities
 
 Operators are the privacy boundary within AIP.
 
@@ -130,236 +128,136 @@ Brand Agents MUST NOT receive:
 * Conversation history
 * User or account identifiers
 
-This separation ensures compliance, auditability, and user trust.
-
 ---
 
-## Relationship to Brand Agents
-
-Operators define the auction, verification, and settlement rules.
-Brand Agents define bidding strategy and pricing.
-
-Both roles interact exclusively through AIP-defined schemas and public protocol interfaces.
-
----
-
-# What an Operator Does
+# What an operator does
 
 Every operator must implement five core functions:
 
-## 1. Receive ContextRequests from Platforms  
-Operators accept anonymized user intent and create an **Auction Context**.
+## 1. Receive intent context from platforms
+Operators accept anonymized user intent and create a selection context.
 
 They must:
 
-- validate payload  
-- generate a serveToken  
-- start or join an auction cycle  
-- notify bidders (Brand Agents)
+- validate payload
+- generate a serve_token
+- start the selection process
+- notify eligible brand agents
 
-## 2. Run AIP Auctions  
-Operators run a real-time auction using AIP rules:
+## 2. Govern participation eligibility
+Before selection begins, operators evaluate whether commercial participation is appropriate for the given intent:
 
-- CPA outranks CPC  
-- CPC outranks CPX  
-- CPA and CPC bids must include budgets  
-- Winning bid must be returned within operator-defined latency
+- Check intent type and governance rules
+- Match against platform `aip.json` editorial_domains
+- Enforce participation policies
 
-## 3. Deliver AuctionResults  
-Operators send the **winning recommendation** back to the platform.
+## 3. Run selection
+Operators run selection using their chosen mechanism (auction, rules, or hybrid):
 
-This includes:
+- Evaluate brand agent responses
+- Apply scoring logic (value, relevance, quality)
+- Select the winning agent
+- Selection must complete within the timing window
 
-- product data  
-- click URL (signed)  
-- serveToken  
-- billing model (CPX, CPC, CPA)
+## 4. Determine interaction mode
+After selection, operators decide whether the participation takes the form of:
 
-## 4. Verify Events (CPX, CPC, CPA)  
+- **Recommend**  -  brand content is integrated into the AI response
+- **Delegate**  -  session is handed off to the brand agent
+
+The mode is included in the SelectionResult.
+
+## 5. Verify outcomes and settle
 Operators must verify:
 
-- **Exposure**: fired when UI SDK renders result  
-- **Click**: via signed click redirect  
-- **Conversion**: via advertiser callback or partner API  
+- **Exposure shown**: platform confirmed the response was surfaced
+- **Interaction started**: user engaged with the recommendation
+- **Delegation started**: session handoff occurred (delegate mode)
+- **Task completed**: user completed the target action
 
-All events must resolve to **one** billable unit per serveToken.
-
-## 5. Maintain Wallets & Monthly Settlement  
-Operators:
-
-- track advertiser balances  
-- track spend per serveToken  
-- maintain signed ledger entries  
-- generate monthly payouts to AI platforms  
-
-AIP defines the rules. Operators implement them.
+All events must resolve to **one** billable unit per serve_token.
 
 ---
 
-# Operator Responsibilities
+# Operator responsibilities
 
 | Responsibility | Required | Description |
 |---------------|----------|-------------|
-| Context ingestion | Yes | Handle ContextRequests from platforms |
-| Auction engine | Yes | Implement CPA > CPC > CPX logic |
-| Event pipeline | Yes | Exposure, click, and conversion validation |
+| Context ingestion | Yes | Handle PlatformRequests from platforms |
+| Participation governance | Yes | Evaluate eligibility based on intent and rules |
+| Selection engine | Yes | Implement selection logic (auction, rules, or hybrid) |
+| Interaction mode determination | Yes | Decide recommend vs delegate |
+| Event pipeline | Yes | Participation, interaction, delegation, and outcome verification |
 | Serve token system | Yes | Generate and sign immutable tokens |
-| Wallet accounting | Yes | Maintain advertiser balances |
-| Ledger & payouts | Yes | Monthly platform payments |
-| UI SDK | Yes | Provide a frontend SDK for platforms |
+| Settlement accounting | Yes | Maintain participant balances |
+| Settlement and payouts | Yes | Periodic platform payments |
+| Platform SDK | Yes | Provide a frontend SDK for platforms |
+| Delegation management | Yes | Manage session initiation and context scoping |
 | Weave SDK | Optional | Provide backend inline-weave SDK |
-| Reporting dashboard | Optional | For advertisers and platforms |
-
----
-
-# Example Operator SDKs (Informational)
-
-An AIP operator may publish one or more SDKs. The following SDK names are illustrative examples from one implementation:
-
-AdMesh (example implementation) provides:
-
-### **1. UI SDK** (required for platforms)
-
-```bash
-npm install admesh-ui-sdk
-```
-
-Used for:
-
-- rendering results  
-- exposure tracking  
-- click tracking  
-- fallback logic  
-- session ID + message ID tracking  
-
-### **2. Backend Weave SDK** (optional)
-
-Node.js:
-
-```bash
-npm install @admesh/weave-node
-```
-
-Python:
-
-```bash
-pip install admesh-weave-python
-```
-
-Used for:
-
-- fetching recommendations server-side  
-- feeding the LLM for inline weaving  
-- reducing follow-up fetches  
-
----
-
-# Operator Architecture (High-Level)
-
-```
-AI Platform (Frontend)
-   → UI SDK
-   → ContextRequest
-   → AuctionResult render
-   → Exposure/Click events
-
-Brand Agents
-   → Bid on auctions
-   → Provide CPA/CPC/CPX values
-
-Operator (You)
-   → Context ingestion
-   → Auction engine
-   → Event verification
-   → Wallet + ledger
-   → Monthly payouts
-```
+| Reporting dashboard | Optional | For brands and platforms |
 
 ---
 
 # Implementing an AIP Operator
 
-To operate an AIP-compatible operator, an implementation **MUST support the following protocol surfaces and responsibilities**:
+To operate an AIP-compatible operator, an implementation **MUST support the following**:
 
-* **ContextRequest handling**
-  Accept and validate platform-submitted intent using the AIP ContextRequest schema.
+* **PlatformRequest handling**  -  Accept and validate platform-submitted intent
+* **Participation governance**  -  Evaluate eligibility before selection
+* **Selection execution**  -  Evaluate responses within timing constraints
+* **Interaction mode determination**  -  Decide recommend vs delegate for each selection
+* **Delegation management**  -  Initiate sessions, scope context, manage consent flow
+* **Event verification**  -  Verify lifecycle events using AIP event schemas
+* **Settlement accounting**  -  Track balances, spend, and settlement using deterministic ledger records
+* **Platform rendering support**  -  Provide a SDK for rendering and event tracking
 
-* **Auction execution**
-  Evaluate bids according to AIP auction rules (CPA > CPC > CPX) within an operator-defined auction window.
-
-* **Bid submission handling**
-  Accept signed bid responses from brand agents using the AIP bid schema.
-
-* **Event verification**
-  Verify exposure, click, and conversion events using AIP event schemas.
-
-* **Wallet and ledger accounting**
-  Track balances, spend, and settlement using deterministic ledger records.
-
-* **Platform rendering support**
-  Provide a UI SDK or equivalent mechanism for rendering and exposure tracking.
-
-* **Click handling**
-  Support signed click redirection and attribution resolution.
-
-* **Authentication and authorization**
-  Authenticate platforms and advertisers using operator-defined mechanisms consistent with AIP requirements.
-
-AIP defines the schemas, event units, and settlement rules.
+AIP defines the schemas, event types, and settlement rules.
 Each operator defines its own transport, APIs, and internal architecture.
 
 ---
 
-# Why Become an Operator?
+# Why become an operator?
 
 Operators implement the protocol to:
-- Operate an ad marketplace within their ecosystem  
-- Process intent from AI platforms  
-- Manage advertiser marketplaces  
-- Maintain transparency through AIP verification  
-- Support performance-based bidding by brand agents  
-- Handle multiple billing models (CPX, CPC, CPA)
+- Govern commercial participation within AI ecosystems
+- Process intent from AI platforms
+- Manage participation networks
+- Maintain transparency through AIP verification
+- Support outcome-based settlement
+- Enable delegation as a first-class interaction mode
 
 ---
 
-# AdMesh as an Operator (Reference Implementation)
+# AdMesh as an operator (reference implementation)
 
 AdMesh implements AIP as one example operator. Its implementation includes:
 
-- UI SDK for platform integration  
-- Backend Weave SDKs for server-side integration  
-- Wallet and ledger systems  
-- Dashboard interfaces for advertisers and platforms  
+- Platform SDK for integration
+- Backend weave SDKs for server-side integration
+- Settlement and ledger systems
+- Dashboard interfaces for brands and platforms
+- Delegation session management
 
 Platforms may integrate with any compliant operator.
 
 ---
 
-# How to Integrate an Operator
+# How to integrate with an operator
 
 Platforms must:
 
-1. Sign up with the operator  
-2. Get API key  
-3. Install operator UI SDK  
-4. Render results via UI SDK or Weave  
-5. Post events (exposures, clicks)  
-6. Receive monthly payouts
+1. Sign up with the operator
+2. Get API key
+3. Install operator SDK
+4. Render results via SDK or weave
+5. Handle delegation consent and handoff
+6. Post events (participation, interaction, delegation, outcomes)
+7. Receive periodic payouts
 
 Brand Agents must:
 
-1. Register with operator  
-2. Create offers  
-3. Bid programmatically  
-4. Track spend  
-5. Track conversions  
-
----
-
-# Unified SDK Direction (In Progress)
-
-AIP is designed with a "single SDK" integration approach in mind.
-
-A reference SDK is in progress to support platforms, operators, and brand agents through a shared implementation of AIP schemas, event handling, and verification logic.
-
-This SDK will be optional and intended to reduce integration complexity, not to constrain operator implementations.
+1. Register with operator
+2. Create offers
+3. Respond to selection requests
+4. Support delegation if applicable
+5. Track spend and outcomes

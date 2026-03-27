@@ -1,60 +1,233 @@
-# Auction Result Schema
+---
+title: Platform Response
+description: Operator-generated response returned to the AI platform after auction evaluation
+---
+
+# PlatformResponse Schema
 
 ## Overview
-Winning bid response returned to AI platforms, including reservation info so platforms understand committed spend.
 
-## Required Fields
-| Field | Type | Description |
-|--------|------|-------------|
-| `auction_id` | string | Auction identifier |
-| `serve_token` | string | Token used to track downstream events |
-| `ttl_ms` | integer | Result time-to-live in milliseconds |
+**PlatformResponse** is the operator-generated response returned to the AI platform after auction evaluation.
 
-## Winner Object
-| Field | Type | Description |
-|--------|------|-------------|
-| `brand_agent_id` | string | Winning Brand Agent |
-| `preferred_unit` | string | Requested billing unit (`CPX`, `CPC`, `CPA`) |
-| `reserved_amount_cents` | integer | Amount placed on hold at auction time |
+It communicates:
 
-## Render Object
-| Field | Type | Description |
-|--------|------|-------------|
-| `label` | string | Disclosure label (`[Ad]`) |
-| `title` | string | Creative title |
-| `body` | string | Creative description |
-| `cta` | string | Call-to-action text |
-| `url` | string | Tracking/deep link URL |
+- the outcome status of the auction
+- the winning bid and reserved billing state, if any
+- the render payload for platform presentation
+- optional delegation availability for the winning bid
+- optional tracking hooks for downstream events
 
-## Optional Fields
-| Field | Type | Description |
-|--------|------|-------------|
-| `no_bid` | boolean | Set to `true` when no bidder responded |
-| `ext` | object | Vendor extensions |
+All monetary values in `PlatformResponse` MUST use micros as the only canonical unit.
+
+If `status` is `"filled"`, `winner` and `render` MUST be present.
+If `status` is `"no_fill"`, `winner` and `render` MUST be omitted.
+If `status` is `"error"`, an `error` object MUST be present.
+
+Creative payloads MUST separate:
+
+- advertiser identity
+- ad assets
+- advertiser destination URL
+- operator-controlled click tracking URL
+
+---
+
+## Top-Level Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `spec_version` | string | Yes | Spec version. MUST be `"1.0"` |
+| `response_id` | string | Yes | Unique identifier for this `PlatformResponse` |
+| `auction_id` | string | Yes | Auction identifier |
+| `serve_token` | string | Yes | Token used to stitch downstream events |
+| `timestamp` | string | Yes | RFC 3339 timestamp when the response was produced |
+| `status` | string | Yes | Auction outcome: `filled`, `no_fill`, or `error` |
+| `ttl_ms` | integer | Yes | Response time-to-live in milliseconds |
+| `winner` | object | Conditionally | Winning bid state. Required when `status="filled"` |
+| `render` | object | Conditionally | Render payload. Required when `status="filled"` |
+| `delegation` | object | No | Delegation availability surfaced to the platform |
+| `tracking` | object | No | Downstream event tracking hooks |
+| `error` | object | Conditionally | Error payload. Required when `status="error"` |
+| `ext` | object | No | Vendor extensions |
+
+---
+
+## `winner`
+
+Winning bid information returned to the platform.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `bid_id` | string | Yes | Winning bid identifier |
+| `brand_agent_id` | string | Yes | Winning Brand Agent |
+| `pricing` | object | Yes | Selected billing model and winning price |
+| `billing` | object | Yes | Reserved amount held at auction time |
+| `rank` | integer | No | Optional winning rank |
+
+### `winner.pricing`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `model` | string | Yes | Selected billing model: `CPX`, `CPC`, or `CPA` |
+| `price_micros` | integer | Yes | Winning price in micros |
+| `currency` | string | Yes | ISO 4217 currency code |
+
+### `winner.billing`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `reserved_amount_micros` | integer | Yes | Amount reserved or held at auction time, in micros |
+| `currency` | string | Yes | ISO 4217 currency code |
+
+---
+
+## `render`
+
+Platform render instructions for the winning recommendation.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `format` | string | Yes | Render format: `weave`, `tail`, `product_card`, or `bridge` |
+| `disclosure` | string | Yes | Disclosure label such as `[Ad]` or `Sponsored` |
+| `creative` | object | Yes | Structured creative payload |
+
+---
+
+## `creative`
+
+Adtech-style creative object containing advertiser identity, ad assets, destination, and click tracking.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `advertiser` | object | Yes | Advertiser identity block |
+| `ad_assets` | object | Yes | Headline, description, CTA, and optional media assets |
+| `landing_page_url` | string | Yes | Advertiser-controlled destination URL |
+| `click_url` | string | Yes | Operator-controlled click tracking URL |
+
+### `creative.advertiser`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `brand_name` | string | Yes | Advertiser or brand name |
+| `domain` | string | No | Optional advertiser domain |
+
+### `creative.ad_assets`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `headline` | string | Yes | Primary ad headline |
+| `description` | string | Yes | Ad description text |
+| `cta_text` | string | Yes | Call-to-action text |
+| `logo_url` | string | No | Optional logo asset |
+| `image_urls` | array | No | Optional creative image assets |
+
+---
+
+## `delegation`
+
+Optional delegation availability surfaced to the platform for the winning bid.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `available` | boolean | No | Whether delegated execution is available |
+| `mode` | string | No | Delegation behavior: `optional`, `recommended`, or `required` |
+| `trigger` | string | No | Activation mode: `user_action`, `explicit_consent`, or `operator_initiated` |
+| `cta_text` | string | No | Delegation-specific CTA text |
+
+---
+
+## `tracking`
+
+Optional downstream tracking hooks.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `impression_url` | string | No | Impression tracking endpoint |
+| `click_url` | string | No | Click tracking endpoint |
+| `conversion_url` | string | No | Conversion tracking endpoint |
+
+---
+
+## `error`
+
+Present when `status = "error"`.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `code` | string | Yes | Operator-defined error code |
+| `message` | string | Yes | Human-readable error message |
+
+---
 
 ## Example
+
 ```json
 {
+  "spec_version": "1.0",
+  "response_id": "resp_981",
   "auction_id": "auc_981",
   "serve_token": "stk_abcxyz123",
+  "timestamp": "2026-03-26T18:00:02Z",
+  "status": "filled",
   "winner": {
+    "bid_id": "bid_7823",
     "brand_agent_id": "ba_451",
-    "preferred_unit": "CPA",
-    "reserved_amount_cents": 500
+    "pricing": {
+      "model": "CPA",
+      "price_micros": 10000000,
+      "currency": "USD"
+    },
+    "billing": {
+      "reserved_amount_micros": 500000000,
+      "currency": "USD"
+    },
+    "rank": 1
   },
   "render": {
-    "label": "[Ad]",
-    "title": "Scale your CRM",
-    "body": "Built for founders.",
-    "cta": "Try for free",
-    "url": "https://admesh.click/stk_abcxyz123"
+    "format": "weave",
+    "disclosure": "[Ad]",
+    "creative": {
+      "advertiser": {
+        "brand_name": "Nimbus",
+        "domain": "nimbus.example.com"
+      },
+      "ad_assets": {
+        "headline": "Scale your CRM",
+        "description": "Built for founders.",
+        "cta_text": "Try for free",
+        "logo_url": "https://cdn.example.com/nimbus/logo.png",
+        "image_urls": [
+          "https://cdn.example.com/nimbus/crm.png"
+        ]
+      },
+      "landing_page_url": "https://nimbus.example.com/signup",
+      "click_url": "https://admesh.click/stk_abcxyz123"
+    }
+  },
+  "delegation": {
+    "available": true,
+    "mode": "optional",
+    "trigger": "user_action",
+    "cta_text": "Continue with Nimbus"
+  },
+  "tracking": {
+    "impression_url": "https://track.example.com/impression/stk_abcxyz123",
+    "click_url": "https://track.example.com/click/stk_abcxyz123",
+    "conversion_url": "https://track.example.com/conversion/stk_abcxyz123"
   },
   "ttl_ms": 60000
 }
 ```
 
+---
+
 ## Validation Rules
-- `ttl_ms` must be between 1,000 and 300,000
-- `preferred_unit` must be `CPX`, `CPC`, or `CPA`
-- `reserved_amount_cents` must be an integer ≥ 0
-- When `no_bid` is true, `winner` and `render` should be omitted
+
+- All monetary values MUST use micros
+- `ttl_ms` MUST be between `1000` and `300000`
+- If `status = "filled"`, `winner` and `render` MUST be present
+- If `status = "no_fill"`, `winner` and `render` MUST be omitted
+- If `status = "error"`, `error` MUST be present
+- `render.creative` MUST separate advertiser identity, ad assets, destination URL, and click tracking URL
+
+---

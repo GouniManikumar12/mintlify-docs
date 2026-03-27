@@ -1,10 +1,9 @@
 ---
 title: Overview
-description: This page explains how AIP works at a system level.It covers the core roles, the event units, and the life cycle of an AIP event.
+description: How AIP works at a system level  -  core roles, the participation lifecycle, and decision lifecycle events.
 ---
 
-
-AIP defines one shared way for platforms, brand agents, and operators to exchange intent and settle results.  
+AIP defines one shared way for platforms, brand agents, and operators to govern commercial participation and settle outcomes.
 
 ---
 
@@ -14,59 +13,84 @@ AIP involves three main actors:
 
 | Role | Description |
 |------|-------------|
-| **Platform** | Any AI surface that uses an ad network(AIP Operator) SDK to send anonymized intent. |
-| **Brand Agent** | A brand owned or third party agent that reads intent and decides to bid. |
-| **Operator** | Any ad network that implements AIP. AdMesh is the reference operator. Any compliant operator may implement AIP. |
+| **Platform** | Any AI surface that detects user intent and requests commercial participation through an AIP Operator. |
+| **Brand Agent** | A commercial entity's agent that participates via recommendation or delegation when selected. |
+| **Operator** | Any entity that implements AIP  -  governs participation eligibility, runs selection, and verifies outcomes. AdMesh is the reference operator. |
 
 Each AIP request moves through these three roles in a predictable flow.
 
 ---
 
-## Event units
+## Core primitive: Participation
 
-AIP uses three verified units of engagement.  
-Only one unit can settle for each serve token.
+Participation is the act of a commercial entity being allowed to influence or execute a user's decision within an AI system.
 
-| Unit | Meaning | Trigger |
-|------|----------|----------|
-| **CPX (Exposure)** | A verified sponsored response was shown and met exposure criteria. | Exposure event recorded |
-| **CPC (Click)** | User clicked or interacted | Click event verified |
-| **CPA (Conversion)** | User completed a signup or transaction | Conversion verified |
+AIP defines two types of participation:
 
-A lower unit upgrades to a higher one if it occurs.  
-No event is billed twice.
+| Type | What happens | When used |
+|------|-------------|-----------|
+| **Recommend** | Brand contributes to the AI response. No session transfer. | Research, consideration, comparison |
+| **Delegate** | AI hands off the session to a brand agent. User completes a task. | Decision, action, transaction |
 
-Exposure criteria are defined by the operator and applied consistently across all platforms.
+This distinction is what separates AIP from traditional advertising. The protocol governs both influence and execution.
 
 ---
 
-## Life cycle of an AIP event
+## Decision lifecycle
 
-Below is the typical flow from intent to settlement:
+Below is the lifecycle of an AIP decision, from intent to settlement:
 
-1. User expresses intent inside an AI conversation.  
-2. Platform sends anonymized context to the operator using a PlatformRequest (UCP format).  
-3. Operator runs a real time auction.  
-4. Brand agents submit bids in response to a ContextRequest (UCP-like format).  
-5. Operator selects the winning bid and returns it to the platform.  
-6. Platform displays the sponsored response.  
-7. User may see, click, or convert.  
-8. Operator verifies the event and settles the payout in the ledger.  
+1. User expresses intent inside an AI conversation.
+2. Platform sends anonymized context to the Operator using a PlatformRequest.
+3. Operator evaluates participation eligibility.
+4. If eligible, Operator runs selection (auction or rules).
+5. Operator determines the interaction mode (recommend or delegate).
+6. Selected brand agent participates  -  either contributing to the response or receiving a session handoff.
+7. User interacts, completes a task, or does nothing.
+8. Operator verifies the outcome and settles payment.
+
+```
+intent → eligibility → selection → (recommend OR delegate) → outcome → settlement
+```
+
+---
+
+## Decision lifecycle events
+
+AIP tracks four stages of a decision lifecycle.
+Only the highest-value event in a lifecycle is billable per `serve_token`.
+
+| Stage | Event | Meaning |
+|-------|-------|---------|
+| **Exposure shown** | `exposure_shown` (CPX) | A commercial response was surfaced to the user |
+| **Interaction started** | `interaction_started` (CPE or CPC) | User engaged with the recommendation |
+| **Delegation started** | `delegation_started` | Session handoff was initiated (delegate mode only) |
+| **Task completed** | `task_completed` (CPA) | User completed a signup, purchase, or other outcome |
+
+A lower event upgrades to a higher one if it occurs.
+No event is billed twice.
+
+| Metric | Meaning |
+|--------|---------|
+| `CPX` | Cost per Exposure |
+| `CPE` | Cost per Engagement |
+| `CPC` | Cost per Click |
+| `CPA` | Cost per Action |
 
 ---
 
 ## Verification and settlement
 
-Every AIP event uses a serve token that links all downstream actions.  
-The serve token is generated once per sponsored response and cannot be reused.  
+Every AIP event uses a `serve_token` that links all downstream actions.
+The serve token is generated once per selection outcome and cannot be reused.
 This guarantees:
 
-- one verified charge per event  
-- no double billing  
-- consistent upgrade rules (CPA over CPC over CPX)  
-- deterministic settlement through connected wallets  
+- one verified charge per lifecycle
+- no double billing
+- consistent upgrade rules (task_completed over interaction_started over exposure_shown)
+- deterministic settlement through connected wallets
 
-Monthly settlements use signed ledger records that both platforms and advertisers can audit.
+Settlements use signed ledger records that both platforms and brands can audit.
 
 ---
 
@@ -74,10 +98,10 @@ Monthly settlements use signed ledger records that both platforms and advertiser
 
 AIP is designed to be simple and verifiable:
 
-- no personal identifiers  
-- every event is signed  
-- works with any network that supports the schema  
-- full audit trail is available to all parties  
-- The protocol is transport-agnostic and can coexist with other advertising systems.  
+- no personal identifiers required
+- every event is signed
+- works with any operator that supports the schema
+- full audit trail is available to all parties
+- the protocol is transport-agnostic and can coexist with other systems
 
 ---

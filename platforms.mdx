@@ -1,40 +1,42 @@
 ---
-title: Platforms
-description: Learn how AI platforms integrate with AIP to surface intent-driven recommendations.
+title: AI Platforms
+sidebarTitle: AI Platforms
+description: How AI platforms integrate with AIP to govern commercial participation and deliver outcomes.
 ---
 
-# Platforms
+AI Platforms are user-facing applications or interfaces where natural language intent is expressed. AI Platforms submit this intent to an AIP Operator, render recommendations, manage delegation consent, and track lifecycle events.
 
-A Platform is a user-facing application or interface where natural language intent is expressed. Platforms submit this intent to an AIP Operator and display the operator's ranked recommendations back to the user.
-
-Within AIP, platforms function as the protocol's publishers — they surface intent and deliver outcomes, while all auction, scoring, and billing processes are handled entirely by the Operator.
+Within AIP, AI Platforms are the protocol's entry point  -  they surface intent and deliver outcomes, while all governance, selection, and settlement processes are handled by the Operator.
 
 ---
 
-## What is a Platform?
+## What is a platform?
 
 A **Platform** is an application, interface, or agentic environment that:
 
-1. **Receives user intent**  
-   Platforms capture user queries, commands, or questions expressed in natural language.
+1. **Receives user intent**
+   AI Platforms capture user queries, commands, or questions expressed in natural language.
 
-2. **Emits a `PlatformRequest` (UCP-aligned format) to an AIP Operator**  
-   The operator derives the downstream `ContextRequest`, then handles auctions, ranking, and selection internally.
+2. **Emits a `PlatformRequest` (AIP canonical request format) to an AIP Operator**
+   The Operator evaluates participation eligibility, derives a ContextRequest, then handles selection and mode determination.
 
-3. **Renders recommendations**  
-   Platforms display operator-returned recommendations using protocol-standard formats (Citation, Product, or Weave).
+3. **Renders recommendations (recommend mode)**
+   AI Platforms display operator-returned recommendations using protocol-standard formats (weave, tail, or product card).
 
-4. **Tracks and forwards signed events**  
-   Platforms report exposure and click events using the operator SDK, ensuring serve-token integrity and attribution.
+4. **Manages delegation consent (delegate mode)**
+   AI Platforms present delegation offers to users, collect consent, and initiate session handoff.
 
-5. **Receives payouts for verified events**  
-   Operators credit platforms for valid exposures, clicks, or conversions based on AIP settlement rules.
+5. **Tracks and forwards signed events**
+   AI Platforms report participation and interaction events using the operator SDK, ensuring serve-token integrity and attribution.
+
+6. **Receives payouts for verified events**
+   Operators credit platforms for valid outcomes based on AIP settlement rules.
 
 ---
 
-## Examples of Platforms
+## Examples of platforms
 
-Examples of Platforms include:
+Examples of platforms include:
 
 - AI assistants and copilots
 - Chat-based search interfaces
@@ -43,65 +45,79 @@ Examples of Platforms include:
 - Productivity applications with embedded AI
 - Messaging applications with AI features
 - Browser extensions or agent runtimes
-- Augmented reality (AR) and virtual reality (VR) environments with conversational or agentic interfaces
+- Augmented reality (AR) and virtual reality (VR) environments with conversational interfaces
 - Autonomous multi-agent environments
 
-If a system can "hear" a user request and show a returned recommendation, it can be a Platform in AIP.
+If a system can detect a user request and deliver a participation outcome, it can be a Platform in AIP.
 
 ---
 
-## Platform Responsibilities
+## Platform responsibilities
 
-### Platforms MUST
+### AI Platforms MUST
 
-- Run an operator-provided UI SDK
+- Run an operator-provided SDK
 - Maintain a session identifier for each user conversation
-- Display transparency labels
+- Display transparency labels for commercial participation
 - Ensure accurate event propagation
-- Provide `latency_budget_ms` in PlatformRequest to specify the auction timing window
+- Provide `latency_budget_ms` in PlatformRequest to specify the selection timing window
+- Present delegation offers clearly and collect explicit user consent before handoff
 
-### Platforms MAY
+### AI Platforms MAY
 
-- Use optional backend SDKs for inline (Weave) embedding
+- Use optional backend SDKs for inline (weave) embedding
 - Add platform-specific UI or UX layers around recommendations
 - Surface recommendations inside various modalities (text, voice, multimodal)
+- Implement custom delegation consent UI
 
 ---
 
-## Asynchronous Auction Interaction
+## Selection interaction
 
-The AIP bidding model uses a **time-bounded asynchronous auction window** rather than full broadcast fanout.
+The AIP selection model uses a **time-bounded asynchronous selection window**.
 
 ### How it works
 
 1. Platform sends a `PlatformRequest` with `latency_budget_ms` to the Operator
-2. Operator derives a `ContextRequest`, classifies it into one or more **category pools**
-3. Only brand agents subscribed to those pools receive the request via publish/subscribe transport
-4. Operator computes the available bid window by subtracting operator overhead from the platform's `latency_budget_ms`
-5. Brand agents submit signed bids via `POST /aip/bid-response` within the computed window
-6. Operator collects bids, applies AIP selection rules (CPA > CPC > CPX), and returns the `auction_result`
-7. If no bids are received before the window expires, Operator returns a valid `no_bid` response
+2. Operator evaluates participation eligibility
+3. Operator derives a `ContextRequest` and filters brand agents that match the context and governance constraints
+4. Operator distributes (broadcasts) the `ContextRequest` to **all matching** brand agents
+5. Operator computes the available response window from the platform's `latency_budget_ms`
+6. Brand agents submit signed responses within the computed window (auction-style participation)
+7. Operator runs selection, determines interaction mode, and returns the `SelectionResult`
+8. If no responses are received before the window expires, Operator returns a valid `no_match` response
 
-### Distribution transport
+### AI Platform implications
 
-Distribution to bidders is handled through a cloud-agnostic **publish/subscribe transport**, starting with Google Pub/Sub in v1.0 and extendable to AWS SNS/SQS, Azure Event Grid, Kafka, or other message buses.
-
-### Platform implications
-
-- Always handle `no_bid` responses gracefully (render a fallback or continue the user workflow)
-- Record exposure attempts in your telemetry even when no bid is returned
-- Specify `latency_budget_ms` in PlatformRequest to control auction timing
-
-This design enables scalable, category-aware bidding, minimizes latency, prevents unnecessary bidder fanout, and ensures that only relevant brand agents compete for each user intent.
+- Always handle `no_match` responses gracefully (render a fallback or continue the user workflow)
+- Record participation attempts in your telemetry even when no match is returned
+- Specify `latency_budget_ms` in PlatformRequest to control selection timing
 
 ---
 
-## Role Within the Protocol
+## Delegation responsibilities
 
-Platforms are the entry point for user intent.  
-Operators manage the economic layer.  
-Brand Agents participate in auctions.
+When the Operator returns a SelectionResult with delegate mode:
 
-**Intent → Platform → Operator → Recommendations → Events → Payouts**
+1. **Present the offer (exposure)**  -  Show the user which Brand Agent is available and what it will do. Fire `exposure_shown` when the offer is displayed.
+2. **Collect consent**  -  The user must explicitly agree before any session is initiated.
+3. **Initiate handoff (start session)**  -  Send the user's consent to the Operator. The Operator initiates the delegation session and connects the AI Platform and the selected Brand Agent.
+4. **Run the delegated session (multi-turn)**  -  During the session, the user can ask multiple questions and the Brand Agent responds within that session while representing its brand.
+5. **Track outcomes and expiration**  -  Fire `delegation_started`, then `task_completed` when the task completes. If the session expires without completion, the Operator handles expiration according to operator-defined rules and settlement policy.
+
+If the user declines:
+- No session is initiated
+- The interaction falls back to recommend mode if content is available
+- `exposure_shown` may still be tracked
+
+---
+
+## Role within the protocol
+
+AI Platforms are the entry point for user intent.
+Operators manage the governance and economic layer.
+Brand Agents participate in selection and execute tasks.
+
+**Intent → Platform → Operator → Participation → Events → Settlement**
 
 The Platform is the surface where intent is captured and value is created.

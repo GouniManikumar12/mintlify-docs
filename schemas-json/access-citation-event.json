@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.agenticintentprotocol.com/aip/0.1/event.schema.json",
-  "title": "Agentic Intent Protocol – Access & Citation Event (v0.1)",
+  "$id": "https://schemas.agenticintentprotocol.com/aip/1.0/event.schema.json",
+  "title": "Agentic Intent Protocol – Access & Citation Event (v1.0)",
   "description": "Publisher-generated access and citation events under the Agentic Intent Protocol.",
   "type": "object",
 
@@ -20,7 +20,7 @@
   "properties": {
     "aip_version": {
       "type": "string",
-      "const": "0.1"
+      "const": "1.0"
     },
 
     "event_id": {

@@ -12,14 +12,14 @@ Each file defines required fields, validation rules, and example payloads.
 
 | Schema | Description |
 |---------|--------------|
-| [context-request.json](context-request.json) | AI platform request that starts an auction |
-| [agentic-intent-taxonomy.schema.json](agentic-intent-taxonomy.schema.json) | Operator-neutral decision envelope for conversational intent classification |
-| [bid.json](bid.json) | Advertiser agent bid payload |
-| [auction-result.json](auction-result.json) | Auction winner response |
-| [event-cpx.json](event-cpx.json) | Exposure event |
-| [event-cpc.json](event-cpc.json) | Click event |
-| [event-cpa.json](event-cpa.json) | Conversion event |
-| [ledger-record.json](ledger-record.json) | Final ledger record summary |
+| [Context Request](/schemas/context-request) | Operator → Brand Agents participation context (JSON schema) |
+| [Agentic Intent Taxonomy](/schemas/agentic-intent-taxonomy) | Conversation-intent classification envelope (JSON schema) |
+| [Bid](/schemas/bid) | Brand agent response payload (JSON schema) |
+| [Platform Response](/schemas/auction-result) | Operator → Platform auction outcome (JSON schema) |
+| event-cpx.json (schemas-json) | Exposure shown event schema |
+| event-cpc.json (schemas-json) | Interaction started event schema |
+| event-cpa.json (schemas-json) | Task completed event schema |
+| ledger-record.json (schemas-json) | Final settlement record summary |
 
 ## Usage
 
@@ -71,6 +71,6 @@ npx json-schema-to-typescript schemas/context-request.json > types/ContextReques
 ## See Also
 
 - [Protocol Overview](/protocol) - High-level protocol flow
-- [Auction Mechanics](/auction) - How bidding and clearing works
+- [Real-Time Selection](/selection) - How selection works
 - [Events](/events) - Event tracking and ledger finalization
-- [API Reference](/api/openapi) - OpenAPI specification
+- [API Reference](/api/openapi.yaml) - OpenAPI specification

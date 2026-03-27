@@ -40,20 +40,20 @@ https://schemas.agenticintentprotocol.com/aip/0.1/retrieve-request.schema.json
 
 ### intent
 
-- **domain** — Primary intent domain (must align with publisher `editorial_domains`). Pattern: `^[a-z0-9]+(\.[a-z0-9-]+)*$`
-- **subdomain** — Optional. Same pattern.
-- **confidence** — Optional. 0.0–1.0.
+- **domain**  -  Primary intent domain (must align with publisher `editorial_domains`). Pattern: `^[a-z0-9]+(\.[a-z0-9-]+)*$`
+- **subdomain**  -  Optional. Same pattern.
+- **confidence**  -  Optional. 0.0–1.0.
 
 ### context
 
-- **language** — BCP 47 (e.g. `en-US`). Required.
-- **geography.country** — ISO 3166-1 alpha-2. Optional.
-- **placement** — Surface (e.g. conversation, chat, voice). Optional.
+- **language**  -  BCP 47 (e.g. `en-US`). Required.
+- **geography.country**  -  ISO 3166-1 alpha-2. Optional.
+- **placement**  -  Surface (e.g. conversation, chat, voice). Optional.
 
 ### runtime
 
-- **session_id**, **turn_index** — Required.
-- **query_text**, **latency_budget_ms** — Optional.
+- **session_id**, **turn_index**  -  Required.
+- **query_text**, **latency_budget_ms**  -  Optional.
 
 ---
 
@@ -119,7 +119,7 @@ A publisher MUST evaluate, in this order:
 4. Enforce `retrieval` limits (from `aip.json`)
 5. Respond or deny
 
-This schema gives publishers everything they need — and nothing they don't.
+This schema gives publishers everything they need  -  and nothing they don't.
 
 ---
 
@@ -139,5 +139,5 @@ Full JSON Schema (Draft 2020-12): [retrieve-request.json](/schemas-json/retrieve
 
 ## See also
 
-- [aip.json — Publisher Declaration](/schemas/aip) — Publisher consent and capability declaration (`editorial_domains`, `retrieval`, `intent_access`)
-- [PlatformRequest](/schemas/platform-request) — Platform → Operator (ads/auction flow; separate from retrieval)
+- [aip.json  -  Publisher Declaration](/schemas/aip)  -  Publisher consent and capability declaration (`editorial_domains`, `retrieval`, `intent_access`)
+- [PlatformRequest](/schemas/platform-request)  -  Platform → Operator (ads/auction flow; separate from retrieval)

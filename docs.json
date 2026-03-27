@@ -35,63 +35,72 @@
         ]
       },
       {
-        "group": "Get started",
+        "group": "Get Started",
         "pages": [
           "platforms",
           "operators",
-          "brand-agents"
+          "brand-agents",
+          "publishers"
         ]
       },
       {
-        "group": "Protocol",
+        "group": "AI Platforms",
         "pages": [
           {
-            "group": "Advertising",
+            "group": "Core Protocol",
             "pages": [
               "protocol",
-              "auction",
+              "interaction-modes",
+              "delegation",
+              "selection",
               "events",
               "state-machine",
-              "wallets-and-payouts",
-              "security",
-              "compliance",
-              "glossary",
+              "settlement",
               "end-to-end-flow"
             ],
             "expanded": true
           },
           {
-            "group": "PAG",
-            "pages": [
-              "authentication-signing"
-            ],
-            "expanded": true
-          }
-        ]
-      },
-      {
-        "group": "Advanced Topics",
-        "pages": [
-          "agentic-advertising",
-          "cpm-vs-cpx"
-        ]
-      },
-      {
-        "group": "Schemas",
-        "pages": [
-          {
-            "group": "Advertising",
+            "group": "Schemas",
             "pages": [
               "schemas/platform-request",
               "schemas/context-request",
-              "schemas/agentic-intent-taxonomy",
               "schemas/bid",
               "schemas/auction-result"
             ],
             "expanded": true
           },
           {
-            "group": "PAG",
+            "group": "Resources",
+            "pages": [
+              "schemas/agentic-intent-taxonomy",
+              "resources/agentic-intent-classifier"
+            ],
+            "expanded": true
+          },
+          {
+            "group": "FAQ",
+            "pages": [
+              "faq/platforms",
+              "faq/operators",
+              "faq/brand-agents"
+            ],
+            "expanded": true
+          }
+        ]
+      },
+      {
+        "group": "Publishers (PAG)",
+        "pages": [
+          {
+            "group": "Core",
+            "pages": [
+              "authentication-signing"
+            ],
+            "expanded": true
+          },
+          {
+            "group": "Schemas",
             "pages": [
               "schemas/aip",
               "schemas/retrieve-request",
@@ -103,11 +112,11 @@
         ]
       },
       {
-        "group": "FAQ",
+        "group": "Common",
         "pages": [
-          "faq/platforms",
-          "faq/adnetworks",
-          "faq/brand-agents",
+          "security",
+          "compliance",
+          "glossary",
           "faq/compliance-and-audit"
         ]
       }

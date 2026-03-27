@@ -10,7 +10,7 @@ Each file defines required fields, validation rules, and example payloads.
 
 ## Available Schemas
 
-Schemas are organized into **Advertising** (platform → operator → brand agents → auction) and **PAG** (Permissioned Access / Publisher: platform ↔ publisher retrieval, no ads).
+Schemas are organized into **Advertising** (platform → operator → brand agents → auction), **Intent Taxonomy** (conversation-intent classification and decisioning), and **PAG** (Permissioned Access / Publisher: platform ↔ publisher retrieval, no ads).
 
 ### Advertising
 
@@ -18,19 +18,24 @@ Schemas are organized into **Advertising** (platform → operator → brand agen
 |--------|--------------|
 | [Platform Request](/schemas/platform-request) | Platform → Operator: user context, intent, runtime, auction params |
 | [Context Request](/schemas/context-request) | Operator → Brand Agents: enriched auction context |
+| [Bid](/schemas/bid) | Brand Agent bid payload (targeting, pricing, budget, recommendation, delegation) |
+| [Platform Response](/schemas/auction-result) | Operator → Platform: auction outcome, render payload, billing state, and delegation |
+| event-cpx.json (see `schemas-json`) | Exposure shown event schema |
+| event-cpc.json (see `schemas-json`) | Interaction started event schema |
+| event-cpa.json (see `schemas-json`) | Task completed event schema |
+| ledger-record.json (see `schemas-json`) | Final settlement record summary |
+
+### Intent Taxonomy
+
+| Schema | Description |
+|--------|--------------|
 | [Agentic Intent Taxonomy](/schemas/agentic-intent-taxonomy) | Operator-neutral decision envelope for conversational intent classification and monetization gating |
-| [Bid](/schemas/bid) | Brand Agent bid payload (pricing, recommendation) |
-| [Auction Result](/schemas/auction-result) | Operator → Platform: winning response |
-| [event-cpx.json](event-cpx.json) | Exposure event |
-| [event-cpc.json](event-cpc.json) | Click event |
-| [event-cpa.json](event-cpa.json) | Conversion event |
-| [ledger-record.json](ledger-record.json) | Final ledger record summary |
 
 ### PAG (Publisher / Permissioned Access)
 
 | Schema | Description |
 |--------|--------------|
-| [aip.json — Publisher Declaration](/schemas/aip) | `/.well-known/aip.json` (AIP v0.1): consent, editorial_domains, retrieval limits |
+| [aip.json  -  Publisher Declaration](/schemas/aip) | `/.well-known/aip.json` (AIP v1.0): consent, editorial_domains, retrieval limits |
 | [RetrieveRequest](/schemas/retrieve-request) | Platform → publisher: permissioned content retrieval (no ads, no bidding) |
 | [RetrieveResponse](/schemas/retrieve-response) | Publisher → platform: chunks, citations, or denial |
 | [Access & Citation Events](/schemas/access-citation-event) | Post-retrieval accountability: access and citation events (no ads, no pricing, no user identity) |
@@ -93,6 +98,6 @@ npx json-schema-to-typescript schemas/context-request.json > types/ContextReques
 ## See Also
 
 - [Protocol Overview](/protocol) - High-level protocol flow
-- [Auction Mechanics](/auction) - How bidding and clearing works
+- [Real-Time Selection](/selection) - How selection works
 - [Events](/events) - Event tracking and ledger finalization
-- [API Reference](/api/openapi) - OpenAPI specification
+- [API Reference](/api/openapi.yaml) - OpenAPI specification

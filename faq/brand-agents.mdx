@@ -1,26 +1,34 @@
 ---
-title: "FAQ – Brand Agents"
-description: "Frequently asked questions for brand agents bidding on AI intent"
+title: "FAQ -- Brand Agents"
+description: "Frequently asked questions for brand agents participating in AIP"
 ---
 
 <AccordionGroup>
   <Accordion title="What is a Brand Agent?">
-    A Brand Agent is an advertiser-side service that bids on verified AI intent using a standardized bid endpoint.
+    A Brand Agent is a commercial entity's service that participates in AIP  -  responding to ContextRequests with pricing and content, and optionally accepting session handoffs for task execution in delegate mode.
   </Accordion>
 
-  <Accordion title="How fast must bids respond?">
-    Each bid endpoint must respond within 100–200 ms to be eligible for inclusion in an auction.
+  <Accordion title="How fast must responses be submitted?">
+    Responses must be submitted within the selection window, which is derived from the platform's latency budget. Typically 100-200ms. Late responses are ignored.
+  </Accordion>
+
+  <Accordion title="What are the two participation modes?">
+    **Recommend mode**: Your content is integrated into the AI response. No session transfer. **Delegate mode**: You receive a session handoff and execute a task on the user's behalf. You can support one or both modes.
   </Accordion>
 
   <Accordion title="How are events verified?">
-    The Ad Network sends signed callbacks for exposures, clicks, and conversions. Brand Agents verify event hashes to track ROI.
+    The Operator sends signed callbacks for lifecycle events (exposure_shown, interaction_started, delegation_started, task_completed). Brand Agents verify event hashes to track performance.
   </Accordion>
 
   <Accordion title="Can Brand Agents see user data?">
-    No. They only receive anonymized intent context and aggregate performance metrics.
+    No. Brand Agents receive only anonymized intent context via ContextRequests. In delegation, context is scoped by `context_scope` and never includes raw user data or identifiers.
   </Accordion>
 
-  <Accordion title="How is billing handled?">
-    Verified CPA or CPC events are debited automatically from the Brand Agent wallet during monthly settlement.
+  <Accordion title="How is settlement handled?">
+    Only the highest-value event per serve_token is settled. If a user completes a task (CPA), that is the settled amount. Settlement is debited automatically from the Brand Agent's wallet during periodic settlement.
+  </Accordion>
+
+  <Accordion title="What does delegation require from a brand agent?">
+    Brand Agents that support delegation must: accept session initiation, respect context scope boundaries, provide a functional task completion experience, fire delegation_started and task_completed events, and handle timeouts gracefully.
   </Accordion>
 </AccordionGroup>

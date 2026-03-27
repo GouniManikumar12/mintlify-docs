@@ -1,87 +1,104 @@
 ---
 title: Agentic Intent Protocol (AIP)
-description: The open standard for monetizing AI intent, transparent, auditable, and interoperable.
+description: The open protocol for governed commercial participation in AI-driven decisions.
 ---
+
 ### What is AIP?
 
-AIP is an open, operator-agnostic protocol that turns user intent inside AI conversations into a trusted signal that brand-operated bidding agents can respond to. 
+AIP is an open protocol that governs how commercial entities participate in AI-driven decisions  -  from intent detection to selection, delegation, and outcome-based settlement.
 
-It defines how AI platforms send intent, how brand agents place bids, and how every exposure, click, or action is verified and billed correctly—without requiring a single controlling platform, network, or vendor.
+**Short version:** AIP defines how intent becomes action in AI systems.
 
-AIP is designed to complement existing advertising standards while addressing gaps specific to AI-native interfaces and conversational systems. AIP is UCP-aligned, using the User Context Protocol (UCP) format for PlatformRequest to ensure interoperability with UCP-compliant systems.
+AIP is designed to complement existing standards while addressing gaps specific to AI-native interfaces and conversational systems. PlatformRequest uses the AIP canonical request envelope to ensure interoperability across compliant systems.
+
+---
 
 ### Why AIP exists
 
-AI conversations show what people really want. This is their intent.  
-Until now there has been no clear or fair way to:
+AI systems are becoming decision engines, not just information tools.
 
-- connect that intent to advertisers  
-- let brands respond in a trusted way  
-- measure what actually happened
+But there is no shared standard for:
 
-Every platform handles intent differently, with no shared method.  
-This makes intent hard to use, hard to verify, and hard to settle.
+- when commercial participation is appropriate
+- which entities are allowed to participate
+- how decisions transition into actions
+- how outcomes are verified and settled
 
-**AIP fixes this by creating one simple open way to handle intent:**
+Today, platforms handle this inconsistently and opaquely.
 
-- AI platforms capture and send intent safely  
-- Brand-operated bidding agents can choose to respond with bids  
-- Every exposure, click, or action is verified  
-- All payments are settled in a transparent wallet and ledger system
+**AIP introduces a common protocol for:**
 
-In simple terms:  
-**AIP makes intent from AI conversations usable, fair, and trustworthy for AI platforms, advertisers, and users.**
+- permissioned participation based on user intent
+- fair selection of eligible commercial agents
+- seamless delegation from AI to brand agents
+- verifiable outcomes and transparent settlement
 
+In simple terms:
+**AIP ensures that commercial participation in AI systems is intentional, controlled, and accountable.**
+
+---
 
 ### What AIP standardizes
 
 | Layer | What it does | Why it matters |
-|--------|--------------|----------------|
-| **Context Ingestion** | Collects anonymized intent from AI platforms | Enables precise and privacy safe matching |
-| **Real-Time Auction** | Allows brand agents to bid on verified intent | Creates fair pricing based on real demand |
-| **Event Verification** | Tracks CPX, CPC, and CPA with signed events | Prevents fraud and double charging |
-| **Wallet Settlement** | Automates payouts and audits | Makes billing clear, predictable, and trusted |
+|-------|-------------|----------------|
+| **Context Ingestion** | Captures structured, privacy-safe intent | Enables precise understanding |
+| **Participation Governance** | Determines if/when brands can participate | Prevents spam, preserves trust |
+| **Real-Time Selection** | Selects eligible agents (auction or rules) | Ensures relevance, not just highest bid |
+| **Interaction Mode** | Decides recommend vs delegate | Bridges decision to action |
+| **Delegation Protocol** | Manages session handoff to agents | Enables real execution |
+| **Event Verification** | Tracks full lifecycle events | Prevents fraud |
+| **Settlement** | Resolves payment based on outcomes | Aligns incentives |
 
 ---
 
 ### Built-in guarantees
 
-- One verified charge per event  
-- Priority order: CPA > CPC > CPX  
-- CPX represents a verified opportunity-to-see inside an AI interface, not a traditional impression  
-- Signed and auditable ledger  
-- Works with any ad network or operator  
+- One verified charge per lifecycle event
+- Only the highest-value event in a lifecycle is billable
+- Signed and auditable ledger
+- Works with any compliant operator
+- Privacy-safe by design  -  no personal identifiers required
 
 ---
 
 ### Who benefits
 
-**AI Platforms**  
-Gain a sustainable monetization model without hurting user experience.
+**AI Platforms**
+- Gain a sustainable model for commercial participation without compromising user experience.
 
-**Advertisers**  
-Pay only for verified intent with clear and trusted results.
+**Brands**
+- Participate on merit with clear, outcome-based results.
 
-**Users**  
-See helpful and relevant recommendations instead of noise.
+**Users**
+- Experience intentional, controlled commercial involvement  -  not noise.
 
 ---
 
-### Example: How it works
+### Example 1: Recommend Mode
 
-1. User asks: **"Best accounting software for freelancers?"**  
-2. AI platform sends anonymized intent context  
-3. Ad network(AIP Operator) runs a real-time auction  
-4. Brand agents submit bids  
-5. Winning bid is returned to the AI platform  
-6. AI shows the recommendation  
-7. User clicks or converts  
-8. AIP verifies the event and settles the payout  
+1. User asks: **"Best accounting software for freelancers"**
+2. Intent classified: commercial, consideration phase
+3. Participation allowed  -  selection happens
+4. AI integrates recommendation into its response
+5. No session transfer  -  user continues in the AI
+6. AIP verifies the participation event and settles
+
+---
+
+### Example 2: Delegate Mode
+
+1. User says: **"Sign me up for QuickBooks"**
+2. Intent classified: transactional, action phase
+3. Delegation allowed  -  agent selected
+4. AI asks user for confirmation
+5. Session starts  -  user completes signup via brand agent
+6. AIP verifies the outcome and settles CPA
 
 ---
 
 ### TL;DR
 
-**AIP turns AI intent into a trusted and monetizable signal for platforms, agents, and advertisers.**
+**AIP is the protocol that turns AI-driven intent into controlled participation, seamless delegation, and outcome-based settlement.**
 
 ---
