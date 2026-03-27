@@ -1,18 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "CPXExposureEvent",
-  "description": "Event fired when an ad is exposed/viewed by the user",
+  "title": "ExposureShownEvent",
+  "description": "Lifecycle event fired when a commercial response is shown to the user.",
   "type": "object",
-  "required": ["event_type", "serve_token", "session_id", "platform_id", "agent_id", "wallet_id", "pricing", "ts"],
+  "required": ["event_type", "serve_token", "session_id", "platform_id", "agent_id", "wallet_id", "settlement", "ts"],
   "properties": {
     "event_type": {
       "type": "string",
-      "const": "cpx_exposure",
-      "description": "Event type identifier"
+      "const": "exposure_shown",
+      "description": "Lifecycle event type identifier"
     },
     "serve_token": {
       "type": "string",
-      "description": "Serve token from the auction result",
+      "description": "Serve token from the PlatformResponse",
       "example": "stk_abcxyz123"
     },
     "session_id": {
@@ -35,25 +35,25 @@
       "description": "Wallet to charge for this exposure",
       "example": "w_890"
     },
-    "pricing": {
+    "settlement": {
       "type": "object",
-      "description": "Pricing information for this exposure",
-      "required": ["unit", "amount", "currency"],
+      "description": "Settlement information for this exposure",
+      "required": ["unit", "amount_micros", "currency"],
       "properties": {
         "unit": {
           "type": "string",
           "const": "CPX",
           "description": "Pricing unit"
         },
-        "amount": {
-          "type": "string",
-          "description": "Charge amount in USD",
-          "pattern": "^\\d+\\.\\d{2,}$",
-          "example": "0.034"
+        "amount_micros": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Charge amount in micros",
+          "example": 34000
         },
         "currency": {
           "type": "string",
-          "const": "USD",
+          "pattern": "^[A-Z]{3}$",
           "description": "Currency code"
         }
       }
@@ -91,15 +91,15 @@
   },
   "examples": [
     {
-      "event_type": "cpx_exposure",
+      "event_type": "exposure_shown",
       "serve_token": "stk_abcxyz123",
       "session_id": "s_001",
       "platform_id": "pf_chatapp",
       "agent_id": "ag_123",
       "wallet_id": "w_890",
-      "pricing": {
+      "settlement": {
         "unit": "CPX",
-        "amount": "0.034",
+        "amount_micros": 34000,
         "currency": "USD"
       },
       "exposure_metadata": {
@@ -111,4 +111,3 @@
     }
   ]
 }
-

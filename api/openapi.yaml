@@ -14,7 +14,7 @@ servers:
     description: Sandbox Environment
 
 tags:
-  - name: Context
+  - name: Requests
     description: Platform requests to initiate auctions
   - name: Bidding
     description: brand agents submit bids
@@ -57,56 +57,8 @@ components:
         format: date-time
         example: "2025-11-11T18:00:00Z"
   schemas:
-    ContextRequest:
-      type: object
-      required: [request_id, session_id, platform_id, query_text, locale, geo, ts, auth]
-      properties:
-        request_id:
-          type: string
-          example: "rq_92f"
-        session_id:
-          type: string
-          example: "s_001"
-        platform_id:
-          type: string
-          example: "pf_chatapp"
-        query_text:
-          type: string
-          example: "best CRM for small teams"
-        surface:
-          type: string
-          enum: [chat, voice, page, result_card]
-        locale:
-          type: string
-          example: "en-US"
-        geo:
-          type: string
-          example: "US"
-        pricing:
-          type: object
-          properties:
-            cpx_floor:
-              type: string
-              example: "0.03"
-        features:
-          type: object
-          properties:
-            topic:
-              type: array
-              items: { type: string }
-              example: ["crm", "smb"]
-            user_type:
-              type: string
-              enum: [human, agent]
-              example: "human"
-        ts:
-          type: string
-          format: date-time
-        auth:
-          type: object
-          properties:
-            nonce: { type: string, example: "n_123" }
-            sig: { type: string, example: "sig_abcd" }
+    PlatformRequest:
+      $ref: "../schemas-json/platform-request.json"
 
     Bid:
       type: object
@@ -242,21 +194,22 @@ components:
           properties:
             code: { type: string, example: "auction_timeout" }
             message: { type: string, example: "Auction evaluation timed out." }
-    EventCPX:
+    EventExposureShown:
       type: object
-      required: [event_type, serve_token, session_id, platform_id, agent_id, wallet_id, pricing, ts]
+      required: [event_type, serve_token, session_id, platform_id, agent_id, wallet_id, settlement, ts]
       properties:
-        event_type: { type: string, const: "cpx_exposure" }
+        event_type: { type: string, const: "exposure_shown" }
         serve_token: { type: string }
         session_id: { type: string }
         platform_id: { type: string }
         agent_id: { type: string }
         wallet_id: { type: string }
-        pricing:
+        settlement:
           type: object
+          required: [unit, amount_micros, currency]
           properties:
             unit: { type: string, enum: ["CPX"] }
-            amount: { type: string, example: "0.034" }
+            amount_micros: { type: integer, minimum: 0, example: 34000 }
             currency: { type: string, example: "USD" }
         exposure_metadata:
           type: object
@@ -266,23 +219,24 @@ components:
             visibility_ms: { type: integer, example: 1500 }
         ts: { type: string, format: date-time }
 
-    EventCPC:
+    EventInteractionStarted:
       type: object
-      required: [event_type, serve_token, session_id, platform_id, brand_agent_id, wallet_id, pricing, timestamp]
+      required: [event_type, serve_token, session_id, platform_id, agent_id, wallet_id, settlement, ts]
       properties:
-        event_type: { type: string, const: "cpc_click" }
+        event_type: { type: string, const: "interaction_started" }
         serve_token: { type: string }
         session_id: { type: string }
         platform_id: { type: string }
-        brand_agent_id: { type: string }
+        agent_id: { type: string }
         wallet_id: { type: string }
-        pricing:
+        settlement:
           type: object
-          required: [unit, amount_cents]
+          required: [unit, amount_micros, currency]
           properties:
             unit: { type: string, const: "CPC" }
-            amount_cents: { type: integer, minimum: 0, example: 45 }
-        click_metadata:
+            amount_micros: { type: integer, minimum: 0, example: 450000 }
+            currency: { type: string, example: "USD" }
+        interaction_metadata:
           type: object
           properties:
             source:
@@ -291,29 +245,48 @@ components:
             position:
               type: integer
               minimum: 1
-        timestamp: { type: string, format: date-time }
+        ts: { type: string, format: date-time }
 
-    EventCPA:
+    EventDelegationStarted:
       type: object
-      required: [event_type, serve_token, conversion_id, conversion_type, wallet_id, brand_agent_id, pricing, timestamp]
+      required: [event_type, serve_token, session_id, platform_id, agent_id, delegation_session_id, ts]
       properties:
-        event_type: { type: string, const: "cpa_conversion" }
+        event_type: { type: string, const: "delegation_started" }
         serve_token: { type: string }
-        conversion_id: { type: string }
-        conversion_type:
+        session_id: { type: string }
+        platform_id: { type: string }
+        agent_id: { type: string }
+        delegation_session_id: { type: string }
+        delegation_metadata:
+          type: object
+          properties:
+            context_scope:
+              type: array
+              items: { type: string }
+        ts: { type: string, format: date-time }
+
+    EventTaskCompleted:
+      type: object
+      required: [event_type, serve_token, session_id, platform_id, agent_id, outcome_type, settlement, ts]
+      properties:
+        event_type: { type: string, const: "task_completed" }
+        serve_token: { type: string }
+        session_id: { type: string }
+        platform_id: { type: string }
+        agent_id: { type: string }
+        outcome_type:
           type: string
           enum: [signup, purchase, trial_start, demo_request, download, custom]
         wallet_id: { type: string }
-        brand_agent_id: { type: string }
-        pricing:
+        settlement:
           type: object
-          required: [unit, amount_cents]
+          required: [unit, amount_micros, currency]
           properties:
             unit: { type: string, const: "CPA" }
-            amount_cents: { type: integer, minimum: 0 }
-        order_value_cents: { type: integer, minimum: 0 }
-        currency: { type: string, pattern: "^[A-Z]{3}$" }
-        conversion_metadata:
+            amount_micros: { type: integer, minimum: 0, example: 10000000 }
+            currency: { type: string, pattern: "^[A-Z]{3}$" }
+        outcome_value_micros: { type: integer, minimum: 0 }
+        outcome_metadata:
           type: object
           properties:
             user_id: { type: string }
@@ -321,7 +294,7 @@ components:
             product_ids:
               type: array
               items: { type: string }
-        timestamp: { type: string, format: date-time }
+        ts: { type: string, format: date-time }
 
     Balance:
       type: object
@@ -336,13 +309,14 @@ components:
         amount: { type: string, example: "2500.00" }
         currency: { type: string, example: "USD" }
 paths:
-  /aip/context:
+  /aip/request:
     post:
-      summary: Submit a ContextRequest
+      summary: Submit a PlatformRequest
       description: >
-        AI platforms send user intent contexts to AdMesh.
+        AI platforms send PlatformRequests to AdMesh.
+        ContextRequest is operator-generated and downstream-facing only.
         AdMesh returns a PlatformResponse for rendering and downstream event tracking.
-      tags: [Context]
+      tags: [Requests]
       parameters:
         - $ref: "#/components/parameters/VersionHeader"
         - $ref: "#/components/parameters/NonceHeader"
@@ -351,7 +325,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/ContextRequest" }
+            schema: { $ref: "#/components/schemas/PlatformRequest" }
       responses:
         "200":
           description: Platform response with winner state and render payload
@@ -379,10 +353,11 @@ paths:
 
   /aip/events:
     post:
-      summary: Send event (CPX, CPC, or CPA)
+      summary: Send lifecycle event
       tags: [Events]
       description: >
-        Platforms post events representing exposures, clicks, or conversions.
+        Platforms, operators, and brand agents post lifecycle events representing exposures,
+        interactions, operator-recorded delegation starts, or completed outcomes.
         Each serve_token can settle only one final event (CPA > CPC > CPX).
       requestBody:
         required: true
@@ -390,9 +365,10 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: "#/components/schemas/EventCPX"
-                - $ref: "#/components/schemas/EventCPC"
-                - $ref: "#/components/schemas/EventCPA"
+                - $ref: "#/components/schemas/EventExposureShown"
+                - $ref: "#/components/schemas/EventInteractionStarted"
+                - $ref: "#/components/schemas/EventDelegationStarted"
+                - $ref: "#/components/schemas/EventTaskCompleted"
       responses:
         "202":
           description: Event accepted for processing

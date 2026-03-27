@@ -3,7 +3,7 @@ title: Brand Agents
 description: How commercial agents participate in AIP  -  from recommendation to delegation and task execution.
 ---
 
-Brand Agents are AI agents or autonomous systems that act on behalf of commercial entities. They evaluate incoming intent, decide whether to participate, submit structured responses, and  -  in delegate mode  -  accept session handoffs to execute real tasks.
+Brand Agents are AI agents or autonomous systems that act on behalf of commercial entities. They evaluate incoming intent, decide whether to participate, submit `Bid` payloads, and  -  in delegate mode  -  accept session handoffs to execute real tasks.
 
 A Brand Agent can be rule-based, ML-driven, or fully autonomous. AIP does not prescribe how it is built, only how it must speak to the protocol.
 
@@ -81,10 +81,10 @@ AIP imposes no limit on who can operate a Brand Agent.
 
 - Expose a stable HTTP endpoint or supported transport
 - Respond to ContextRequests within the Operator selection window
-- Return one response per request
-- Include at least one valid price field (`price_cpc` and/or `price_cpa`)
-- Provide valid content and a landing URL
-- Include required creative metadata
+- Return one valid `Bid` per ContextRequest
+- Include at least one valid pricing field in `pricing` (`cpx_micros`, `cpc_micros`, or `cpa_micros`)
+- Provide a valid `recommendation.creative_input` payload
+- Include required targeting, budget, and render metadata
 - Respect the AIP event lifecycle: task_completed overrides interaction_started, which overrides exposure_shown
 - Verify serve tokens in event callbacks
 - Maintain spend accuracy using Operator settlement records
@@ -101,7 +101,7 @@ AIP imposes no limit on who can operate a Brand Agent.
 
 - Use any internal logic, including rules, heuristics, ML, LTV models, or autonomous agents
 - Dynamically adjust pricing based on performance
-- Decline to participate using `no_bid: true`
+- Decline to participate by not submitting a `Bid`
 - Use contextual embeddings, RAG, or classifier models
 - Implement their own budget and outcome controls
 - Support one or both interaction modes (recommend and delegate)
@@ -135,11 +135,11 @@ A ContextRequest may include:
 
 ---
 
-## 4. Brand agent response
+## 4. Brand agent bid
 
-Brand Agents submit responses to the Operator within the selection window.
+Brand Agents submit `Bid` payloads to the Operator within the selection window.
 
-Each response:
+Each bid:
 
 * Must be submitted within the active selection window
 * Is evaluated only if received before the window closes
@@ -147,17 +147,25 @@ Each response:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `price_cpc` | optional | Amount willing to pay for an interaction |
-| `price_cpa` | optional | Amount willing to pay for a completed task |
-| `creative` | required | Text or metadata used in the recommendation |
-| `landing_url` | required | Destination URL |
-| `ttl` | required | Validity window in milliseconds |
-| `supports_delegation` | optional | Whether this agent can accept session handoffs |
-| `no_bid` | optional | Indicates declining to participate |
+| `bid_id` | Yes | Unique identifier for this bid |
+| `brand_agent_id` | Yes | Identifier of the Brand Agent placing the bid |
+| `context_id` | Yes | ID of the ContextRequest being bid on |
+| `wallet_id` | Yes | Wallet to debit if the bid wins |
+| `targeting` | Yes | Applicability constraints for the bid |
+| `pricing` | Yes | Billing fields in micros |
+| `budget` | Yes | Spend caps and pacing controls |
+| `recommendation.creative_input` | Yes | Structured content to render if selected |
+| `declared_relevance` | Yes | Brand-declared relevance score (`0.0`-`1.0`) |
+| `supported_opportunities` | Yes | Opportunity types the bid supports |
+| `preferred_format` | Yes | Preferred render format |
+| `format_constraints` | Yes | Rendering and ranking hints |
+| `valid_until` | Yes | RFC 3339 expiry timestamp for the bid |
+| `timestamp` | Yes | RFC 3339 creation timestamp |
+| `delegation` | No | Delegation capability declaration |
 
-At least one of `price_cpc` or `price_cpa` MUST be included for a valid response.
+At least one of `pricing.cpx_micros`, `pricing.cpc_micros`, or `pricing.cpa_micros` MUST be included for a valid bid.
 
-CPX (exposure_shown) does not require explicit pricing  -  it is always settled by the Operator when no higher event occurs.
+The canonical bid contract is the [`Bid` schema](/schemas/bid). Narrative examples and implementation guidance should follow that schema directly.
 
 ---
 
@@ -166,6 +174,7 @@ CPX (exposure_shown) does not require explicit pricing  -  it is always settled 
 In recommend mode, the brand agent contributes content that is integrated into the AI's response:
 
 - Provide creative content (short description, value propositions, CTA)
+- Populate `recommendation.creative_input` with the structured content used to render the recommendation
 - Content is rendered by the platform using the operator's format
 - No session transfer occurs
 - Events tracked: `exposure_shown`, optionally `interaction_started`, optionally `task_completed`
@@ -181,7 +190,7 @@ In delegate mode, the brand agent receives a session handoff and executes a task
 - Accept session initiation from the Operator
 - Respect context scope boundaries  -  only use data provided in the scoped context
 - Provide a functional experience that completes the intended task
-- Fire `delegation_started` when the session begins
+- Declare delegation capability in the optional `delegation` block of the bid when applicable
 - Fire `task_completed` when the outcome is verified
 - Handle session timeouts and errors gracefully
 
@@ -210,7 +219,7 @@ Once a Brand Agent is selected, the Operator sends event notifications tied to t
 |-------|---------|
 | `exposure_shown` | Commercial response was surfaced to the user |
 | `interaction_started` | User engaged with the recommendation |
-| `delegation_started` | Session handoff occurred (delegate mode) |
+| `delegation_started` | Operator recorded delegated session start (delegate mode) |
 | `task_completed` | User completed the target action |
 
 Brand Agents MUST:
@@ -256,9 +265,48 @@ A Brand Agent can be implemented in any technology stack.
 
 ```typescript
 if (intent.type === "commercial" && intent.verticals.includes("CRM")) {
-  return { price_cpa: 10.0, supports_delegation: true };
+  return {
+    bid_id: "bid_123",
+    brand_agent_id: "brand_agent_123",
+    context_id: "ctx_123",
+    wallet_id: "wallet_123",
+    targeting: {
+      intent_types: ["commercial"],
+      decision_phases: ["consideration", "decision"]
+    },
+    pricing: { currency: "USD", cpa_micros: 10000000 },
+    budget: {
+      max_bid_per_event_micros: 10000000,
+      daily_cap_micros: 50000000,
+      remaining_budget_micros: 50000000,
+      pacing_mode: "even"
+    },
+    recommendation: {
+      creative_input: {
+        brand_name: "Nimbus",
+        product_name: "Nimbus CRM Pro",
+        short_description: "CRM for growing teams.",
+        long_description: "CRM for growing teams.",
+        value_props: ["Pipeline insights"],
+        context_snippet: "For teams comparing CRM tools.",
+        cta_label: "Start Free Trial",
+        cta_url: "https://nimbus.example.com/signup",
+        assets: {}
+      }
+    },
+    declared_relevance: 0.87,
+    supported_opportunities: ["comparison_slot"],
+    preferred_format: "weave",
+    format_constraints: {
+      max_responses: 1,
+      ranking: "operator_defined"
+    },
+    valid_until: "2026-03-27T18:05:00Z",
+    timestamp: "2026-03-27T18:00:00Z",
+    delegation: { supported: true }
+  };
 } else {
-  return { no_bid: true };
+  return null;
 }
 ```
 
@@ -288,7 +336,7 @@ Brand Agents are commercial agents that:
 
 - Receive intent context
 - Evaluate relevance
-- Submit structured responses
+- Submit `Bid` payloads
 - Participate in real-time selection
 - Support recommend mode, delegate mode, or both
 - Receive lifecycle event callbacks

@@ -35,7 +35,7 @@ You have **three distinct messages**. Do not blur them.
 |---------|-----------|---------|
 | **A. PlatformRequest** | Platform → Operator | "Here is the user context + my declared intent + my constraints." **Platform-asserted**; Operator validates and uses for participation governance. |
 | **B. ContextRequest** | Operator → Brand Agents | "Here is the eligible participation context you may respond to." **Operator-generated** and **trusted by brand agents**. Eligibility already decided. |
-| **C. SelectionResult** | Operator → Platform | "Here is the selected agent + interaction mode + metadata." |
+| **C. PlatformResponse** | Operator → Platform | "Here is the selected agent + interaction mode + metadata." |
 
 ```mermaid
 sequenceDiagram
@@ -48,15 +48,17 @@ sequenceDiagram
   Operator->>BrandAgent: B. ContextRequest (eligible participation context)
   BrandAgent->>Operator: Response (bid or recommendation)
   Operator->>Operator: Run selection; determine interaction mode
-  Operator->>Platform: C. SelectionResult (selected agent + mode + metadata)
-  Platform->>Operator: Events (exposure_shown, interaction_started, delegation_started, task_completed)
+  Operator->>Platform: C. PlatformResponse (selected agent + mode + metadata)
+  Platform->>Operator: exposure_shown / interaction_started
+  Operator->>Operator: delegation_started
+  BrandAgent->>Operator: task_completed
 ```
 
 ### 3.1 PlatformRequest (Platform → Operator)
 
 Sent by the AI platform. AIP canonical request envelope (producer, context, identity, extensions). **`producer.agent_role` must be `"platform"`**. Contains:
 
-- **`extensions.aip.intent`**  -  Explicit, structured intent (domain, subdomain, confidence) for **participation governance**; Operator matches against platform `aip.json` editorial_domains.
+- **`extensions.aip.intent`**  -  Explicit, structured intent (domain, subdomain, confidence) for **participation governance** within the operator monetization flow.
 - **`extensions.aip.runtime`**  -  Session, turn, query_text, optional messages, latency_budget_ms.
 - **`extensions.aip.auction`**  -  Selection parameters (pricing_model, cpx_floor, currency). Governance logic must never touch selection logic.
 
@@ -64,7 +66,7 @@ Sent by the AI platform. AIP canonical request envelope (producer, context, iden
 
 Operator-enriched, operator-trusted, and (eventually) operator-signed. Answers: "Given a valid, eligible platform request, here is the participation context you may respond to." Intent in ContextRequest is **operator-generated** and used for **brand response decisions**; it can differ from PlatformRequest intent (which is for governance only).
 
-### 3.3 SelectionResult (Operator → Platform)
+### 3.3 PlatformResponse (Operator → Platform)
 
 The outcome of the selection process. Contains:
 
@@ -77,12 +79,12 @@ The outcome of the selection process. Contains:
 ### 3.4 Authoritative flow (lock this)
 
 1. Platform builds **PlatformRequest** (context + explicit intent + runtime + selection parameters).
-2. Operator validates signature; checks platform `aip.json`; evaluates **participation eligibility**.
+2. Operator validates signature and request integrity; evaluates **participation eligibility**.
 3. If eligible, Operator generates **ContextRequest**.
 4. ContextRequest is sent to Brand Agents.
 5. Brand Agents return **responses** (bids, recommendations, or delegation offers).
 6. Operator runs **selection** and determines **interaction mode**.
-7. Operator sends **SelectionResult** to platform.
+7. Operator sends **PlatformResponse** to platform.
 
 Each step has **one owner**. No overlap.
 
@@ -118,7 +120,7 @@ X-AIP-Version: 1.0
 4. Operator derives ContextRequest and sends to brand agents.
 5. Brand agents respond.
 6. Operator runs selection, determines recommend mode.
-7. Platform receives SelectionResult and renders recommendation.
+7. Platform receives PlatformResponse and renders recommendation.
 8. Events logged under serve_token.
 
 **Delegate mode:**
@@ -126,11 +128,12 @@ X-AIP-Version: 1.0
 2. Platform sends PlatformRequest with transactional intent.
 3. Operator evaluates eligibility  -  delegation allowed.
 4. Operator runs selection  -  Trello agent selected.
-5. Platform receives SelectionResult with delegation object.
+5. Platform receives PlatformResponse with delegation object.
 6. Platform asks user for consent.
-7. User consents  -  session handed off to Trello agent.
-8. User completes setup. `task_completed` event fired.
-9. Operator verifies and settles.
+7. User consents and the Platform relays that consent to the Operator.
+8. Operator confirms Trello agent availability, initiates the delegated session, and records `delegation_started`.
+9. User completes setup. Trello agent fires `task_completed`.
+10. Operator verifies and settles.
 
 ## 7. Guarantees
 

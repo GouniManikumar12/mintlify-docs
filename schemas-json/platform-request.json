@@ -162,20 +162,13 @@
         "constraints": {
           "type": "object",
           "required": [
-            "allow_raw_query_downstream",
-            "allow_message_history_downstream",
             "allow_identity_downstream"
           ],
           "additionalProperties": false,
           "properties": {
-            "allow_raw_query_downstream": {
-              "type": "boolean"
-            },
-            "allow_message_history_downstream": {
-              "type": "boolean"
-            },
             "allow_identity_downstream": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "Whether identity information may be forwarded downstream. Raw query text and message history must never be forwarded in v1.0."
             }
           }
         },
@@ -661,8 +654,6 @@
           "measurement": true
         },
         "constraints": {
-          "allow_raw_query_downstream": false,
-          "allow_message_history_downstream": false,
           "allow_identity_downstream": false
         },
         "captured_at": "2026-03-26T18:29:00Z"
@@ -753,8 +744,6 @@
           "measurement": true
         },
         "constraints": {
-          "allow_raw_query_downstream": false,
-          "allow_message_history_downstream": false,
           "allow_identity_downstream": false
         }
       },

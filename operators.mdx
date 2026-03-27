@@ -27,7 +27,7 @@ This page explains how operators work, what they must implement, and how others 
 5. The Operator distributes (broadcasts) the `ContextRequest` to **all matching** Brand Agents.
 6. Brand Agents evaluate the ContextRequest and submit signed responses within the selection window.
 7. The Operator runs **selection** and determines the **interaction mode** (recommend or delegate).
-8. The Operator returns the SelectionResult (or `no_match`) to the Platform.
+8. The Operator returns the PlatformResponse (or `no_match`) to the Platform.
 9. Verified events are recorded and settled via the Operator's settlement system.
 
 The Operator is responsible for enforcing governance, timing, verification, and settlement guarantees.
@@ -81,11 +81,11 @@ Used by the Operator to deliver a ContextRequest to a Brand Agent.
 
 ### Receive responses
 
-**POST /aip/response**
+**POST /aip/bid**
 
-Used by Brand Agents to submit responses.
+Used by Brand Agents to submit bid responses.
 
-* Payload: Response schema
+* Payload: Bid schema
 * Responses received after the selection window are ignored
 * Each response maps to a single ContextRequest
 
@@ -148,7 +148,7 @@ They must:
 Before selection begins, operators evaluate whether commercial participation is appropriate for the given intent:
 
 - Check intent type and governance rules
-- Match against platform `aip.json` editorial_domains
+- Apply operator policy constraints to the declared participation intent
 - Enforce participation policies
 
 ## 3. Run selection
@@ -165,14 +165,14 @@ After selection, operators decide whether the participation takes the form of:
 - **Recommend**  -  brand content is integrated into the AI response
 - **Delegate**  -  session is handed off to the brand agent
 
-The mode is included in the SelectionResult.
+The mode is included in the PlatformResponse.
 
 ## 5. Verify outcomes and settle
 Operators must verify:
 
 - **Exposure shown**: platform confirmed the response was surfaced
 - **Interaction started**: user engaged with the recommendation
-- **Delegation started**: session handoff occurred (delegate mode)
+- **Delegation started**: operator-mediated delegated session was initiated after platform consent and brand-agent availability confirmation
 - **Task completed**: user completed the target action
 
 All events must resolve to **one** billable unit per serve_token.
@@ -191,7 +191,7 @@ All events must resolve to **one** billable unit per serve_token.
 | Serve token system | Yes | Generate and sign immutable tokens |
 | Settlement accounting | Yes | Maintain participant balances |
 | Settlement and payouts | Yes | Periodic platform payments |
-| Platform SDK | Yes | Provide a frontend SDK for platforms |
+| Platform SDK | Optional | Provide an integration SDK or client library for platforms |
 | Delegation management | Yes | Manage session initiation and context scoping |
 | Weave SDK | Optional | Provide backend inline-weave SDK |
 | Reporting dashboard | Optional | For brands and platforms |
@@ -209,10 +209,10 @@ To operate an AIP-compatible operator, an implementation **MUST support the foll
 * **Delegation management**  -  Initiate sessions, scope context, manage consent flow
 * **Event verification**  -  Verify lifecycle events using AIP event schemas
 * **Settlement accounting**  -  Track balances, spend, and settlement using deterministic ledger records
-* **Platform rendering support**  -  Provide a SDK for rendering and event tracking
+* **Platform integration support**  -  Support platform integration through the canonical APIs; SDKs or client libraries are optional convenience tooling
 
 AIP defines the schemas, event types, and settlement rules.
-Each operator defines its own transport, APIs, and internal architecture.
+Each operator defines its own transport, APIs, internal architecture, and optional SDK strategy.
 
 ---
 
@@ -232,7 +232,7 @@ Operators implement the protocol to:
 
 AdMesh implements AIP as one example operator. Its implementation includes:
 
-- Platform SDK for integration
+- Optional platform SDKs for integration
 - Backend weave SDKs for server-side integration
 - Settlement and ledger systems
 - Dashboard interfaces for brands and platforms

@@ -47,7 +47,7 @@ The Operator derives a `ContextRequest` and distributes it to Brand Agents. Oper
 Brand Agents submit signed `BidResponse` payloads with pricing, creative input, and relevance scores. Operators collect bids received within the auction window.
 
 ### **5. Outcome Guarantees**
-The Operator MUST return a single `PlatformResponse` and a `serve_token` back to the Platform. When no responses arrive in time, the response uses `status: "no_fill"`. The protocol guarantees deterministic settlement based on the event ladder (CPA > CPC > CPX).
+The Operator MUST return a single `PlatformResponse` and a `serve_token` back to the Platform. When no responses arrive in time, the response uses `status: "no_fill"`. The protocol guarantees deterministic settlement through flow-specific billing paths, but those paths do not dictate auction ranking.
 
 ## 4. Scoring (Informational)
 
@@ -66,7 +66,16 @@ Operators apply their own scoring logic consistently for all bids, producing det
 
 **Note**: AIP does not mandate how operators combine these signals or weight them. Each operator defines their own scoring methodology.
 
-## 5. PlatformResponse
+## 5. Settlement Semantics
+
+Settlement paths are billing semantics only:
+
+- External click-out flows follow `CPX -> CPC -> CPA`
+- Delegated-session flows follow `CPX -> CPE -> CPA`
+
+These paths define when charges may be recognized. They are not normative auction-ranking rules.
+
+## 6. PlatformResponse
 
 The operator returns a `PlatformResponse` containing the auction status, winning bid state, render payload, and optional delegation/tracking metadata:
 
@@ -113,7 +122,7 @@ The operator returns a `PlatformResponse` containing the auction status, winning
 
 For the complete schema, see: [Platform Response Schema](/schemas/auction-result)
 
-## 6. Transparency and Verification
+## 7. Transparency and Verification
 
 Every exchange in the auction cycle is logged as verifiable artifacts:
 
@@ -123,7 +132,7 @@ Every exchange in the auction cycle is logged as verifiable artifacts:
 - timestamps and nonces
 - protocol version identifiers
 
-## 7. Example Flow
+## 8. Example Flow
 
 User asks: **"Best AI note-taking tools."**
 
@@ -134,12 +143,12 @@ User asks: **"Best AI note-taking tools."**
 5. Platform receives a single `PlatformResponse` with `serve_token`.
 6. Exposure and click events connect cleanly to the same attribution chain via `serve_token`.
 
-## 7. Protocol Guarantees
+## 9. Protocol Guarantees
 
 AIP ensures:
 
 - **Timing compliance**: Bids received after the computed window are rejected
-- **Deterministic settlement**: Event ladder (CPA > CPC > CPX) ensures one charge per `serve_token`
+- **Deterministic settlement**: Flow-specific settlement paths ensure one charge per `serve_token`
 - **Complete verifiability**: All messages are signed and timestamped
 - **Unified attribution**: `serve_token` links all events to the original auction
 - **Operator autonomy**: Operators define their own auction and scoring logic within protocol constraints

@@ -33,24 +33,28 @@ The protocol guarantees the following invariants:
 
 Operators maintain operator-defined settlement records that link verified events to settlement outcomes. Each settlement record:
 - Links to a `serve_token` from the original auction
-- Records the terminal event type (CPX, CPC, or CPA)
+- Records the terminal billing unit (`CPX`, `CPC`, `CPE`, or `CPA`)
 - Contains immutable timestamps and state information
 
 ### Event-to-settlement linkage
 
-Every verified event (`cpx_exposure`, `cpc_click`, `cpa_conversion`) must be attributable to an operator-defined settlement outcome linked to the `serve_token`. Events must be linkable to:
+Every verified lifecycle event (`exposure_shown`, `interaction_started`, `delegation_started`, `task_completed`) must be attributable to an operator-defined settlement outcome linked to the `serve_token`. Events must be linkable to:
 - The original `serve_token` from the auction
 - An operator-defined settlement record that reflects the final settlement state
-- The terminal billing unit (highest verified event in the ladder)
+- The terminal billing unit for the applicable flow
 
 ### One terminal charge per serve_token
 
 Each `serve_token` resolves to **at most one terminal charge**. The protocol guarantees:
-- If a CPA conversion is verified, CPX and CPC are not billed
-- If a CPC click is verified (and no CPA), CPX is not billed
+- If a CPA conversion is verified, earlier billable units in the same flow are not billed
+- If a delegated session starts and no CPA is later verified, CPE is the terminal billable unit
+- If an interaction click is verified in an external click-out flow (and no CPA), CPC is the terminal billable unit
 - If only CPX is verified, CPX is billed
 
-This follows the event ladder: CPA > CPC > CPX.
+These are flow-specific settlement semantics:
+
+- External click-out: `CPX -> CPC -> CPA`
+- Delegated session: `CPX -> CPE -> CPA`
 
 ### Settlement immutability and auditability
 
@@ -74,13 +78,13 @@ The following example illustrates a settlement record structure. **This is non-n
   "auction_id": "auc_981",
   "state": "FINALIZED",
   "final_unit": "CPA",
-  "final_charge": "10.00",
+  "final_amount_micros": 10000000,
   "currency": "USD",
   "timestamps": {
     "auction": "2025-11-11T18:00:00Z",
-    "exposure": "2025-11-11T18:00:00Z",
-    "click": "2025-11-11T18:02:00Z",
-    "conversion": "2025-11-11T18:30:00Z",
+    "exposure_shown": "2025-11-11T18:00:00Z",
+    "interaction_started": "2025-11-11T18:02:00Z",
+    "task_completed": "2025-11-11T18:30:00Z",
     "finalized": "2025-11-11T19:00:00Z"
   }
 }
@@ -93,7 +97,7 @@ The following example illustrates a settlement record structure. **This is non-n
 The protocol guarantees:
 
 - **No double billing**: Each `serve_token` resolves to at most one terminal charge
-- **One terminal settlement per serve_token**: The event ladder (CPA > CPC > CPX) ensures only the highest verified event is billed
+- **One terminal settlement per serve_token**: The applicable flow-specific settlement path ensures only one terminal billing unit is recognized
 - **Immutable settlement records**: Finalized settlement records cannot be modified
 - **Full auditability**: All settlement records are tamper-evident and auditable and can be independently verified
 

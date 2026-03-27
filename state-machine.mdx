@@ -64,7 +64,7 @@ The protocol defines allowed transitions and constraints. Operators implement th
 |------|----|----------|---------------------------|
 | PENDING | EXPOSURE_SHOWN | `exposure_shown` event | Operator (may use platform signals) |
 | EXPOSURE_SHOWN | INTERACTION_STARTED | `interaction_started` event | Operator (may use platform signals) |
-| EXPOSURE_SHOWN | DELEGATION_STARTED | `delegation_started` event | Operator (may use platform and agent signals) |
+| EXPOSURE_SHOWN | DELEGATION_STARTED | `delegation_started` event | Operator (canonical producer; may use platform consent and brand-agent availability signals) |
 | INTERACTION_STARTED | TASK_COMPLETED | `task_completed` event | Operator (may use brand agent signals) |
 | DELEGATION_STARTED | TASK_COMPLETED | `task_completed` event | Operator (may use brand agent signals) |
 | EXPOSURE_SHOWN | SETTLED | Operator-defined expiration window | Operator |
@@ -94,7 +94,7 @@ AIP does not mandate specific time windows. Operators define their own expiratio
 
 1. Selection completes, `serve_token` generated → state = *PENDING*
 2. Operator verifies a **exposure_shown** event → state = *EXPOSURE_SHOWN*
-3. User consents, **delegation_started** event verified → state = *DELEGATION_STARTED*
+3. User consents, the Operator confirms brand-agent availability, and **delegation_started** is recorded → state = *DELEGATION_STARTED*
 4. User completes task, **task_completed** event verified → state = *TASK_COMPLETED*
 5. Operator finalizes settlement → state = *SETTLED*
 
@@ -139,7 +139,7 @@ The protocol guarantees that settled states are immutable. Operators define thei
   "state": "SETTLED",
   "interaction_mode": "delegate",
   "final_unit": "CPA",
-  "final_charge": "10.00",
+  "final_amount_micros": 10000000,
   "currency": "USD",
   "timestamps": {
     "selection": "2025-11-11T18:00:00Z",

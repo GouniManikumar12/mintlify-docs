@@ -82,9 +82,9 @@ Every request must carry an explicit consent envelope. The operator must not pro
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `allow_raw_query_downstream` | boolean | Yes | Whether the raw query text may be forwarded |
-| `allow_message_history_downstream` | boolean | Yes | Whether message history may be forwarded |
 | `allow_identity_downstream` | boolean | Yes | Whether identity information may be forwarded |
+
+In AIP v1.0, raw query text and message history **MUST NEVER** be forwarded downstream to brand agents. Those are protocol prohibitions, not consent-controlled options.
 
 ---
 
@@ -445,8 +445,6 @@ The operator SHOULD:
       "measurement": true
     },
     "constraints": {
-      "allow_raw_query_downstream": false,
-      "allow_message_history_downstream": false,
       "allow_identity_downstream": false
     },
     "captured_at": "2026-03-26T18:29:00Z"
@@ -544,8 +542,6 @@ The operator SHOULD:
       "measurement": true
     },
     "constraints": {
-      "allow_raw_query_downstream": false,
-      "allow_message_history_downstream": false,
       "allow_identity_downstream": false
     }
   },
@@ -633,7 +629,8 @@ The operator SHOULD:
 - When `type` is `"provided_signals"`, `signals.source` and `signals.intent` are required.
 - `signals.intent` must contain `type` and `decision_phase`.
 - `identity.quarantined` must never be forwarded downstream.
-- `consent.constraints` flags must be respected when forwarding data to brand agents or downstream systems.
+- `consent.constraints.allow_identity_downstream` must be respected when forwarding identity-related data.
+- Raw query text and message history must never be forwarded downstream to brand agents in v1.0.
 
 ---
 

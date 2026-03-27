@@ -35,10 +35,10 @@ sequenceDiagram
 
     BrandAgent->>BrandAgent: Evaluate and respond
     BrandAgent->>Operator: Response<br/>(with recommendation content)
-    Note over BrandAgent,Operator: Contains: pricing,<br/>creative_input, relevance
+    Note over BrandAgent,Operator: Contains: pricing,<br/>creative_input, declared_relevance
 
     Operator->>Operator: Run selection,<br/>determine mode: recommend
-    Operator->>Platform: SelectionResult<br/>(mode: recommend)
+    Operator->>Platform: PlatformResponse<br/>(mode: recommend)
     Note over Operator,Platform: Contains: serve_token,<br/>format-specific content
 
     Platform->>User: AI integrates recommendation
@@ -67,7 +67,7 @@ sequenceDiagram
 4. Operator derives ContextRequest and sends to eligible brand agents
 5. Brand agents respond with pricing and content
 6. Operator runs selection, determines recommend mode
-7. Platform receives SelectionResult and integrates recommendation into AI response
+7. Platform receives PlatformResponse and integrates recommendation into AI response
 8. Events track the lifecycle: exposure_shown → interaction_started → task_completed
 9. Only the highest-value event is settled
 
@@ -96,17 +96,18 @@ sequenceDiagram
     BrandAgent->>Operator: Response (with delegation capability)
 
     Operator->>Operator: Run selection,<br/>determine mode: delegate
-    Operator->>Platform: SelectionResult<br/>(mode: delegate, delegation object)
+    Operator->>Platform: PlatformResponse<br/>(mode: delegate, delegation object)
     Note over Operator,Platform: Contains: serve_token,<br/>delegation session_id,<br/>context_scope
 
     Platform->>User: "QuickBooks can handle your signup. Proceed?"
     User->>Platform: Confirms consent
     Platform->>Operator: Consent confirmed
 
-    Operator->>BrandAgent: Session initiated<br/>(scoped context)
+    Operator->>BrandAgent: Check availability +<br/>initiate session
+    BrandAgent->>Operator: Session accepted
     Note over Operator,BrandAgent: Only intent + constraints<br/>shared per context_scope
 
-    BrandAgent->>Operator: delegation_started event
+    Operator->>Operator: delegation_started recorded
     BrandAgent->>User: Signup flow begins
 
     User->>BrandAgent: Completes signup
@@ -124,12 +125,13 @@ sequenceDiagram
 4. Operator derives ContextRequest and sends to eligible agents
 5. Brand agent responds with delegation capability
 6. Operator runs selection, determines delegate mode
-7. Platform receives SelectionResult with delegation object
+7. Platform receives PlatformResponse with delegation object
 8. Platform asks user for consent
-9. User consents  -  session handed off to brand agent with scoped context
-10. Brand agent executes the task
-11. `task_completed` event fired and verified
-12. Operator settles CPA
+9. User consents and the Platform sends that consent to the Operator
+10. Operator confirms brand-agent availability, initiates the delegated session, and records `delegation_started`
+11. Brand agent executes the task
+12. `task_completed` event fired and verified
+13. Operator settles CPA
 
 ---
 
@@ -137,7 +139,7 @@ sequenceDiagram
 
 **Schema:** [`platform-request.json`](/schemas/platform-request)
 
-The AI platform initiates the process by sending a `PlatformRequest` to the operator. The operator validates the request (signature, platform `aip.json`, and match of `editorial_domains` vs `extensions.aip.intent`); if eligible, it derives a **ContextRequest** and sends it to brand agents.
+The AI platform initiates the process by sending a `PlatformRequest` to the operator. The operator validates the request, evaluates participation eligibility, and if eligible derives a **ContextRequest** and sends it to brand agents.
 
 ### Key fields:
 - `spec_version`: AIP request schema version (e.g. "1.0")
@@ -267,38 +269,49 @@ If the window expires with no responses, the outcome is `no_match`. Late respons
 
 **Schema:** [`bid.json`](/schemas/bid)
 
-Brand agents evaluate the context request and submit responses containing pricing and content.
+Brand agents evaluate the context request and submit `Bid` payloads containing pricing, targeting, budget, and structured recommendation content.
 
 ### Key fields:
-- `bid_id`: Unique identifier for this response
+- `spec_version`: Schema version for the bid payload
+- `bid_id`: Unique identifier for this bid
 - `brand_agent_id`: Identifier of the brand agent
 - `context_id`: ID of the ContextRequest being responded to
 - `wallet_id`: Wallet to debit if selected
-- `pricing`: Pricing vector with micros (authoritative), cents (display), and dollars (UI)
+- `targeting`: Applicability constraints for the bid
+- `pricing`: Pricing fields in micros
+- `budget`: Spend caps and pacing controls
 - `recommendation.creative_input`: Unified content structure
-- `relevance`: Relevance score (0.0-1.0, required)
-- `supports_delegation`: Whether this agent supports delegate mode (optional)
+- `declared_relevance`: Relevance score (0.0-1.0, required)
+- `delegation`: Delegation capability declaration (optional)
+- `valid_until`: Bid expiry timestamp
 
 ### Example:
 ```json
 {
+  "spec_version": "1.0",
   "bid_id": "bid_7823",
   "brand_agent_id": "brand_agent_123",
   "context_id": "ctx_92f",
   "wallet_id": "wallet_890",
+  "targeting": {
+    "intent_types": ["commercial", "transactional"],
+    "decision_phases": ["consideration", "decision"],
+    "verticals": ["crm", "sales_software"],
+    "countries": ["US"],
+    "locales": ["en-US"]
+  },
   "pricing": {
     "currency": "USD",
-    "display_currency": "USD",
     "cpx_micros": 50000,
-    "cpx_cents": 5,
-    "cpx_dollars": 0.05,
     "cpc_micros": 450000,
-    "cpc_cents": 45,
-    "cpc_dollars": 0.45,
     "cpa_micros": 10000000,
-    "cpa_cents": 1000,
-    "cpa_dollars": 10.0,
     "preferred_pricing_model": "CPA"
+  },
+  "budget": {
+    "max_bid_per_event_micros": 10000000,
+    "daily_cap_micros": 50000000,
+    "remaining_budget_micros": 32000000,
+    "pacing_mode": "even"
   },
   "recommendation": {
     "creative_input": {
@@ -315,9 +328,38 @@ Brand agents evaluate the context request and submit responses containing pricin
       "cta_url": "https://nimbus.example.com/signup"
     }
   },
+  "supported_opportunities": ["comparison_slot", "decision_moment", "transaction_trigger"],
+  "preferred_format": "weave",
+  "format_constraints": {
+    "max_responses": 1,
+    "ranking": "operator_defined"
+  },
+  "valid_until": "2025-11-11T18:05:00Z",
   "timestamp": "2025-11-11T18:00:01Z",
-  "relevance": 0.87,
-  "supports_delegation": true
+  "declared_relevance": 0.87,
+  "delegation": {
+    "supported": true,
+    "consent_required": true,
+    "supported_for_intents": {
+      "intent_types": ["transactional", "commercial"],
+      "decision_phases": ["decision", "post_purchase"]
+    },
+    "required_scopes": ["intent", "constraints"],
+    "protocol": {
+      "type": "mcp",
+      "version": "1.0"
+    },
+    "mcp": {
+      "server_url": "https://agent.nimbus.example.com/mcp",
+      "tool_name": "start_crm_signup_session",
+      "session_init_schema_ref": "https://agent.nimbus.example.com/schemas/session-init.json"
+    },
+    "session_constraints": {
+      "multi_turn": true,
+      "session_timeout_seconds": 900,
+      "max_turns": 20
+    }
+  }
 }
 ```
 
@@ -386,7 +428,7 @@ The operator evaluates the auction and returns a `PlatformResponse` to the AI pl
 
 ---
 
-## 5. Events (Platform/Brand Agent → Operator)
+## 5. Events (Platform / Operator / Brand Agent → Operator)
 
 After participation begins, events track the decision lifecycle.
 
@@ -396,16 +438,18 @@ Sent when the user sees the recommendation or delegation offer.
 
 ```json
 {
-  "event_id": "evt_ps_001",
-  "serve_token": "stk_abcxyz123",
   "event_type": "exposure_shown",
-  "timestamp": "2025-11-14T18:22:05Z",
-  "platform_id": "openai_chat",
+  "serve_token": "stk_abcxyz123",
   "session_id": "sess_001",
-  "auth": {
-    "nonce": "nonce_ps_123",
-    "sig": "sig_ps_456"
-  }
+  "platform_id": "openai_chat",
+  "agent_id": "ba_451",
+  "wallet_id": "w_0021",
+  "settlement": {
+    "unit": "CPX",
+    "amount_micros": 34000,
+    "currency": "USD"
+  },
+  "ts": "2025-11-14T18:22:05Z"
 }
 ```
 
@@ -415,38 +459,38 @@ Sent when the user engages with the recommendation.
 
 ```json
 {
-  "event_id": "evt_is_001",
-  "serve_token": "stk_abcxyz123",
   "event_type": "interaction_started",
-  "timestamp": "2025-11-14T18:22:10Z",
-  "platform_id": "openai_chat",
+  "serve_token": "stk_abcxyz123",
   "session_id": "sess_001",
-  "interaction_url": "https://admesh.click/stk_abcxyz123",
-  "auth": {
-    "nonce": "nonce_is_123",
-    "sig": "sig_is_456"
-  }
+  "platform_id": "openai_chat",
+  "agent_id": "ba_451",
+  "wallet_id": "w_0021",
+  "settlement": {
+    "unit": "CPC",
+    "amount_micros": 450000,
+    "currency": "USD"
+  },
+  "interaction_metadata": {
+    "source": "deep_link",
+    "position": 1
+  },
+  "ts": "2025-11-14T18:22:10Z"
 }
 ```
 
 ### 5.3 Delegation started
 
-Sent when the user consents and a session is handed off (delegate mode only).
+Sent by the Operator after the Platform has collected consent and the Operator has confirmed brand-agent availability and initiated the delegated session (delegate mode only).
 
 ```json
 {
-  "event_id": "evt_ds_001",
-  "serve_token": "stk_abcxyz123",
   "event_type": "delegation_started",
-  "timestamp": "2025-11-14T18:22:15Z",
-  "platform_id": "openai_chat",
+  "serve_token": "stk_abcxyz123",
   "session_id": "sess_001",
-  "delegation_session_id": "del_sess_001",
+  "platform_id": "openai_chat",
   "agent_id": "ba_451",
-  "auth": {
-    "nonce": "nonce_ds_123",
-    "sig": "sig_ds_456"
-  }
+  "delegation_session_id": "del_sess_001",
+  "ts": "2025-11-14T18:22:15Z"
 }
 ```
 
@@ -456,18 +500,20 @@ Sent when the user completes the target action.
 
 ```json
 {
-  "event_id": "evt_tc_001",
-  "serve_token": "stk_abcxyz123",
   "event_type": "task_completed",
-  "timestamp": "2025-11-14T18:25:00Z",
-  "platform_id": "openai_chat",
+  "serve_token": "stk_abcxyz123",
   "session_id": "sess_001",
+  "platform_id": "openai_chat",
+  "agent_id": "ba_451",
+  "wallet_id": "w_0021",
   "outcome_type": "signup",
-  "outcome_value_cents": 0,
-  "auth": {
-    "nonce": "nonce_tc_123",
-    "sig": "sig_tc_456"
-  }
+  "outcome_value_micros": 0,
+  "settlement": {
+    "unit": "CPA",
+    "amount_micros": 10000000,
+    "currency": "USD"
+  },
+  "ts": "2025-11-14T18:25:00Z"
 }
 ```
 
@@ -480,7 +526,7 @@ Sent when the user completes the target action.
 | `platform-request` | AI Platform → Operator | Initial participation request |
 | `context-request` | Operator → Brand Agents | Eligible participation context |
 | `bid` | Brand Agents → Operator | Response with pricing and content |
-| `selection-result` | Operator → AI Platform | Selected agent + interaction mode |
+| `PlatformResponse` | Operator → AI Platform | Selected agent + interaction mode |
 
 ---
 
@@ -517,8 +563,7 @@ All timestamps use ISO 8601 / RFC 3339 format:
 - Example: `2025-11-14T18:22:00Z`
 
 ### Money/Currency
-- Prices in `pricing` object: Decimal strings (e.g., `"0.05"`)
-- Amounts in events/settlement: Integer cents (e.g., `5` for $0.05)
+- Monetary values in events and settlement use integer micros
 - Currency: ISO 4217 code (e.g., `"USD"`)
 
 ### IDs

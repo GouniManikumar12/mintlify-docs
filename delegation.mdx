@@ -29,7 +29,7 @@ AIP delegation solves this by defining:
 
 ## 3. Delegation object
 
-When the Operator selects delegate mode, the selection result includes a delegation object:
+When the Operator selects delegate mode, the PlatformResponse includes a delegation object:
 
 ```json
 {
@@ -90,14 +90,15 @@ sequenceDiagram
   participant Operator
   participant BrandAgent as Brand Agent
 
-  Operator->>Platform: SelectionResult (mode: delegate, delegation object)
+  Operator->>Platform: PlatformResponse (mode: delegate, delegation object)
   Platform->>User: "Would you like [Brand] to handle this?"
   User->>Platform: Confirms consent
   Platform->>Operator: Consent confirmed (session_id)
-  Operator->>BrandAgent: Session initiated (scoped context)
-  Note over Platform,BrandAgent: Operator connects Platform and BrandAgent for a multi-turn session
+  Operator->>BrandAgent: Check availability + initiate session (scoped context)
+  BrandAgent->>Operator: Session accepted
+  Operator->>Operator: delegation_started recorded
+  Note over Platform,BrandAgent: Operator mediates the delegated session between Platform and BrandAgent
   BrandAgent->>User: Delegation session begins (multi-turn)
-  BrandAgent->>Operator: delegation_started event
   Note over User,BrandAgent: User completes task within brand agent
   BrandAgent->>Operator: task_completed event
   Operator->>Operator: Verify outcome, settle
@@ -108,8 +109,9 @@ sequenceDiagram
 1. **Consent first.** The platform MUST present the delegation offer to the user and receive explicit confirmation before any session is created.
 2. **One session per selection.** Each delegation creates exactly one session. If the user declines, no session is created and the serve token resolves as a recommend-mode participation.
 3. **Scoped context only.** The brand agent receives only the context defined in `context_scope`. No additional data may be shared.
-4. **Session tracking.** The `session_id` in the delegation object links all events back to the original selection and serve token.
-5. **Multi-turn session.** Once the session is initiated, the user may ask multiple questions. The Brand Agent responds within the delegated session on behalf of the AI platform while representing its brand.
+4. **Operator-mediated initiation.** After the platform sends user consent, the Operator confirms brand-agent availability, initiates the session, and emits `delegation_started`.
+5. **Session tracking.** The `session_id` in the delegation object links all events back to the original selection and serve token.
+6. **Multi-turn session.** Once the session is initiated, the user may ask multiple questions. The Brand Agent responds within the delegated session on behalf of the AI platform while representing its brand.
 
 ---
 
@@ -141,7 +143,7 @@ Delegation introduces additional lifecycle events beyond the standard recommend 
 | Event | When fired | Who fires it |
 |-------|-----------|-------------|
 | `exposure_shown` | Selection result delivered to platform | Platform |
-| `delegation_started` | User consents and session begins | Brand Agent (via Operator) |
+| `delegation_started` | User consent is confirmed, brand-agent availability is confirmed, and the delegated session is initiated | Operator |
 | `task_completed` | User completes the target action | Brand Agent (via Operator) |
 
 ### Settlement rules for delegation
@@ -160,7 +162,6 @@ Brand agents that support delegate mode MUST:
 - Accept session initiation from the Operator
 - Respect context scope boundaries  -  do not request additional user data
 - Provide a functional experience that completes the intended task
-- Fire `delegation_started` when the session begins
 - Fire `task_completed` when the outcome is verified
 - Handle session timeouts and errors gracefully
 
@@ -182,12 +183,14 @@ Brand agents MAY:
 4. Operator determines delegate mode based on transactional intent
 5. Platform shows: "QuickBooks can handle your signup. Proceed?"
 6. User confirms
-7. QuickBooks agent receives scoped context: `["intent", "constraints"]`
-8. QuickBooks agent initiates signup flow
-9. User completes signup
-10. QuickBooks agent fires `task_completed` with conversion details
-11. Operator verifies the outcome against the serve token
-12. Settlement: CPA is charged and recorded
+7. Platform sends consent to the Operator
+8. Operator checks QuickBooks agent availability and initiates the delegated session with scoped context: `["intent", "constraints"]`
+9. Operator records `delegation_started`
+10. QuickBooks agent initiates signup flow
+11. User completes signup
+12. QuickBooks agent fires `task_completed` with conversion details
+13. Operator verifies the outcome against the serve token
+14. Settlement: CPA is charged and recorded
 
 ---
 

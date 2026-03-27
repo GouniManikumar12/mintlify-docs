@@ -12,16 +12,16 @@
     "brand_agent_id",
     "state",
     "reserved_unit",
-    "reserved_amount_cents",
+    "reserved_amount_micros",
     "final_unit",
-    "final_amount_cents",
+    "final_amount_micros",
     "currency",
     "timestamps"
   ],
   "properties": {
     "serve_token": {
       "type": "string",
-      "description": "Unique token linking exposure → click → conversion",
+      "description": "Unique token linking exposure, interaction, delegation, and task outcome events",
       "example": "stk_abcxyz123"
     },
     "session_id": {
@@ -56,11 +56,11 @@
       "description": "Pricing unit reserved at auction time",
       "example": "CPA"
     },
-    "reserved_amount_cents": {
+    "reserved_amount_micros": {
       "type": "integer",
       "minimum": 0,
-      "description": "Maximum amount held from advertiser wallet",
-      "example": 500
+      "description": "Maximum amount held from advertiser wallet in micros",
+      "example": 5000000
     },
     "final_unit": {
       "type": "string",
@@ -68,11 +68,11 @@
       "description": "Final pricing unit applied after events",
       "example": "CPC"
     },
-    "final_amount_cents": {
+    "final_amount_micros": {
       "type": "integer",
       "minimum": 0,
-      "description": "Actual charge applied to advertiser wallet",
-      "example": 120
+      "description": "Actual charge applied to advertiser wallet in micros",
+      "example": 1200000
     },
     "currency": {
       "type": "string",
@@ -85,15 +85,17 @@
       "description": "Event timestamps",
       "properties": {
         "auction": { "type": "string", "format": "date-time" },
-        "exposure": { "type": "string", "format": "date-time" },
-        "click": { "type": "string", "format": "date-time" },
-        "conversion": { "type": "string", "format": "date-time" },
+        "exposure_shown": { "type": "string", "format": "date-time" },
+        "interaction_started": { "type": "string", "format": "date-time" },
+        "delegation_started": { "type": "string", "format": "date-time" },
+        "task_completed": { "type": "string", "format": "date-time" },
         "finalized": { "type": "string", "format": "date-time" }
       },
       "example": {
         "auction": "2025-11-11T18:00:00Z",
-        "exposure": "2025-11-11T18:00:01Z",
-        "click": "2025-11-11T18:02:00Z",
+        "exposure_shown": "2025-11-11T18:00:01Z",
+        "interaction_started": "2025-11-11T18:02:00Z",
+        "task_completed": "2025-11-11T18:30:00Z",
         "finalized": "2025-11-11T19:00:00Z"
       }
     },
@@ -101,12 +103,12 @@
       "type": "object",
       "description": "Revenue distribution breakdown",
       "properties": {
-        "platform_cents": { "type": "integer", "minimum": 0 },
-        "operator_cents": { "type": "integer", "minimum": 0 }
+        "platform_micros": { "type": "integer", "minimum": 0 },
+        "operator_micros": { "type": "integer", "minimum": 0 }
       },
       "example": {
-        "platform_cents": 30,
-        "operator_cents": 90
+        "platform_micros": 300000,
+        "operator_micros": 900000
       }
     },
     "ext": {

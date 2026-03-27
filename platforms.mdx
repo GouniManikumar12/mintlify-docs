@@ -24,7 +24,7 @@ A **Platform** is an application, interface, or agentic environment that:
    AI Platforms display operator-returned recommendations using protocol-standard formats (weave, tail, or product card).
 
 4. **Manages delegation consent (delegate mode)**
-   AI Platforms present delegation offers to users, collect consent, and initiate session handoff.
+   AI Platforms present delegation offers to users, collect consent, and relay that consent to the Operator for delegated session initiation.
 
 5. **Tracks and forwards signed events**
    AI Platforms report participation and interaction events using the operator SDK, ensuring serve-token integrity and attribution.
@@ -56,7 +56,7 @@ If a system can detect a user request and deliver a participation outcome, it ca
 
 ### AI Platforms MUST
 
-- Run an operator-provided SDK
+- Integrate with an operator through the canonical AIP APIs and event contracts
 - Maintain a session identifier for each user conversation
 - Display transparency labels for commercial participation
 - Ensure accurate event propagation
@@ -65,7 +65,7 @@ If a system can detect a user request and deliver a participation outcome, it ca
 
 ### AI Platforms MAY
 
-- Use optional backend SDKs for inline (weave) embedding
+- Use operator-provided SDKs or backend libraries when convenient
 - Add platform-specific UI or UX layers around recommendations
 - Surface recommendations inside various modalities (text, voice, multimodal)
 - Implement custom delegation consent UI
@@ -84,7 +84,7 @@ The AIP selection model uses a **time-bounded asynchronous selection window**.
 4. Operator distributes (broadcasts) the `ContextRequest` to **all matching** brand agents
 5. Operator computes the available response window from the platform's `latency_budget_ms`
 6. Brand agents submit signed responses within the computed window (auction-style participation)
-7. Operator runs selection, determines interaction mode, and returns the `SelectionResult`
+7. Operator runs selection, determines interaction mode, and returns the `PlatformResponse`
 8. If no responses are received before the window expires, Operator returns a valid `no_match` response
 
 ### AI Platform implications
@@ -97,13 +97,13 @@ The AIP selection model uses a **time-bounded asynchronous selection window**.
 
 ## Delegation responsibilities
 
-When the Operator returns a SelectionResult with delegate mode:
+When the Operator returns a PlatformResponse with delegate mode:
 
 1. **Present the offer (exposure)**  -  Show the user which Brand Agent is available and what it will do. Fire `exposure_shown` when the offer is displayed.
 2. **Collect consent**  -  The user must explicitly agree before any session is initiated.
-3. **Initiate handoff (start session)**  -  Send the user's consent to the Operator. The Operator initiates the delegation session and connects the AI Platform and the selected Brand Agent.
-4. **Run the delegated session (multi-turn)**  -  During the session, the user can ask multiple questions and the Brand Agent responds within that session while representing its brand.
-5. **Track outcomes and expiration**  -  Fire `delegation_started`, then `task_completed` when the task completes. If the session expires without completion, the Operator handles expiration according to operator-defined rules and settlement policy.
+3. **Confirm consent to the Operator**  -  Send the user's consent to the Operator. The Operator checks brand-agent availability, initiates the delegation session, and records `delegation_started`.
+4. **Run the delegated session (multi-turn)**  -  During the session, the user can ask multiple questions and the Brand Agent responds within that session while representing its brand, with the Operator mediating the handoff.
+5. **Track outcomes and expiration**  -  The Platform fires `exposure_shown` and any applicable `interaction_started` events. The Operator records `delegation_started`, and the Brand Agent submits `task_completed` when the task completes. If the session expires without completion, the Operator handles expiration according to operator-defined rules and settlement policy.
 
 If the user declines:
 - No session is initiated

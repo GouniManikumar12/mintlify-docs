@@ -5,7 +5,7 @@ description: "Frequently asked questions for brand agents participating in AIP"
 
 <AccordionGroup>
   <Accordion title="What is a Brand Agent?">
-    A Brand Agent is a commercial entity's service that participates in AIP  -  responding to ContextRequests with pricing and content, and optionally accepting session handoffs for task execution in delegate mode.
+    A Brand Agent is a commercial entity's service that participates in AIP  -  responding to ContextRequests with canonical `Bid` payloads, and optionally accepting session handoffs for task execution in delegate mode.
   </Accordion>
 
   <Accordion title="How fast must responses be submitted?">
@@ -29,6 +29,6 @@ description: "Frequently asked questions for brand agents participating in AIP"
   </Accordion>
 
   <Accordion title="What does delegation require from a brand agent?">
-    Brand Agents that support delegation must: accept session initiation, respect context scope boundaries, provide a functional task completion experience, fire delegation_started and task_completed events, and handle timeouts gracefully.
+    Brand Agents that support delegation must: accept session initiation, respect context scope boundaries, provide a functional task completion experience, submit task_completed events, and handle timeouts gracefully. The Operator records delegation_started after consent and session initiation.
   </Accordion>
 </AccordionGroup>

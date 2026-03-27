@@ -5,7 +5,7 @@ description: Configure the distributed auction transport on Google Cloud, AWS, o
 
 # Quickstart for Cloud Providers
 
-The AIP bidding model uses a **time-bounded asynchronous auction window** rather than full broadcast fanout. When a platform sends a `PlatformRequest`, the AIP Operator derives a `context_request`, classifies the request into one or more **category pools**, and only brand agents and advertiser networks that have explicitly subscribed to those pools receive it. Distribution to bidders is handled through a cloud-agnostic **publish/subscribe transport**, starting with Google Pub/Sub in v1.0 and extendable to AWS SNS/SQS, Azure Event Grid, Kafka, or other message buses. After publishing the context, the AIP Server opens a short **auction window** (typically 30–70 ms) during which bidders may submit signed bids via `POST /aip/bid-response`. When the window closes, the server collects all bids received within the allowed timeframe, applies the AIP selection rules (CPA > CPC > CPX), and returns the `auction_result` to the platform. If no bids are received before the window expires, the server returns a valid `no_bid` response. This design enables scalable, category-aware bidding, minimizes latency, prevents unnecessary bidder fanout, and ensures that only relevant brand agents compete for each user intent.
+The AIP bidding model uses a **time-bounded asynchronous auction window** rather than full broadcast fanout. When a platform sends a `PlatformRequest`, the AIP Operator derives a `context_request`, classifies the request into one or more **category pools**, and only brand agents and advertiser networks that have explicitly subscribed to those pools receive it. Distribution to bidders is handled through a cloud-agnostic **publish/subscribe transport**, starting with Google Pub/Sub in v1.0 and extendable to AWS SNS/SQS, Azure Event Grid, Kafka, or other message buses. After publishing the context, the AIP Server opens a short **auction window** (typically 30–70 ms) during which bidders may submit signed bids via `POST /aip/bid`. When the window closes, the server collects all bids received within the allowed timeframe, applies operator-defined selection logic, and returns the `PlatformResponse` to the platform. If no bids are received before the window expires, the server returns a valid `no_bid` response. This design enables scalable, category-aware bidding, minimizes latency, prevents unnecessary bidder fanout, and ensures that only relevant brand agents compete for each user intent.
 
 ## Google Cloud Pub/Sub (Reference)
 
@@ -13,7 +13,7 @@ The AIP bidding model uses a **time-bounded asynchronous auction window** rather
 2. **Create Subscriptions** – Provision pull subscriptions per Brand Agent, binding Cloud IAM service accounts with least-privilege roles (`roles/pubsub.subscriber`).
 3. **Grant Publisher Role** – Assign the AIP Operator service account `roles/pubsub.publisher` on all topics.
 4. **Configure AIP Server** – Set `auction.distribution.backend=pubsub`, add `project_id`, and ensure the topic prefix matches your naming convention.
-5. **Deploy Bid Listener** – Brand Agents run lightweight subscribers (Python, Go, Node) that read messages, classify intents, and respond via HTTPS to `POST /aip/bid-response`.
+5. **Deploy Bid Listener** – Brand Agents run lightweight subscribers (Python, Go, Node) that read messages, classify intents, and respond via HTTPS to `POST /aip/bid`.
 
 ## AWS SNS/SQS
 

@@ -1,36 +1,47 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aip.org/schemas/event-cpa.json",
-  "title": "CPA Conversion Event",
-  "description": "Event fired when a user completes a conversion (signup, purchase, trial start, etc.).",
+  "title": "TaskCompletedEvent",
+  "description": "Lifecycle event fired when a user completes a signup, purchase, or other billable outcome.",
   "type": "object",
   "required": [
     "event_type",
     "serve_token",
-    "conversion_id",
-    "conversion_type",
+    "session_id",
+    "platform_id",
+    "agent_id",
+    "outcome_type",
     "wallet_id",
-    "brand_agent_id",
-    "pricing",
-    "timestamp"
+    "settlement",
+    "ts"
   ],
   "properties": {
     "event_type": {
       "type": "string",
-      "const": "cpa_conversion",
-      "description": "Event type (always cpa_conversion)"
+      "const": "task_completed",
+      "description": "Lifecycle event type identifier"
     },
     "serve_token": {
       "type": "string",
-      "description": "Token linking exposure → click → conversion",
+      "description": "Token linking exposure, interaction, delegation, and outcome events",
       "example": "stk_abcxyz123"
     },
-    "conversion_id": {
+    "session_id": {
       "type": "string",
-      "description": "Unique identifier for this conversion",
-      "example": "cnv_001"
+      "description": "Session identifier",
+      "example": "sess_001"
     },
-    "conversion_type": {
+    "platform_id": {
+      "type": "string",
+      "description": "Platform identifier",
+      "example": "pf_chatapp"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Winning brand agent or advertiser identifier",
+      "example": "ba_451"
+    },
+    "outcome_type": {
       "type": "string",
       "enum": [
         "signup",
@@ -40,7 +51,7 @@
         "download",
         "custom"
       ],
-      "description": "Type of conversion action",
+      "description": "Type of completed outcome",
       "example": "purchase"
     },
     "wallet_id": {
@@ -48,42 +59,37 @@
       "description": "Wallet to apply final CPA charge",
       "example": "wal_ba451"
     },
-    "brand_agent_id": {
-      "type": "string",
-      "description": "Brand agent associated with the conversion",
-      "example": "ba_451"
-    },
-    "pricing": {
+    "settlement": {
       "type": "object",
-      "description": "CPA pricing. This is the FINAL amount, replacing CPX/CPC.",
-      "required": ["unit", "amount_cents"],
+      "description": "CPA settlement. This is the terminal billable amount for the lifecycle.",
+      "required": ["unit", "amount_micros", "currency"],
       "properties": {
         "unit": {
           "type": "string",
           "const": "CPA",
           "description": "Billing unit"
         },
-        "amount_cents": {
+        "amount_micros": {
           "type": "integer",
           "minimum": 0,
-          "description": "Final CPA charge in cents",
-          "example": 4900
+          "description": "Final CPA charge in micros",
+          "example": 4900000
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "Settlement currency",
+          "example": "USD"
         }
       }
     },
-    "order_value_cents": {
+    "outcome_value_micros": {
       "type": "integer",
       "minimum": 0,
-      "description": "Optional order value for purchase conversions",
-      "example": 25000
+      "description": "Optional outcome value in micros",
+      "example": 250000000
     },
-    "currency": {
-      "type": "string",
-      "pattern": "^[A-Z]{3}$",
-      "description": "Order currency",
-      "example": "USD"
-    },
-    "conversion_metadata": {
+    "outcome_metadata": {
       "type": "object",
       "description": "Optional advertiser-side contextual data",
       "properties": {
@@ -95,10 +101,10 @@
         }
       }
     },
-    "timestamp": {
+    "ts": {
       "type": "string",
       "format": "date-time",
-      "description": "When the conversion occurred",
+      "description": "When the outcome occurred",
       "example": "2025-11-14T18:30:00Z"
     },
     "ext": {

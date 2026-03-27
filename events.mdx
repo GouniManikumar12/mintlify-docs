@@ -86,12 +86,12 @@ All events share common required fields that link them back to the selection and
 | Field | Type | Description |
 |--------|------|-------------|
 | `event_type` | string | Event type identifier (`exposure_shown`, `interaction_started`, `delegation_started`, or `task_completed`) |
-| `serve_token` | string | Serve token from the selection result  -  links event to original selection |
+| `serve_token` | string | Serve token from the `PlatformResponse`  -  links event to original selection |
 | `ts` | string | ISO 8601 timestamp of when the event occurred |
 
 ### Event-specific fields
 
-At the protocol level, events require `event_type`, `serve_token`, and `timestamp`. Each event type has additional required and optional fields that are implementation-specific.
+At the protocol level, events require `event_type`, `serve_token`, and `ts`. Each event type has additional required and optional fields that are implementation-specific.
 
 ### Example: Exposure shown event
 
@@ -105,14 +105,39 @@ At the protocol level, events require `event_type`, `serve_token`, and `timestam
   "wallet_id": "w_890",
   "settlement": {
     "unit": "CPX",
-    "amount": "0.034",
+    "amount_micros": 34000,
     "currency": "USD"
   },
   "ts": "2025-11-11T18:00:00Z"
 }
 ```
 
+### Example: Interaction started event
+
+```json
+{
+  "event_type": "interaction_started",
+  "serve_token": "stk_abcxyz123",
+  "session_id": "sess_789",
+  "platform_id": "pf_chatapp",
+  "agent_id": "ag_123",
+  "wallet_id": "w_890",
+  "settlement": {
+    "unit": "CPC",
+    "amount_micros": 450000,
+    "currency": "USD"
+  },
+  "interaction_metadata": {
+    "source": "button",
+    "position": 1
+  },
+  "ts": "2025-11-11T18:00:30Z"
+}
+```
+
 ### Example: Delegation started event
+
+This event is emitted by the Operator after the Platform has collected user consent and the Operator has confirmed that the selected Brand Agent can accept the delegated session.
 
 ```json
 {
@@ -135,11 +160,12 @@ At the protocol level, events require `event_type`, `serve_token`, and `timestam
   "session_id": "sess_789",
   "platform_id": "pf_chatapp",
   "agent_id": "ag_123",
+  "wallet_id": "w_890",
   "outcome_type": "signup",
-  "outcome_value_cents": 0,
+  "outcome_value_micros": 0,
   "settlement": {
     "unit": "CPA",
-    "amount": "10.00",
+    "amount_micros": 10000000,
     "currency": "USD"
   },
   "ts": "2025-11-11T18:30:00Z"
@@ -175,7 +201,7 @@ Every event is digitally signed and validated against the original `serve_token`
 
 ### Delegate mode
 1. Platform shows delegation offer → **exposure_shown logged**
-2. User consents, session handed off → **delegation_started verified**
+2. User consents, the Operator confirms brand-agent availability and initiates the delegated session → **delegation_started verified**
 3. User completes signup through brand agent → **task_completed confirmed**
 4. Only task_completed (CPA) is billed
 

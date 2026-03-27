@@ -49,7 +49,14 @@ The Operator derives a `ContextRequest` and filters brand agents that match the 
 Brand agents submit signed responses with pricing, content, and relevance scores to participate in the auction-style selection. Operators collect responses received within the selection window.
 
 ### 6. Outcome guarantees
-The Operator MUST return a single `SelectionResult` (or `no_match` when no responses arrive in time) and a `serve_token` back to the platform. The result includes the selected agent and the determined interaction mode (recommend or delegate).
+The Operator MUST return a single `PlatformResponse` (or `no_match` when no responses arrive in time) and a `serve_token` back to the platform. The result includes the selected agent and the determined interaction mode (recommend or delegate).
+
+### 7. Settlement is separate from ranking
+Settlement paths are billing semantics, not ranking rules.
+
+- External click-out flows follow `CPX -> CPC -> CPA`
+- Delegated-session flows follow `CPX -> CPE -> CPA`
+- Operators still define their own ranking and scoring logic for selection
 
 ## 4. Selection mechanisms
 
@@ -158,7 +165,7 @@ Every exchange in the selection cycle is logged as verifiable artifacts:
 
 - signed `ContextRequest`
 - signed brand agent responses
-- signed `SelectionResult`
+- signed `PlatformResponse`
 - timestamps and nonces
 - protocol version identifiers
 
@@ -171,7 +178,7 @@ User asks: **"Best AI note-taking tools."**
 3. Operator derives `ContextRequest` and distributes (broadcasts) it to all matching brand agents using operator-defined mechanisms.
 4. Brand agents return responses within the computed selection window.
 5. Operator applies its selection logic to rank responses and determine interaction mode.
-6. Platform receives a single `SelectionResult` with `serve_token`.
+6. Platform receives a single `PlatformResponse` with `serve_token`.
 7. Lifecycle events connect cleanly to the same attribution chain via `serve_token`.
 
 ## 9. Protocol guarantees
@@ -180,6 +187,7 @@ AIP ensures:
 
 - **Timing compliance**: Responses received after the computed window are rejected
 - **Deterministic settlement**: Event ladder ensures one charge per `serve_token`
+- **Selection autonomy**: Settlement paths do not prescribe how operators rank responses
 - **Complete verifiability**: All messages are signed and timestamped
 - **Unified attribution**: `serve_token` links all events to the original selection
 - **Operator autonomy**: Operators define their own selection and scoring logic within protocol constraints
