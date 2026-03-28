@@ -18,7 +18,6 @@
     "declared_relevance",
     "supported_opportunities",
     "preferred_format",
-    "format_constraints",
     "valid_until",
     "timestamp"
   ],
@@ -59,14 +58,83 @@
     },
     "recommendation": {
       "type": "object",
-      "description": "Recommendation metadata and creative input that the operator may render if the bid wins.",
-      "required": ["creative_input"],
+      "description": "Platform render instructions for the winning recommendation.",
+      "required": ["format", "disclosure", "creative"],
       "additionalProperties": false,
       "properties": {
-        "creative_input": {
-          "$ref": "./creative-input.json"
+        "format": {
+          "type": "string",
+          "enum": ["weave", "tail", "product_card", "bridge"],
+          "description": "Creative format to render.",
+          "example": "weave"
+        },
+        "disclosure": {
+          "type": "string",
+          "description": "Disclosure label such as [Ad] or Sponsored.",
+          "example": "[Ad]"
+        },
+        "creative": {
+          "type": "object",
+          "description": "Combined creative object containing brand information, ad assets, and destination.",
+          "required": ["brand_name", "headline", "description", "cta_text", "landing_page_url"],
+          "additionalProperties": false,
+          "properties": {
+            "brand_name": {
+          "type": "string",
+          "description": "Advertiser or brand name.",
+          "example": "Nimbus"
+        },
+        "domain": {
+          "type": "string",
+          "description": "Optional advertiser domain.",
+          "example": "nimbus.example.com"
+        },
+        "headline": {
+          "type": "string",
+          "description": "Primary ad headline",
+          "example": "Scale your CRM with AI"
+        },
+        "description": {
+          "type": "string",
+          "description": "Ad description text",
+          "example": "Nimbus CRM Pro helps growing teams automate their sales pipeline with AI-powered insights and collaborative forecasting."
+        },
+        "cta_text": {
+          "type": "string",
+          "description": "Call-to-action text",
+          "example": "Start Free Trial"
+        },
+        "follow_up_suggestion": {
+          "type": "string",
+          "description": "Optional follow-up suggestion the platform can surface after the initial recommendation",
+          "example": "Get a migration checklist tailored to your current CRM"
+        },
+        "logo_url": {
+          "type": "string",
+          "description": "Optional logo asset",
+          "example": "https://cdn.example.com/nimbus/logo.png"
+        },
+        "image_urls": {
+          "type": "array",
+          "description": "Optional creative image assets for creative",
+          "items": {
+            "type": "string"
+          },
+          "example": ["https://cdn.example.com/nimbus/crm.png"]
+        },
+        "landing_page_url": {
+          "type": "string",
+          "description": "Advertiser-controlled destination URL.",
+          "example": "https://nimbus.example.com/signup"
         }
-      }
+          }
+        },
+        "offerId": {
+          "type": "string",
+          "description": "Unique identifier for the offer being presented.",
+          "example": "offer_12345"
+        }
+        }
     },
     "declared_relevance": {
       "type": "number",
@@ -103,9 +171,6 @@
     },
     "delegation": {
       "$ref": "#/$defs/delegation"
-    },
-    "format_constraints": {
-      "$ref": "#/$defs/formatConstraints"
     },
     "processing_latency_ms": {
       "type": "integer",
@@ -417,26 +482,6 @@
           }
         }
       ]
-    },
-    "formatConstraints": {
-      "type": "object",
-      "description": "Rendering and ranking hints for operators that support multi-response output.",
-      "additionalProperties": false,
-      "required": ["max_responses", "ranking"],
-      "properties": {
-        "max_responses": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "Maximum number of sponsored responses the brand agent permits in the same rendered set.",
-          "example": 2
-        },
-        "ranking": {
-          "type": "string",
-          "enum": ["operator_defined"],
-          "description": "Ranking hint. In v1.0, operator-defined ranking is the only standardized value.",
-          "example": "operator_defined"
-        }
-      }
     }
   },
   "examples": [
@@ -468,35 +513,25 @@
         "pacing_mode": "even"
       },
       "recommendation": {
-        "creative_input": {
+        "format": "weave",
+        "disclosure": "[Ad]",
+        "creative": {
           "brand_name": "Nimbus",
-          "product_name": "Nimbus CRM Pro",
-          "short_description": "CRM built for growing teams, with AI-assisted workflows.",
-          "long_description": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management.",
-          "value_props": [
-            "Automated pipeline insights",
-            "Collaborative forecasting"
-          ],
-          "context_snippet": "For teams comparing CRM options for scaling sales workflows.",
-          "cta_label": "Start Free Trial",
-          "cta_url": "https://nimbus.example.com/signup",
-          "assets": {
-            "logo_url": "https://cdn.example.com/nimbus/logo.png",
-            "image_urls": ["https://cdn.example.com/nimbus/crm.png"],
-            "resource_urls": ["https://nimbus.example.com/signup"]
-          }
-        }
+          "domain": "nimbus.example.com",
+          "headline": "Scale your CRM with AI",
+          "description": "Nimbus CRM Pro helps growing teams automate their sales pipeline with AI-powered insights and collaborative forecasting.",
+          "cta_text": "Start Free Trial",
+          "follow_up_suggestion": "Get a migration checklist tailored to your current CRM.",
+          "logo_url": "https://cdn.example.com/nimbus/logo.png",
+          "image_urls": ["https://cdn.example.com/nimbus/crm.png"],
+          "landing_page_url": "https://nimbus.example.com/signup"
+        },
+        "offerId": "offer_12345"
       },
       "declared_relevance": 0.87,
-      "supported_opportunities": [
-        "comparison_slot",
-        "decision_moment",
-        "transaction_trigger"
-      ],
+      "supported_opportunities": ["comparison_slot", "decision_moment", "transaction_trigger"],
       "preferred_format": "weave",
       "delegation": {
-        "supported": true,
-        "consent_required": true,
         "supported_for_intents": {
           "intent_types": ["transactional", "commercial"],
           "decision_phases": ["decision", "post_purchase"]

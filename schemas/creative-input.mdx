@@ -1,0 +1,167 @@
+---
+title: Creative Input
+description: Unified creative input structure containing all fields needed for any ad format. Brand agents generate this structure, and operators transform it into format-specific creatives.
+---
+
+# Creative Input Schema
+
+## Overview
+
+**Creative Input** is a unified structure that brand agents generate containing all the information needed for operators to render ads in any format (weave, tail, product_card, bridge, followup). This structure ensures consistency across different ad formats while allowing format-specific extensions.
+
+---
+
+## Top-Level Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `brand_name` | string | Yes | Brand or advertiser name |
+| `product_name` | string | Yes | Product or offer name |
+| `description` | string | Yes | Single description field. Contextual to the query, max 300 characters |
+| `value_props` | array | Yes | Short value propositions or bullet points |
+| `cta_label` | string | Yes | Call-to-action label, smart based on product |
+| `cta_url` | string | Yes | Call-to-action URL, selected from available resource URLs |
+| `assets` | object | Yes | Creative assets (logo, images, resource URLs) |
+| `product_id` | string | No | Optional product identifier for tracking |
+| `categories` | array | No | Optional product categories |
+| `followup_query` | string | No | Optional sponsored follow-up query for headless follow-up format |
+| `offer_id` | string | No | Optional offer identifier when creative is generated from a specific offer |
+| `offer_summary` | string | No | Optional offer summary text when creative is generated from a specific offer |
+
+---
+
+## Field Details
+
+### `brand_name`
+The brand or advertiser name. Used for attribution and brand recognition.
+
+**Example**: `"Nimbus"`
+
+### `product_name`
+The specific product or service being advertised.
+
+**Example**: `"Nimbus CRM Pro"`
+
+### `description`
+A single description field that directly addresses the user's query. Maximum 300 characters, contextual to the query.
+
+**Example**: `"CRM built for growing teams, with AI-assisted workflows and intelligent pipeline management."`
+
+### `value_props`
+Array of short value propositions or bullet points highlighting key benefits.
+
+**Example**: `["Automated pipeline insights", "Collaborative forecasting", "AI-powered deal recommendations"]`
+
+### `cta_label`
+The call-to-action button text, intelligently selected based on the product and context.
+
+**Example**: `"Start Free Trial"`, `"Request Demo"`, `"Learn More"`
+
+### `cta_url`
+The destination URL for the call-to-action. Selected from the available resource URLs based on query relevance.
+
+**Example**: `"https://nimbus.example.com/signup"`
+
+### `assets`
+Object containing creative assets needed for ad rendering.
+
+#### `assets.logo_url`
+Product or brand logo URL.
+
+#### `assets.image_urls`
+Array of creative image URLs.
+
+#### `assets.resource_urls`
+Array of destination or tracking URLs available for use.
+
+---
+
+## Optional Fields
+
+### `product_id`
+Optional product identifier for tracking and analytics purposes.
+
+**Example**: `"prod_nimbus_001"`
+
+### `categories`
+Optional product categories for better targeting and classification.
+
+**Example**: `["crm", "saas", "business_tools"]`
+
+### `followup_query`
+Optional sponsored follow-up query string for headless follow-up ad format. Generated automatically by brand-agents based on product and context.
+
+**Example**: `"Compare Nimbus CRM Pro vs Salesforce pricing and features"`
+
+### `offer_id`
+Optional offer identifier when the creative is generated from a specific offer. Used for tracking and analytics.
+
+**Example**: `"offer_12345"`
+
+### `offer_summary`
+Optional offer summary text when the creative is generated from a specific offer. Contains the offer details and pricing information.
+
+**Example**: `"Get 20% off your first 3 months with annual billing"`
+
+---
+
+## Format-Specific Extensions
+
+### Bridge Format Extensions
+For bridge format, additional fields may be included:
+
+#### `bridge_content`
+Object containing bridge format specific fields:
+- `headline`: Bridge-specific headline
+- `brand_description`: Brand description for bridge format  
+- `product_name`: Product name
+- `brand_name`: Brand name
+
+---
+
+## Example
+
+```json
+{
+  "brand_name": "Nimbus",
+  "product_name": "Nimbus CRM Pro",
+  "description": "CRM built for growing teams, with AI-assisted workflows and intelligent pipeline management.",
+  "value_props": [
+    "Automated pipeline insights",
+    "Collaborative forecasting",
+    "AI-powered deal recommendations"
+  ],
+  "cta_label": "Start Free Trial",
+  "cta_url": "https://nimbus.example.com/signup",
+  "assets": {
+    "logo_url": "https://cdn.example.com/nimbus/logo.png",
+    "image_urls": ["https://cdn.example.com/nimbus/crm.png"],
+    "resource_urls": ["https://nimbus.example.com/signup"]
+  },
+  "product_id": "prod_nimbus_001",
+  "categories": ["crm", "saas"],
+  "followup_query": "Compare Nimbus CRM Pro vs Salesforce pricing and features",
+  "offer_id": "offer_12345",
+  "offer_summary": "Get 20% off your first 3 months with annual billing"
+}
+```
+
+---
+
+## Usage
+
+1. **Brand Agents** generate this structure based on context and product information
+2. **Operators** receive this structure and transform it into format-specific creatives
+3. **Format Transformation** operators convert the unified input into weave, tail, product_card, bridge, or followup formats
+4. **Offer Integration** when offers are available, offer_id and offer_summary are included for tracking
+
+---
+
+## Validation Rules
+
+- All required fields must be present and non-empty
+- `description` must be ≤ 300 characters
+- `value_props` must be a non-empty array with non-empty strings
+- `assets` must contain all required sub-fields
+- All URLs must be valid URIs
+- Optional fields are only included when relevant

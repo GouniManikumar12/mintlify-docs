@@ -58,11 +58,9 @@ sequenceDiagram
 
 ### 3.1 PlatformRequest (Platform → Operator)
 
-Sent by the AI platform. AIP canonical request envelope (producer, context, identity, extensions). **`producer.agent_role` must be `"platform"`**. Contains:
+Sent by the AI platform. The canonical request envelope carries:
 
-- **`extensions.aip.intent`**  -  Explicit, structured intent (domain, subdomain, confidence) for **participation governance** within the operator monetization flow.
-- **`extensions.aip.runtime`**  -  Session, turn, query_text, optional messages, latency_budget_ms.
-- **`extensions.aip.auction`**  -  Selection parameters (pricing_model, cpx_floor, currency). Governance logic must never touch selection logic.
+- `message_id` for canonical per-message auction identity
 
 ### 3.2 ContextRequest (Operator → Brand Agents)
 
@@ -109,6 +107,8 @@ X-AIP-Version: 1.0
 | operator_id | Operator |
 | wallet_id | Settlement |
 | session_id | User session |
+| message_id | Canonical message-turn identifier used for auction identity |
+| context_id | Operator-generated auction identifier derived from `(session_id, message_id)` |
 | response_id | Operator response |
 | auction_id | Auction process |
 | bid_id | Brand agent response |

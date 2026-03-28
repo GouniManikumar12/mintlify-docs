@@ -27,7 +27,7 @@ A ContextRequest **MUST NOT** contain raw interaction text, full message history
 |-------|------|----------|-------------|
 | `spec_version` | string | Yes | Spec version. **MUST** be `"1.0"` |
 | `context_id` | string | Yes | Unique identifier for this operator-generated ContextRequest |
-| `source_request_id` | string | Yes | Reference to the originating `PlatformRequest.request_id` |
+| `message_id` | string | Yes | Canonical message identifier copied from the originating `PlatformRequest` |
 | `timestamp` | string | Yes | RFC 3339 timestamp when the operator generated this ContextRequest |
 | `operator` | object | Yes | The system that generated the ContextRequest |
 | `platform` | object | Yes | The upstream AI platform where the interaction originated |
@@ -48,9 +48,14 @@ A ContextRequest **MUST NOT** contain raw interaction text, full message history
 Every ContextRequest **MUST** contain:
 
 - A unique `context_id` identifying this specific auction context
-- A `source_request_id` referencing the originating [PlatformRequest](/schemas/platform-request)
+- The canonical upstream `message_id` for per-turn traceability
 
-This dual-ID design avoids conflating the original platform message with the derived auction message. The operator is the author of the ContextRequest; the platform is the source of the upstream interaction.
+This two-ID design keeps concerns separate:
+
+- `message_id`: upstream canonical message-turn identifier
+- `context_id`: operator-generated auction identifier derived from `(session_id, message_id)`
+
+The operator is the author of the ContextRequest; the platform is the source of the upstream interaction.
 
 ---
 
@@ -207,7 +212,7 @@ Explicit usage restrictions that downstream brand agents **MUST** respect.
 {
   "spec_version": "1.0",
   "context_id": "ctx_92fA1",
-  "source_request_id": "req_92fA1",
+  "message_id": "msg_92fA1_turn_003",
   "timestamp": "2026-03-26T18:22:00Z",
 
   "operator": {
@@ -280,7 +285,7 @@ Explicit usage restrictions that downstream brand agents **MUST** respect.
 
 | Before | After | Why |
 |--------|-------|-----|
-| Single reused upstream request identifier | `context_id` + `source_request_id` | Separate operator-generated ID from upstream reference for clean traceability |
+| Single reused upstream request identifier | `context_id` + `message_id` | Separate operator-generated auction ID from upstream message ID |
 | `producer` (mixed platform/operator identity) | `operator` + `platform` (distinct blocks) | The operator generates the ContextRequest; the platform is the upstream source |
 | `publisher`, `placement`, `device`, `geography`, `language`, `platform_type` | `surface` (unified object) | Eliminates fragmentation and redundancy |
 | `classification_reasoning` in intent | Removed | Internal operator reasoning is a leakage risk and should not reach brand agents |

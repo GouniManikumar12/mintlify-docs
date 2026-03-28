@@ -6,9 +6,7 @@
   "type": "object",
   "required": [
     "spec_version",
-    "response_id",
-    "auction_id",
-    "serve_token",
+    "recommendation_id",
     "timestamp",
     "status",
     "ttl_ms"
@@ -19,17 +17,9 @@
       "type": "string",
       "const": "1.0"
     },
-    "response_id": {
+    "recommendation_id": {
       "type": "string",
-      "description": "Unique identifier for this PlatformResponse."
-    },
-    "auction_id": {
-      "type": "string",
-      "description": "Auction identifier."
-    },
-    "serve_token": {
-      "type": "string",
-      "description": "Token used to track downstream events."
+      "description": "Unique identifier for this recommendation."
     },
     "timestamp": {
       "type": "string",
@@ -38,14 +28,11 @@
     },
     "status": {
       "type": "string",
-      "enum": ["filled", "no_match", "error"],
-      "description": "Auction outcome status."
+      "enum": ["generated", "no_match", "error"],
+      "description": "Recommendation generation status."
     },
-    "winner": {
-      "$ref": "#/$defs/winner"
-    },
-    "render": {
-      "$ref": "#/$defs/render"
+    "recommendation": {
+      "$ref": "#/$defs/recommendation"
     },
     "delegation": {
       "$ref": "#/$defs/delegation"
@@ -72,12 +59,12 @@
     {
       "if": {
         "properties": {
-          "status": { "const": "filled" }
+          "status": { "const": "generated" }
         },
         "required": ["status"]
       },
       "then": {
-        "required": ["winner", "render"]
+        "required": ["recommendation"]
       }
     },
     {
@@ -89,10 +76,7 @@
       },
       "then": {
         "not": {
-          "anyOf": [
-            { "required": ["winner"] },
-            { "required": ["render"] }
-          ]
+          "required": ["recommendation"]
         }
       }
     },
@@ -109,72 +93,7 @@
     }
   ],
   "$defs": {
-    "winner": {
-      "type": "object",
-      "description": "Winning bid information returned to the platform.",
-      "required": [
-        "bid_id",
-        "brand_agent_id",
-        "pricing",
-        "billing"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "bid_id": {
-          "type": "string",
-          "description": "Winning bid identifier."
-        },
-        "brand_agent_id": {
-          "type": "string",
-          "description": "Winning Brand Agent."
-        },
-        "pricing": {
-          "type": "object",
-          "required": ["model", "price_micros", "currency"],
-          "additionalProperties": false,
-          "properties": {
-            "model": {
-              "type": "string",
-              "enum": ["CPX", "CPC", "CPE", "CPA"],
-              "description": "Selected billing model."
-            },
-            "price_micros": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Winning price in micros."
-            },
-            "currency": {
-              "type": "string",
-              "pattern": "^[A-Z]{3}$",
-              "description": "ISO 4217 currency code."
-            }
-          }
-        },
-        "billing": {
-          "type": "object",
-          "required": ["reserved_amount_micros", "currency"],
-          "additionalProperties": false,
-          "properties": {
-            "reserved_amount_micros": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Amount reserved or held at auction time, in micros."
-            },
-            "currency": {
-              "type": "string",
-              "pattern": "^[A-Z]{3}$",
-              "description": "ISO 4217 currency code."
-            }
-          }
-        },
-        "rank": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "Optional winning rank."
-        }
-      }
-    },
-    "render": {
+    "recommendation": {
       "type": "object",
       "description": "Platform render instructions for the winning recommendation.",
       "required": ["format", "disclosure", "creative"],
@@ -191,84 +110,70 @@
         },
         "creative": {
           "$ref": "#/$defs/creative"
+        },
+        "offerId": {
+          "type": "string",
+          "description": "Unique identifier for the offer being presented."
         }
       }
     },
     "creative": {
       "type": "object",
-      "description": "Adtech-style creative object containing advertiser identity, ad assets, destination, and click tracking.",
+      "description": "Combined creative object containing brand information, ad assets, and destination.",
       "required": [
-        "advertiser",
-        "ad_assets",
-        "landing_page_url",
-        "click_url"
+        "brand_name",
+        "headline",
+        "description",
+        "cta_text",
+        "landing_page_url"
       ],
       "additionalProperties": false,
       "properties": {
-        "advertiser": {
-          "type": "object",
-          "required": ["brand_name"],
-          "additionalProperties": false,
-          "properties": {
-            "brand_name": {
-              "type": "string",
-              "description": "Advertiser or brand name."
-            },
-            "domain": {
-              "type": "string",
-              "description": "Optional advertiser domain."
-            }
-          }
+        "brand_name": {
+          "type": "string",
+          "description": "Advertiser or brand name."
         },
-        "ad_assets": {
-          "type": "object",
-          "required": ["headline", "description", "cta_text"],
-          "additionalProperties": false,
-          "properties": {
-            "headline": {
-              "type": "string",
-              "maxLength": 120,
-              "description": "Primary ad headline."
-            },
-            "description": {
-              "type": "string",
-              "maxLength": 300,
-              "description": "Ad description text."
-            },
-            "cta_text": {
-              "type": "string",
-              "maxLength": 60,
-              "description": "Call-to-action text."
-            },
-            "follow_up_suggestion": {
-              "type": "string",
-              "maxLength": 240,
-              "description": "Optional follow-up suggestion the platform can surface after the initial recommendation."
-            },
-            "logo_url": {
-              "type": "string",
-              "format": "uri",
-              "description": "Optional brand logo asset."
-            },
-            "image_urls": {
-              "type": "array",
-              "description": "Optional creative image assets.",
-              "items": {
-                "type": "string",
-                "format": "uri"
-              }
-            }
+        "domain": {
+          "type": "string",
+          "description": "Optional advertiser domain."
+        },
+        "headline": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Primary ad headline."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Ad description text."
+        },
+        "cta_text": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Call-to-action text."
+        },
+        "follow_up_suggestion": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "Optional follow-up suggestion the platform can surface after the initial recommendation."
+        },
+        "logo_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional brand logo asset."
+        },
+        "image_urls": {
+          "type": "array",
+          "description": "Optional creative image assets.",
+          "items": {
+            "type": "string",
+            "format": "uri"
           }
         },
         "landing_page_url": {
           "type": "string",
           "format": "uri",
           "description": "Advertiser-controlled destination URL."
-        },
-        "click_url": {
-          "type": "string",
-          "format": "uri",
-          "description": "Operator-controlled click tracking URL."
         }
       }
     },
@@ -307,7 +212,7 @@
           "type": "string",
           "format": "uri"
         },
-        "followUp_exposure_url": {
+        "followup_exposure_url": {
           "type": "string",
           "format": "uri"
         },
@@ -319,7 +224,7 @@
           "type": "string",
           "format": "uri"
         },
-        "followup_engament_url": {
+        "followup_engagement_url": {
           "type": "string",
           "format": "uri"
         }
@@ -343,46 +248,26 @@
   "examples": [
     {
       "spec_version": "1.0",
-      "response_id": "resp_981",
-      "auction_id": "auc_981",
-      "serve_token": "stk_abcxyz123",
+      "recommendation_id": "rec_981",
       "timestamp": "2026-03-26T18:00:02Z",
-      "status": "filled",
-      "winner": {
-        "bid_id": "bid_7823",
-        "brand_agent_id": "ba_451",
-        "pricing": {
-          "model": "CPA",
-          "price_micros": 10000000,
-          "currency": "USD"
-        },
-        "billing": {
-          "reserved_amount_micros": 500000000,
-          "currency": "USD"
-        },
-        "rank": 1
-      },
-      "render": {
+      "status": "generated",
+      "recommendation": {
         "format": "weave",
         "disclosure": "[Ad]",
         "creative": {
-          "advertiser": {
-            "brand_name": "Nimbus",
-            "domain": "nimbus.example.com"
-          },
-          "ad_assets": {
-            "headline": "Scale your CRM",
-            "description": "Built for founders.",
-            "cta_text": "Try for free",
-            "follow_up_suggestion": "Ask Nimbus to draft a migration plan for your current CRM.",
-            "logo_url": "https://cdn.example.com/nimbus/logo.png",
-            "image_urls": [
-              "https://cdn.example.com/nimbus/crm.png"
-            ]
-          },
-          "landing_page_url": "https://nimbus.example.com/signup",
-          "click_url": "https://admesh.click/stk_abcxyz123"
-        }
+          "brand_name": "Nimbus",
+          "domain": "nimbus.example.com",
+          "headline": "Scale your CRM",
+          "description": "Built for founders.",
+          "cta_text": "Try for free",
+          "follow_up_suggestion": "Ask Nimbus to draft a migration plan for your current CRM.",
+          "logo_url": "https://cdn.example.com/nimbus/logo.png",
+          "image_urls": [
+            "https://cdn.example.com/nimbus/crm.png"
+          ],
+          "landing_page_url": "https://nimbus.example.com/signup"
+        },
+        "offerId": "offer_12345"
       },
       "delegation": {
         "available": true,
@@ -392,18 +277,16 @@
       },
       "tracking": {
         "exposure_url": "https://track.example.com/impression/stk_abcxyz123",
-        "followUp_exposure_url": "https://track.example.com/follow-up-impression/stk_abcxyz123",
+        "followup_exposure_url": "https://track.example.com/follow-up-impression/stk_abcxyz123",
         "click_url": "https://track.example.com/click/stk_abcxyz123",
         "conversion_url": "https://track.example.com/conversion/stk_abcxyz123",
-        "followup_engament_url": "https://track.example.com/follow-up-engagement/stk_abcxyz123"
+        "followup_engagement_url": "https://track.example.com/follow-up-engagement/stk_abcxyz123"
       },
       "ttl_ms": 60000
     },
     {
       "spec_version": "1.0",
-      "response_id": "resp_982",
-      "auction_id": "auc_982",
-      "serve_token": "stk_empty",
+      "recommendation_id": "rec_982",
       "timestamp": "2026-03-26T18:00:02Z",
       "status": "no_match",
       "ttl_ms": 60000

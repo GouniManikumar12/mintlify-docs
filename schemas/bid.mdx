@@ -35,7 +35,6 @@ A **Bid** is the payload a Brand Agent returns for a [ContextRequest](/schemas/c
 | `declared_relevance` | number | Yes | Brand-declared relevance score (`0.0`-`1.0`) |
 | `supported_opportunities` | array | Yes | Opportunity types this bid supports |
 | `preferred_format` | string | Yes | Preferred creative format |
-| `format_constraints` | object | Yes | Rendering and ranking hints |
 | `valid_until` | string | Yes | RFC 3339 expiry timestamp for the bid |
 | `timestamp` | string | Yes | RFC 3339 creation timestamp for the bid |
 | `delegation` | object | No | Delegation capability declaration |
@@ -98,23 +97,30 @@ Budget controls declared by the Brand Agent.
 
 ## `recommendation`
 
-Contains the creative payload the operator may transform into a supported format.
+Platform render instructions for the winning recommendation.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `creative_input` | object | Yes | Unified creative input structure |
+| `format` | string | Yes | Creative format: `weave`, `tail`, `product_card`, or `bridge` |
+| `disclosure` | string | Yes | Disclosure label such as `[Ad]` or `Sponsored` |
+| `creative` | object | Yes | Structured creative payload |
+| `offerId` | string | No | Unique identifier for the offer being presented |
 
-The `creative_input` object follows the [Creative Input JSON schema](/schemas-json/creative-input.json) and includes:
+### `recommendation.creative`
 
-- `brand_name`
-- `product_name`
-- `short_description`
-- `long_description`
-- `value_props`
-- `context_snippet`
-- `cta_label`
-- `cta_url`
-- `assets`
+Combined creative object containing brand information, ad assets, and destination.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `brand_name` | string | Yes | Advertiser or brand name |
+| `domain` | string | No | Optional advertiser domain |
+| `headline` | string | Yes | Primary ad headline |
+| `description` | string | Yes | Ad description text |
+| `cta_text` | string | Yes | Call-to-action text |
+| `follow_up_suggestion` | string | No | Optional follow-up suggestion the platform can surface after the initial recommendation |
+| `logo_url` | string | No | Optional logo asset |
+| `image_urls` | array | No | Optional creative image assets for creative |
+| `landing_page_url` | string | Yes | Advertiser-controlled destination URL |
 
 ---
 
@@ -182,17 +188,6 @@ In v1.0, delegated session liveness is tracked from verified `delegation_activit
 
 ---
 
-## `format_constraints`
-
-Rendering hints for operators that support multi-response output.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `max_responses` | integer | Yes | Maximum number of sponsored responses allowed in the rendered set |
-| `ranking` | string | Yes | Ranking hint. In v1.0, this is `operator_defined` |
-
----
-
 ## Example
 
 ```json
@@ -224,24 +219,20 @@ Rendering hints for operators that support multi-response output.
     "pacing_mode": "even"
   },
   "recommendation": {
-    "creative_input": {
+    "format": "weave",
+    "disclosure": "[Ad]",
+    "creative": {
       "brand_name": "Nimbus",
-      "product_name": "Nimbus CRM Pro",
-      "short_description": "CRM built for growing teams, with AI-assisted workflows.",
-      "long_description": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management.",
-      "value_props": [
-        "Automated pipeline insights",
-        "Collaborative forecasting"
-      ],
-      "context_snippet": "For teams comparing CRM options for scaling sales workflows.",
-      "cta_label": "Start Free Trial",
-      "cta_url": "https://nimbus.example.com/signup",
-      "assets": {
-        "logo_url": "https://cdn.example.com/nimbus/logo.png",
-        "image_urls": ["https://cdn.example.com/nimbus/crm.png"],
-        "resource_urls": ["https://nimbus.example.com/signup"]
-      }
-    }
+      "domain": "nimbus.example.com",
+      "headline": "Scale your CRM with AI",
+      "description": "Nimbus CRM Pro helps growing teams automate their sales pipeline with AI-powered insights and collaborative forecasting.",
+      "cta_text": "Start Free Trial",
+      "follow_up_suggestion": "Get a migration checklist tailored to your current CRM.",
+      "logo_url": "https://cdn.example.com/nimbus/logo.png",
+      "image_urls": ["https://cdn.example.com/nimbus/crm.png"],
+      "landing_page_url": "https://nimbus.example.com/signup"
+    },
+    "offerId": "offer_12345"
   },
   "declared_relevance": 0.87,
   "supported_opportunities": ["comparison_slot", "decision_moment", "transaction_trigger"],
@@ -268,10 +259,6 @@ Rendering hints for operators that support multi-response output.
       "session_timeout_seconds": 900,
       "max_turns": 25
     }
-  },
-  "format_constraints": {
-    "max_responses": 2,
-    "ranking": "operator_defined"
   },
   "processing_latency_ms": 42,
   "valid_until": "2026-03-26T18:00:10Z",

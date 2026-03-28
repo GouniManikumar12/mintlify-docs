@@ -154,7 +154,7 @@ The AI platform initiates the process by sending a `PlatformRequest` to the oper
 
 ### Key fields:
 - `spec_version`: AIP request schema version (e.g. "1.0")
-- `request_id`: Unique identifier for this request
+- `message_id`: Canonical per-message identifier used for auction identity and replay
 - `timestamp`: ISO 8601 timestamp
 - `producer`: Producer information; **`agent_role` must be `"platform"`**
 - `context`: Context (language, publisher, placement, device, geography)
@@ -167,7 +167,7 @@ The AI platform initiates the process by sending a `PlatformRequest` to the oper
 ```json
 {
   "spec_version": "1.0",
-  "request_id": "req_92fA1",
+  "message_id": "msg_92fA1_turn_003",
   "timestamp": "2025-11-14T18:22:00Z",
   "producer": {
     "agent_id": "openai_chat",
@@ -217,7 +217,7 @@ The operator normalizes the platform request and enriches it with intent analysi
 ### Key fields:
 - `spec_version`: AIP specification version (default: "1.0")
 - `context_id`: Unique identifier for this operator-generated ContextRequest
-- `source_request_id`: Reference to the originating PlatformRequest `request_id`
+- `message_id`: Canonical upstream message identifier
 - `timestamp`: ISO 8601 timestamp
 - `operator`: Operator information
 - `platform`: Upstream platform information
@@ -238,7 +238,7 @@ The operator normalizes the platform request and enriches it with intent analysi
 {
   "spec_version": "1.0",
   "context_id": "ctx_92fA1",
-  "source_request_id": "req_92fA1",
+  "message_id": "msg_92fA1_turn_003",
   "timestamp": "2025-11-14T18:22:00Z",
   "operator": {
     "operator_id": "admesh_operator"
@@ -593,9 +593,9 @@ Sent when the user completes the target action.
 ## Key identifiers flow
 
 ```
-request_id (PlatformRequest)
+message_id (PlatformRequest)
     ↓
-context_id (ContextRequest) ← references request_id via source_request_id
+context_id (ContextRequest) ← derived from session_id + message_id
     ↓
 bid_id (Bid) ← references context_id
     ↓

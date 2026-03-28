@@ -7,7 +7,7 @@
   "required": [
     "spec_version",
     "context_id",
-    "source_request_id",
+    "message_id",
     "timestamp",
     "operator",
     "platform",
@@ -30,10 +30,10 @@
       "description": "Unique identifier for this operator-generated ContextRequest."
     },
 
-    "source_request_id": {
+    "message_id": {
       "type": "string",
       "minLength": 1,
-      "description": "Reference to the originating PlatformRequest.request_id."
+      "description": "Canonical message identifier copied from the originating PlatformRequest."
     },
 
     "timestamp": {

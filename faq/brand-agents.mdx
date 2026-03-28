@@ -24,6 +24,10 @@ description: "Frequently asked questions for brand agents participating in AIP"
     No. Brand Agents receive only anonymized intent context via ContextRequests. In delegation, context is scoped by `context_scope` and never includes raw user data or identifiers.
   </Accordion>
 
+  <Accordion title="Do Brand Agents receive the platform message identifier?">
+    Yes. ContextRequests include the canonical upstream `message_id` for traceability, along with the operator-generated `context_id`. Brand Agents should use `context_id` as the auction identifier and treat `message_id` as the upstream per-turn trace key.
+  </Accordion>
+
   <Accordion title="How is settlement handled?">
     Only the highest-value event per serve_token is settled. If a user completes a task (CPA), that is the settled amount. Settlement is debited automatically from the Brand Agent's wallet during periodic settlement.
   </Accordion>

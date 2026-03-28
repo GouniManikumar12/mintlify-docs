@@ -6,10 +6,8 @@
   "required": [
     "brand_name",
     "product_name",
-    "short_description",
-    "long_description",
+    "description",
     "value_props",
-    "context_snippet",
     "cta_label",
     "cta_url",
     "assets"
@@ -25,17 +23,11 @@
       "description": "Product or offer name",
       "example": "Nimbus CRM Pro"
     },
-    "short_description": {
+    "description": {
       "type": "string",
-      "description": "1-2 sentence summary, max 200 characters, contextual to the query",
-      "maxLength": 200,
-      "example": "CRM built for growing teams, with AI-assisted workflows."
-    },
-    "long_description": {
-      "type": "string",
-      "description": "2-4 sentence expanded description, max 500 characters",
-      "maxLength": 500,
-      "example": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management. It includes automated follow-ups, collaborative forecasting, and embedded AI copilots that help close deals faster."
+      "description": "Single description field. Contextual to the query, max 300 characters.",
+      "example": "CRM built for growing teams, with AI-assisted workflows and intelligent pipeline management.",
+      "maxLength": 300
     },
     "value_props": {
       "type": "array",
@@ -47,13 +39,6 @@
         "Collaborative forecasting",
         "AI-powered deal recommendations"
       ]
-    },
-    "context_snippet": {
-      "type": "string",
-      "description": "60-100 character contextual hint for weave format, making the ad relevant to the user's query",
-      "minLength": 60,
-      "maxLength": 100,
-      "example": "For startups needing higher limits and automated expense workflows."
     },
     "cta_label": {
       "type": "string",
@@ -117,6 +102,16 @@
       "type": "string",
       "description": "Optional sponsored follow-up query string to execute when user selects the follow-up. Used in headless follow-up ad format for AI platforms with existing follow-up suggestion UI. Generated automatically by brand-agents based on product and context.",
       "example": "Compare Nimbus CRM Pro vs Salesforce pricing and features"
+    },
+    "offer_id": {
+      "type": "string",
+      "description": "Optional offer identifier when creative is generated from a specific offer. Used for tracking and analytics.",
+      "example": "offer_12345"
+    },
+    "offer_summary": {
+      "type": "string",
+      "description": "Optional offer summary text when creative is generated from a specific offer. Contains the offer details and pricing information.",
+      "example": "Get 20% off your first 3 months with annual billing"
     }
   },
   "additionalProperties": false,
@@ -124,14 +119,12 @@
     {
       "brand_name": "Nimbus",
       "product_name": "Nimbus CRM Pro",
-      "short_description": "CRM built for growing teams, with AI-assisted workflows.",
-      "long_description": "Nimbus CRM Pro is designed for teams of 5-50 people who need intelligent pipeline management. It includes automated follow-ups, collaborative forecasting, and embedded AI copilots that help close deals faster.",
+      "description": "CRM built for growing teams, with AI-assisted workflows and intelligent pipeline management.",
       "value_props": [
         "Automated pipeline insights",
         "Collaborative forecasting",
         "AI-powered deal recommendations"
       ],
-      "context_snippet": "For startups needing higher limits and automated expense workflows.",
       "cta_label": "Start Free Trial",
       "cta_url": "https://nimbus.example.com/signup",
       "assets": {

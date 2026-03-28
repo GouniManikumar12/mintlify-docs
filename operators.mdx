@@ -47,6 +47,7 @@ PlatformRequest uses the AIP canonical request format. A PlatformRequest may inc
 * Raw user queries or commands
 * Conversation state
 * Platform session identifiers
+* `message_id` for canonical per-message auction identity
 * Platform-specific metadata
 * `latency_budget_ms`  -  the platform's latency budget for the auction
 
@@ -54,6 +55,8 @@ PlatformRequest uses the AIP canonical request format. A PlatformRequest may inc
 
 ContextRequest uses the AIP canonical context format with enriched fields. A ContextRequest:
 
+* Adds an operator-generated `context_id`
+* Preserves upstream `message_id` for per-turn traceability
 * Removes raw user data
 * Removes conversation transcripts
 * Removes user identifiers

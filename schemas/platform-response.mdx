@@ -19,8 +19,8 @@ It communicates:
 
 All monetary values in `PlatformResponse` MUST use micros as the only canonical unit.
 
-If `status` is `"filled"`, `winner` and `render` MUST be present.
-If `status` is `"no_match"`, `winner` and `render` MUST be omitted.
+If `status` is `"generated"`, `recommendation` MUST be present.
+If `status` is `"no_match"`, `recommendation` MUST be omitted.
 If `status` is `"error"`, an `error` object MUST be present.
 
 Creative payloads MUST separate:
@@ -28,7 +28,6 @@ Creative payloads MUST separate:
 - advertiser identity
 - ad assets
 - advertiser destination URL
-- operator-controlled click tracking URL
 
 ---
 
@@ -37,14 +36,11 @@ Creative payloads MUST separate:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `spec_version` | string | Yes | Spec version. MUST be `"1.0"` |
-| `response_id` | string | Yes | Unique identifier for this `PlatformResponse` |
-| `auction_id` | string | Yes | Auction identifier |
-| `serve_token` | string | Yes | Token used to stitch downstream events |
+| `recommendation_id` | string | Yes | Unique identifier for this recommendation |
 | `timestamp` | string | Yes | RFC 3339 timestamp when the response was produced |
-| `status` | string | Yes | Auction outcome: `filled`, `no_match`, or `error` |
+| `status` | string | Yes | Recommendation generation status: `generated`, `no_match`, or `error` |
 | `ttl_ms` | integer | Yes | Response time-to-live in milliseconds |
-| `winner` | object | Conditionally | Winning bid state. Required when `status="filled"` |
-| `render` | object | Conditionally | Render payload. Required when `status="filled"` |
+| `recommendation` | object | Conditionally | Recommendation payload. Required when `status="generated"` |
 | `delegation` | object | No | Delegation availability surfaced to the platform |
 | `tracking` | object | No | Downstream event tracking hooks |
 | `error` | object | Conditionally | Error payload. Required when `status="error"` |
@@ -52,75 +48,34 @@ Creative payloads MUST separate:
 
 ---
 
-## `winner`
+## `recommendation`
 
-Winning bid information returned to the platform.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `bid_id` | string | Yes | Winning bid identifier |
-| `brand_agent_id` | string | Yes | Winning Brand Agent |
-| `pricing` | object | Yes | Selected billing model and winning price |
-| `billing` | object | Yes | Reserved amount held at auction time |
-| `rank` | integer | No | Optional winning rank |
-
-### `winner.pricing`
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `model` | string | Yes | Selected billing model: `CPX`, `CPC`, `CPE`, or `CPA` |
-| `price_micros` | integer | Yes | Winning price in micros |
-| `currency` | string | Yes | ISO 4217 currency code |
-
-### `winner.billing`
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `reserved_amount_micros` | integer | Yes | Amount reserved or held at auction time, in micros |
-| `currency` | string | Yes | ISO 4217 currency code |
-
----
-
-## `render`
-
-Platform render instructions for the winning recommendation.
+Platform recommendation payload containing format, disclosure, and creative content.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `format` | string | Yes | Render format: `weave`, `tail`, `product_card`, or `bridge` |
 | `disclosure` | string | Yes | Disclosure label such as `[Ad]` or `Sponsored` |
 | `creative` | object | Yes | Structured creative payload |
+| `offerId` | string | No | Unique identifier for the offer being presented |
 
 ---
 
 ## `creative`
 
-Adtech-style creative object containing advertiser identity, ad assets, destination, and click tracking.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `advertiser` | object | Yes | Advertiser identity block |
-| `ad_assets` | object | Yes | Headline, description, CTA, and optional media assets |
-| `landing_page_url` | string | Yes | Advertiser-controlled destination URL |
-| `click_url` | string | Yes | Operator-controlled click tracking URL |
-
-### `creative.advertiser`
+Combined creative object containing brand information, ad assets, destination, and click tracking.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `brand_name` | string | Yes | Advertiser or brand name |
 | `domain` | string | No | Optional advertiser domain |
-
-### `creative.ad_assets`
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
 | `headline` | string | Yes | Primary ad headline |
 | `description` | string | Yes | Ad description text |
 | `cta_text` | string | Yes | Call-to-action text |
 | `follow_up_suggestion` | string | No | Optional follow-up suggestion the platform can surface after the initial recommendation |
 | `logo_url` | string | No | Optional logo asset |
 | `image_urls` | array | No | Optional creative image assets |
+| `landing_page_url` | string | Yes | Advertiser-controlled destination URL |
 
 ---
 
@@ -144,10 +99,10 @@ Optional downstream tracking hooks.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `exposure_url` | string | No | Impression tracking endpoint |
-| `followUp_exposure_url` | string | No | Follow-up impression tracking endpoint |
+| `followup_exposure_url` | string | No | Follow-up impression tracking endpoint |
 | `click_url` | string | No | Click tracking endpoint |
 | `conversion_url` | string | No | Conversion tracking endpoint |
-| `followup_engament_url` | string | No | Follow-up engagement tracking endpoint |
+| `followup_engagement_url` | string | No | Follow-up engagement tracking endpoint |
 
 ---
 
@@ -167,46 +122,26 @@ Present when `status = "error"`.
 ```json
 {
   "spec_version": "1.0",
-  "response_id": "resp_981",
-  "auction_id": "auc_981",
-  "serve_token": "stk_abcxyz123",
+  "recommendation_id": "rec_981",
   "timestamp": "2026-03-26T18:00:02Z",
-  "status": "filled",
-  "winner": {
-    "bid_id": "bid_7823",
-    "brand_agent_id": "ba_451",
-    "pricing": {
-      "model": "CPA",
-      "price_micros": 10000000,
-      "currency": "USD"
-    },
-    "billing": {
-      "reserved_amount_micros": 500000000,
-      "currency": "USD"
-    },
-    "rank": 1
-  },
-  "render": {
+  "status": "generated",
+  "recommendation": {
     "format": "weave",
     "disclosure": "[Ad]",
     "creative": {
-      "advertiser": {
-        "brand_name": "Nimbus",
-        "domain": "nimbus.example.com"
-      },
-      "ad_assets": {
-        "headline": "Scale your CRM",
-        "description": "Built for founders.",
-        "cta_text": "Try for free",
-        "follow_up_suggestion": "Ask Nimbus to draft a migration plan for your current CRM.",
-        "logo_url": "https://cdn.example.com/nimbus/logo.png",
-        "image_urls": [
-          "https://cdn.example.com/nimbus/crm.png"
-        ]
-      },
-      "landing_page_url": "https://nimbus.example.com/signup",
-      "click_url": "https://admesh.click/stk_abcxyz123"
-    }
+      "brand_name": "Nimbus",
+      "domain": "nimbus.example.com",
+      "headline": "Scale your CRM",
+      "description": "Built for founders.",
+      "cta_text": "Try for free",
+      "follow_up_suggestion": "Ask Nimbus to draft a migration plan for your current CRM.",
+      "logo_url": "https://cdn.example.com/nimbus/logo.png",
+      "image_urls": [
+        "https://cdn.example.com/nimbus/crm.png"
+      ],
+      "landing_page_url": "https://nimbus.example.com/signup"
+    },
+    "offerId": "offer_12345"
   },
   "delegation": {
     "available": true,
@@ -216,10 +151,10 @@ Present when `status = "error"`.
   },
   "tracking": {
     "exposure_url": "https://track.example.com/impression/stk_abcxyz123",
-    "followUp_exposure_url": "https://track.example.com/follow-up-impression/stk_abcxyz123",
+    "followup_exposure_url": "https://track.example.com/follow-up-impression/stk_abcxyz123",
     "click_url": "https://track.example.com/click/stk_abcxyz123",
     "conversion_url": "https://track.example.com/conversion/stk_abcxyz123",
-    "followup_engament_url": "https://track.example.com/follow-up-engagement/stk_abcxyz123"
+    "followup_engagement_url": "https://track.example.com/follow-up-engagement/stk_abcxyz123"
   },
   "ttl_ms": 60000
 }
@@ -231,9 +166,9 @@ Present when `status = "error"`.
 
 - All monetary values MUST use micros
 - `ttl_ms` MUST be between `1000` and `300000`
-- If `status = "filled"`, `winner` and `render` MUST be present
-- If `status = "no_match"`, `winner` and `render` MUST be omitted
+- If `status = "generated"`, `recommendation` MUST be present
+- If `status = "no_match"`, `recommendation` MUST be omitted
 - If `status = "error"`, `error` MUST be present
-- `render.creative` MUST separate advertiser identity, ad assets, destination URL, and click tracking URL
+- `recommendation.creative` MUST separate advertiser identity, ad assets, and destination URL
 
 ---

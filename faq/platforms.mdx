@@ -8,6 +8,10 @@ description: "Frequently asked questions for AI platforms integrating with AIP"
     AI platforms send anonymized PlatformRequests to an Operator when they detect actionable intent. The Operator evaluates participation eligibility, runs selection, and returns a recommendation or delegation offer. Verified outcomes generate payouts through the settlement system.
   </Accordion>
 
+  <Accordion title="What identifiers must a platform send?">
+    Platforms send `message_id` on the canonical PlatformRequest. It is the canonical per-message identifier used for auction identity, replay, and downstream traceability. Client SDKs may expose `messageId`, but the canonical schema field is `message_id`.
+  </Accordion>
+
   <Accordion title="What data is shared with brand agents?">
     Brand agents receive only anonymized ContextRequests  -  intent classification, decision phase, vertical signals, and metadata. No raw user queries, conversation transcripts, or user identifiers are shared. In delegation, context is further scoped by `context_scope`.
   </Accordion>

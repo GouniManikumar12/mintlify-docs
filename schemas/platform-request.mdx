@@ -22,7 +22,7 @@ The schema is designed around five principles:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `spec_version` | string | Yes | `"1.0"` |
-| `request_id` | string | Yes | Unique identifier for this request |
+| `message_id` | string | Yes | Canonical per-message identifier used for auction identity, replay, dedupe, and downstream traceability |
 | `timestamp` | string | Yes | RFC 3339 timestamp when the platform generated the request |
 | `platform` | object | Yes | The AI platform producing the request |
 | `identity` | object | Yes | Anonymous or pseudonymous subject identity |
@@ -32,6 +32,16 @@ The schema is designed around five principles:
 | `signal_validation` | object | No | Operator validation metadata (platform-derived mode only) |
 | `policy` | object | No | Auditable policy decision |
 | `monetization` | object | No | Monetization configuration and runtime controls |
+
+---
+
+## Identifier Model
+
+AIP uses one top-level identifier on `PlatformRequest`:
+
+- `message_id`: canonical conversation-turn identifier used for auction identity, replay, dedupe, and downstream traceability
+
+If your SDK or UI layer uses `messageId`, treat it as a client alias that maps to canonical `message_id` at the API boundary.
 
 ---
 
@@ -421,7 +431,7 @@ The operator SHOULD:
 ```json
 {
   "spec_version": "1.0",
-  "request_id": "req_001",
+  "message_id": "msg_001_turn_002",
   "timestamp": "2026-03-26T18:30:00Z",
   "platform": {
     "platform_id": "chat_interface_x",
@@ -518,7 +528,7 @@ The operator SHOULD:
 ```json
 {
   "spec_version": "1.0",
-  "request_id": "req_002",
+  "message_id": "msg_002_turn_000",
   "timestamp": "2026-03-26T18:31:00Z",
   "platform": {
     "platform_id": "chat_interface_x",
@@ -620,7 +630,7 @@ The operator SHOULD:
 ## Validation Rules
 
 - `spec_version` must be `"1.0"`.
-- `request_id` must be a non-empty string.
+- `message_id` must be a non-empty string.
 - `timestamp` must be RFC 3339.
 - `platform.role` must be `"platform"`.
 - `consent` must contain `status`, `scope`, and `constraints`.

@@ -6,7 +6,7 @@
   "type": "object",
   "required": [
     "spec_version",
-    "request_id",
+    "message_id",
     "timestamp",
     "platform",
     "identity",
@@ -21,10 +21,10 @@
       "const": "1.0"
     },
 
-    "request_id": {
+    "message_id": {
       "type": "string",
       "minLength": 1,
-      "description": "Unique identifier for this request."
+      "description": "Canonical per-message identifier used for auction identity, deduplication, replay, and downstream traceability."
     },
 
     "timestamp": {
@@ -630,7 +630,7 @@
   "examples": [
     {
       "spec_version": "1.0",
-      "request_id": "req_001",
+      "message_id": "msg_001_turn_002",
       "timestamp": "2026-03-26T18:30:00Z",
       "platform": {
         "platform_id": "chat_interface_x",
@@ -720,7 +720,7 @@
     },
     {
       "spec_version": "1.0",
-      "request_id": "req_002",
+      "message_id": "msg_002_turn_000",
       "timestamp": "2026-03-26T18:31:00Z",
       "platform": {
         "platform_id": "chat_interface_x",
