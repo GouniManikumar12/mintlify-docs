@@ -298,7 +298,7 @@
       "description": "Optional downstream tracking endpoints or identifiers.",
       "additionalProperties": false,
       "properties": {
-        "impression_url": {
+        "exposure_url": {
           "type": "string",
           "format": "uri"
         },
@@ -377,7 +377,7 @@
         "cta_text": "Continue with Nimbus"
       },
       "tracking": {
-        "impression_url": "https://track.example.com/impression/stk_abcxyz123",
+        "exposure_url": "https://track.example.com/impression/stk_abcxyz123",
         "click_url": "https://track.example.com/click/stk_abcxyz123",
         "conversion_url": "https://track.example.com/conversion/stk_abcxyz123"
       },
