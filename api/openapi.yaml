@@ -64,7 +64,7 @@ components:
       $ref: "../schemas-json/bid.json"
 
     PlatformResponse:
-      $ref: "../schemas-json/auction-result.json"
+      $ref: "../schemas-json/platform-response.json"
     EventExposureShown:
       type: object
       required: [event_type, serve_token, session_id, platform_id, agent_id, wallet_id, settlement, ts]

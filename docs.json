@@ -67,7 +67,7 @@
               "schemas/platform-request",
               "schemas/context-request",
               "schemas/bid",
-              "schemas/auction-result"
+              "schemas/platform-response"
             ],
             "expanded": true
           },

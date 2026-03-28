@@ -118,6 +118,7 @@ Adtech-style creative object containing advertiser identity, ad assets, destinat
 | `headline` | string | Yes | Primary ad headline |
 | `description` | string | Yes | Ad description text |
 | `cta_text` | string | Yes | Call-to-action text |
+| `follow_up_suggestion` | string | No | Optional follow-up suggestion the platform can surface after the initial recommendation |
 | `logo_url` | string | No | Optional logo asset |
 | `image_urls` | array | No | Optional creative image assets |
 
@@ -143,8 +144,10 @@ Optional downstream tracking hooks.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `exposure_url` | string | No | Impression tracking endpoint |
+| `followUp_exposure_url` | string | No | Follow-up impression tracking endpoint |
 | `click_url` | string | No | Click tracking endpoint |
 | `conversion_url` | string | No | Conversion tracking endpoint |
+| `followup_engament_url` | string | No | Follow-up engagement tracking endpoint |
 
 ---
 
@@ -195,6 +198,7 @@ Present when `status = "error"`.
         "headline": "Scale your CRM",
         "description": "Built for founders.",
         "cta_text": "Try for free",
+        "follow_up_suggestion": "Ask Nimbus to draft a migration plan for your current CRM.",
         "logo_url": "https://cdn.example.com/nimbus/logo.png",
         "image_urls": [
           "https://cdn.example.com/nimbus/crm.png"
@@ -212,8 +216,10 @@ Present when `status = "error"`.
   },
   "tracking": {
     "exposure_url": "https://track.example.com/impression/stk_abcxyz123",
+    "followUp_exposure_url": "https://track.example.com/follow-up-impression/stk_abcxyz123",
     "click_url": "https://track.example.com/click/stk_abcxyz123",
-    "conversion_url": "https://track.example.com/conversion/stk_abcxyz123"
+    "conversion_url": "https://track.example.com/conversion/stk_abcxyz123",
+    "followup_engament_url": "https://track.example.com/follow-up-engagement/stk_abcxyz123"
   },
   "ttl_ms": 60000
 }

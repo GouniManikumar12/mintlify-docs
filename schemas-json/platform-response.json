@@ -240,6 +240,11 @@
               "maxLength": 60,
               "description": "Call-to-action text."
             },
+            "follow_up_suggestion": {
+              "type": "string",
+              "maxLength": 240,
+              "description": "Optional follow-up suggestion the platform can surface after the initial recommendation."
+            },
             "logo_url": {
               "type": "string",
               "format": "uri",
@@ -302,11 +307,19 @@
           "type": "string",
           "format": "uri"
         },
+        "followUp_exposure_url": {
+          "type": "string",
+          "format": "uri"
+        },
         "click_url": {
           "type": "string",
           "format": "uri"
         },
         "conversion_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "followup_engament_url": {
           "type": "string",
           "format": "uri"
         }
@@ -361,6 +374,7 @@
             "headline": "Scale your CRM",
             "description": "Built for founders.",
             "cta_text": "Try for free",
+            "follow_up_suggestion": "Ask Nimbus to draft a migration plan for your current CRM.",
             "logo_url": "https://cdn.example.com/nimbus/logo.png",
             "image_urls": [
               "https://cdn.example.com/nimbus/crm.png"
@@ -378,8 +392,10 @@
       },
       "tracking": {
         "exposure_url": "https://track.example.com/impression/stk_abcxyz123",
+        "followUp_exposure_url": "https://track.example.com/follow-up-impression/stk_abcxyz123",
         "click_url": "https://track.example.com/click/stk_abcxyz123",
-        "conversion_url": "https://track.example.com/conversion/stk_abcxyz123"
+        "conversion_url": "https://track.example.com/conversion/stk_abcxyz123",
+        "followup_engament_url": "https://track.example.com/follow-up-engagement/stk_abcxyz123"
       },
       "ttl_ms": 60000
     },
